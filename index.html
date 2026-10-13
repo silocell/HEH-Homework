@@ -308,6 +308,24 @@ a.gs-title:hover{text-decoration:underline!important}
 .gcsc-find-more-on-google-magnifier{fill:var(--accent)!important}
 .gsc-adBlock{border-bottom:1px solid var(--rule)!important;padding-bottom:6px!important}
 
+/* ---------- READER (a result opened inside the page) ---------- */
+.reader{margin-bottom:20px}
+.reader-head{
+  display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap;
+}
+.reader-site{
+  font-family:var(--font-mono);font-size:.72rem;color:var(--ink-faint);
+  flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.reader-head .ghost-btn{padding:5px 10px;font-size:.74rem}
+.reader-frame{
+  width:100%;height:min(70vh,640px);border:1px solid var(--rule);
+  border-radius:10px;background:var(--paper);display:block;
+}
+.reader-note{
+  margin:10px 0 0;font-size:.72rem;color:var(--ink-faint);line-height:1.5;
+}
+
 /* ---------- GRID / SECTIONS ---------- */
 .columns{display:grid;grid-template-columns:1fr;gap:20px;align-items:start}
 @media (min-width:900px){ .columns{grid-template-columns:1.45fr 1fr} }
@@ -542,6 +560,16 @@ footer{
     </select>
     <button type="submit" class="btn">Search</button>
   </form>
+
+  <div class="panel reader" id="reader" hidden>
+    <div class="reader-head">
+      <span class="reader-site" id="readerSite"></span>
+      <a class="ghost-btn" id="readerOpen" href="#" target="_blank" rel="noopener noreferrer">Open in a tab</a>
+      <button class="ghost-btn" id="readerClose" type="button">Close</button>
+    </div>
+    <iframe class="reader-frame" id="readerFrame" title="Page preview" referrerpolicy="no-referrer"></iframe>
+    <p class="reader-note">Some sites refuse to be shown inside another page. If this stays blank, use "Open in a tab".</p>
+  </div>
 
   <div class="panel cse-panel" id="csePanel" hidden>
     <div class="cse-head">
@@ -1384,6 +1412,74 @@ function runRevisionSearch(q){
 document.getElementById("cseClose").addEventListener("click",function(){
   document.getElementById("csePanel").hidden = true;
 });
+
+/* ---------- open a result inside the page ----------
+   Only sites that permit it. The rest refuse to be framed by anyone,
+   so those open in a tab as normal. Checked per site, not guessed.
+   ------------------------------------------------------------- */
+var READABLE = [
+  "en.wikipedia.org","simple.wikipedia.org","wikipedia.org",
+  "www.khanacademy.org","khanacademy.org",
+  "www.bbc.co.uk","bbc.co.uk",
+  "www.physicsandmathstutor.com","physicsandmathstutor.com",
+  "www.natgeokids.com","natgeokids.com",
+  "www.internetgeography.net","internetgeography.net",
+  "corbettmaths.com","www.corbettmaths.com",
+  "spartacus-educational.com","www.spartacus-educational.com"
+];
+
+function youtubeEmbed(u){
+  try{
+    var id = "";
+    if(/(^|\.)youtube\.com$/.test(u.hostname)){
+      if(u.pathname === "/watch") id = u.searchParams.get("v") || "";
+      else if(u.pathname.indexOf("/shorts/") === 0) id = u.pathname.split("/")[2] || "";
+      else if(u.pathname.indexOf("/embed/") === 0) return u.href;
+    }else if(/(^|\.)youtu\.be$/.test(u.hostname)){
+      id = u.pathname.replace("/","");
+    }
+    if(/^[A-Za-z0-9_-]{6,20}$/.test(id)) return "https://www.youtube.com/embed/" + id;
+  }catch(e){}
+  return null;
+}
+
+function openInReader(href){
+  var u;
+  try{ u = new URL(href, location.href); }catch(e){ return false; }
+  if(u.protocol !== "https:" && u.protocol !== "http:") return false;
+
+  var src = youtubeEmbed(u);
+  if(!src){
+    var host = u.hostname.toLowerCase();
+    var ok = false;
+    for(var i=0;i<READABLE.length;i++){ if(host === READABLE[i]){ ok = true; break; } }
+    if(!ok) return false;
+    src = u.href;
+  }
+
+  document.getElementById("readerSite").textContent = u.hostname.replace(/^www\./,"") + u.pathname;
+  document.getElementById("readerOpen").href = u.href;
+  document.getElementById("readerFrame").src = src;
+  var panel = document.getElementById("reader");
+  panel.hidden = false;
+  panel.scrollIntoView({ behavior:"smooth", block:"start" });
+  return true;
+}
+
+document.getElementById("readerClose").addEventListener("click",function(){
+  document.getElementById("reader").hidden = true;
+  document.getElementById("readerFrame").src = "about:blank";
+});
+
+/* Google renders its results into our page, so result clicks can be caught here. */
+document.getElementById("csePanel").addEventListener("click",function(e){
+  var a = e.target;
+  while(a && a !== this && a.tagName !== "A") a = a.parentNode;
+  if(!a || a.tagName !== "A") return;
+  var href = a.getAttribute("href") || "";
+  if(!href || href.charAt(0) === "#") return;
+  if(openInReader(href)) e.preventDefault();
+}, true);
 
 document.getElementById("searchForm").addEventListener("submit",function(e){
   e.preventDefault();
