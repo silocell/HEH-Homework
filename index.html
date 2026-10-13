@@ -1875,6 +1875,25 @@ function renderExplanation(text){
   flush();
 }
 
+/* A non-2xx reply from the function arrives as an error with the real
+   body tucked away on .context, so dig the message out of there. */
+function readInvokeError(err){
+  try{
+    var ctx = err && err.context;
+    if(ctx && typeof ctx.json === "function"){
+      return ctx.json().then(
+        function(b){ return (b && b.error) ? b.error : null; },
+        function(){ return null; }
+      );
+    }
+    if(ctx && typeof ctx.text === "function"){
+      return ctx.text().then(function(t){ return t ? String(t).slice(0,200) : null; },
+                             function(){ return null; });
+    }
+  }catch(e){}
+  return Promise.resolve(null);
+}
+
 function refreshAllowance(){
   if(!canSync()) { showExplainPanel(false); return; }
   showExplainPanel(true);
@@ -1906,7 +1925,10 @@ if(exForm) exForm.addEventListener("submit",function(e){
   sb.functions.invoke("explain",{ body:{ topic: topic } }).then(function(r){
     var d = r.data || {};
     if(r.error && !d.error){
-      exError("Couldn't reach the explainer. Check your connection and try again.");
+      /* supabase-js hides the body of a non-2xx reply on error.context */
+      readInvokeError(r.error).then(function(msg){
+        exError(msg || "Couldn't reach the explainer. Check your connection and try again.");
+      });
     }else if(d.error){
       exError(d.error);
       if(typeof d.remaining === "number") setLeft(d.remaining, d.limit || 10);
