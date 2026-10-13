@@ -191,6 +191,17 @@ button,input,select,textarea{font:inherit;color:inherit}
   color:var(--ink-soft);cursor:pointer;transition:border-color .15s,color .15s;
 }
 .ghost-btn:hover{border-color:var(--accent);color:var(--accent)}
+.ghost-btn[disabled]{opacity:.55;cursor:default}
+.sync{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:.72rem;color:var(--ink-faint);
+  padding:6px 10px;border:1px solid var(--rule);border-radius:999px;
+  white-space:nowrap;
+}
+.sync-dot{width:7px;height:7px;border-radius:50%;background:var(--good);flex:none}
+.sync.is-syncing .sync-dot{background:var(--accent)}
+.sync.is-offline .sync-dot{background:var(--margin)}
+.sync.is-offline{color:var(--margin);border-color:var(--margin)}
 
 /* ---------- GREETING ---------- */
 .greeting{
@@ -333,6 +344,38 @@ button,input,select,textarea{font:inherit;color:inherit}
   display:block;margin-bottom:4px;
 }
 
+/* ---------- EXPLAINER ---------- */
+.ex-form{display:flex;gap:8px;margin-bottom:4px}
+.ex-form input{
+  flex:1;min-width:0;background:var(--paper);
+  border:1px solid var(--rule);border-radius:9px;
+  padding:10px 12px;font-size:.88rem;
+}
+.ex-form input:focus{border-color:var(--accent);outline:none}
+.ex-form button{
+  flex:none;background:var(--accent);color:#fff;border:none;
+  border-radius:9px;padding:10px 15px;font-size:.85rem;font-weight:600;cursor:pointer;
+}
+.ex-form button[disabled]{opacity:.55;cursor:default}
+.ex-left{
+  font-family:var(--font-mono);font-size:.7rem;color:var(--ink-faint);
+  font-variant-numeric:tabular-nums;margin:0 0 2px;
+}
+.ex-out{margin-top:14px;font-size:.9rem;line-height:1.6}
+.ex-out:empty{margin-top:0}
+.ex-out h4{
+  font-size:.68rem;font-weight:600;letter-spacing:.11em;text-transform:uppercase;
+  color:var(--ink-faint);margin:16px 0 6px;
+}
+.ex-out h4:first-child{margin-top:0}
+.ex-out p{margin:0 0 10px;white-space:pre-wrap}
+.ex-out p:last-child{margin-bottom:0}
+.ex-note{
+  margin-top:14px;padding-top:12px;border-top:1px solid var(--rule);
+  font-size:.72rem;color:var(--ink-faint);line-height:1.5;
+}
+.ex-err{color:var(--margin);font-size:.85rem;margin-top:12px;line-height:1.5}
+
 /* ---------- TODO ---------- */
 .todo-add{display:flex;gap:8px;margin-bottom:14px}
 .todo-add input{
@@ -392,18 +435,14 @@ footer{
     <p class="sub">Sign in to pick up where you left off.</p>
     <form id="loginForm" autocomplete="off">
       <div class="field">
-        <label for="username">Username</label>
-        <input type="text" id="username" name="username" autocomplete="off" required>
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" autocomplete="username" required>
       </div>
       <div class="field">
         <label for="password">Password</label>
-        <input type="password" id="password" name="password" autocomplete="off" required>
+        <input type="password" id="password" name="password" autocomplete="current-password" required>
       </div>
-      <div class="remember">
-        <input type="checkbox" id="rememberMe" checked>
-        <label for="rememberMe" style="text-transform:none;letter-spacing:0;font-size:.82rem;font-weight:400;color:var(--ink-soft)">Keep me signed in for 15 days</label>
-      </div>
-      <button type="submit" class="btn">Sign in</button>
+      <button type="submit" class="btn" id="loginBtn">Sign in</button>
       <p class="gate-error" id="gateError"></p>
     </form>
   </div>
@@ -417,8 +456,9 @@ footer{
   <div class="topbar">
     <div class="brand"><span class="dot"></span> Homework Launchpad</div>
     <div class="topbar-actions">
+      <span class="sync" id="syncPill" title="Sync status"><span class="sync-dot"></span><span id="syncText">Synced</span></span>
       <button class="ghost-btn" id="themeBtn" type="button">Dark mode</button>
-      <button class="ghost-btn" id="switchBtn" type="button">Switch user</button>
+      <button class="ghost-btn" id="switchBtn" type="button">Sign out</button>
     </div>
   </div>
 
@@ -462,6 +502,18 @@ footer{
         <div class="lookup-result" id="lookupResult"></div>
       </div>
 
+      <div class="panel" id="explainPanel" hidden>
+        <p class="panel-title">Explain a topic</p>
+        <p class="ex-left" id="exLeft"></p>
+        <form class="ex-form" id="exForm">
+          <input type="text" id="exInput" placeholder="e.g. photosynthesis, the water cycle…" autocomplete="off" aria-label="Topic to explain">
+          <button type="submit" id="exBtn">Explain</button>
+        </form>
+        <div class="ex-out" id="exOut"></div>
+        <p class="ex-err" id="exErr" hidden></p>
+        <p class="ex-note">Explains topics so you can understand them. It won't do set work for you.</p>
+      </div>
+
       <div class="panel">
         <p class="panel-title">To-do</p>
         <form class="todo-add" id="todoForm">
@@ -476,11 +528,11 @@ footer{
   </div>
 
   <footer>
-    Saved on this computer only — to-do items don't travel with the file.<br>
     Word of the day changes at midnight.
   </footer>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.0/dist/umd/supabase.js"></script>
 <script>
 /* ==================================================================
    ACCOUNTS — EDIT THIS BLOCK
@@ -498,11 +550,34 @@ footer{
 var SALT = "hl$2026$";
 
 var ACCOUNTS = [
-  { login:"User1", name:"Shiv",  full:"Shiv Kumar",
+  { login:"User1", name:"Shiv",  full:"Shiv Kumar",  email:"26kush@hatchend.harrow.sch.uk",
     hash:"b3f2854db4e0d083007e3d1093f4d1def946857297ed05e3d2aed06484fe8ce0" },
-  { login:"User2", name:"Shlok", full:"Shlok Patel",
+  { login:"User2", name:"Shlok", full:"Shlok Patel", email:"",
     hash:"7bb6f6af193ea5585ff219f9ed07be112678f2c11574840c3dad503ec6e9dd37" }
 ];
+
+/* ==================================================================
+   SUPABASE — the account and sync service
+   ------------------------------------------------------------------
+   Both values below are meant to be public. The database rules you
+   set up are what protect the data, not these.
+
+   TO ADD SOMEONE: Supabase dashboard -> Authentication -> Users ->
+   Add user -> Create new user, with "Auto Confirm User" ticked.
+   Then add their email and display name to ACCOUNTS above so the
+   greeting knows what to call them.
+   ================================================================== */
+var SUPABASE_URL = "https://lkyfpvlrqgezgitfmpqo.supabase.co";
+var SUPABASE_KEY = "sb_publishable_BTzbP_oOZnfvCgs4UBJYXA_WCTyT88M";
+
+var sb = null;
+try{
+  if(window.supabase && window.supabase.createClient){
+    sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+      auth:{ persistSession:true, autoRefreshToken:true }
+    });
+  }
+}catch(e){ sb = null; }
 
 /* --- password scrambling (SHA-256), works offline and on https --- */
 function sha256(ascii){
@@ -573,7 +648,6 @@ function hashFor(login, password){
 }
 window.hashFor = hashFor;
 
-var REMEMBER_DAYS = 15;
 
 /* ==================================================================
    LINKS — EDIT THIS BLOCK to add or remove tiles
@@ -1056,68 +1130,121 @@ var THEME_KEY   = "hl.theme";
 function todoKey(login){ return "hl.todo." + login; }
 
 /* ==================================================================
-   AUTH
+   AUTH — Supabase first, with an offline fallback
    ================================================================== */
-var currentUser = null;
+var currentUser = null;   /* { name, email, uid, offline } */
 
-function findAccount(typed){
+var SESSION_HINT = "hl.lastuser";
+
+function accountFor(typed){
   var t = String(typed||"").trim().toLowerCase();
   for(var i=0;i<ACCOUNTS.length;i++){
     var a = ACCOUNTS[i];
-    if(t === a.login.toLowerCase() || t === a.name.toLowerCase()) return a;
+    if(t === a.login.toLowerCase()) return a;
+    if(t === a.name.toLowerCase()) return a;
+    if(a.email && t === a.email.toLowerCase()) return a;
   }
   return null;
 }
 
-function restoreSession(){
-  var s = recall(SESSION_KEY,null);
-  if(!s || !s.login || !s.expires) return null;
-  if(Date.now() > s.expires){ forget(SESSION_KEY); return null; }
-  for(var i=0;i<ACCOUNTS.length;i++){
-    if(ACCOUNTS[i].login === s.login) return ACCOUNTS[i];
+function displayName(email){
+  var a = accountFor(email);
+  if(a) return a.name;
+  var p = String(email||"").split("@")[0].replace(/[._\-0-9]+/g," ").trim();
+  return p ? p.charAt(0).toUpperCase() + p.slice(1) : "there";
+}
+
+function isNetworkError(e){
+  if(!e) return false;
+  if(e.name === "AuthRetryableFetchError") return true;
+  if(e.status === 0) return true;
+  var m = String(e.message||"").toLowerCase();
+  return m.indexOf("fetch") > -1 || m.indexOf("network") > -1 || m.indexOf("load failed") > -1;
+}
+
+function signInOffline(typed, pwd, err){
+  var acc = accountFor(typed);
+  if(acc && acc.hash && hashFor(acc.login, pwd) === acc.hash){
+    openDashboard({ name:acc.name, email:acc.email||"", uid:"local:"+acc.login, offline:true }, null);
+    return;
   }
-  return null;
+  err.textContent = navigator.onLine
+    ? "That email and password don't match. Try again."
+    : "Can't reach the server right now, and the offline password didn't match.";
+  document.getElementById("password").value = "";
 }
 
 document.getElementById("loginForm").addEventListener("submit",function(e){
   e.preventDefault();
-  var err = document.getElementById("gateError");
-  var acc = findAccount(document.getElementById("username").value);
-  var pwd = document.getElementById("password").value;
+  var err  = document.getElementById("gateError");
+  var btn  = document.getElementById("loginBtn");
+  var typed = document.getElementById("email").value.trim();
+  var pwd   = document.getElementById("password").value;
+  err.textContent = "";
 
-  if(!acc || hashFor(acc.login, pwd) !== acc.hash){
-    err.textContent = "That username and password don't match. Try again.";
-    document.getElementById("password").value = "";
+  function release(){ btn.disabled = false; btn.textContent = "Sign in"; }
+
+  if(!sb || typed.indexOf("@") === -1){
+    signInOffline(typed, pwd, err);
     return;
   }
-  err.textContent = "";
-  if(document.getElementById("rememberMe").checked){
-    store(SESSION_KEY,{ login:acc.login, expires: Date.now() + REMEMBER_DAYS*86400000 });
-  }
-  openDashboard(acc);
+
+  btn.disabled = true;
+  btn.textContent = "Signing in…";
+
+  sb.auth.signInWithPassword({ email:typed, password:pwd }).then(function(r){
+    release();
+    if(r.error){
+      if(isNetworkError(r.error)) signInOffline(typed, pwd, err);
+      else{
+        err.textContent = "That email and password don't match. Try again.";
+        document.getElementById("password").value = "";
+      }
+      return;
+    }
+    var u = r.data.user;
+    store(SESSION_HINT, u.email);
+    openDashboard({ name:displayName(u.email), email:u.email, uid:u.id, offline:false }, u);
+  }).catch(function(){
+    release();
+    signInOffline(typed, pwd, err);
+  });
 });
 
 document.getElementById("switchBtn").addEventListener("click",function(){
-  forget(SESSION_KEY);
+  stopSyncTimer();
+  if(sb){ try{ sb.auth.signOut(); }catch(e){} }
   currentUser = null;
   document.getElementById("dash").hidden = true;
   document.getElementById("gate").hidden = false;
-  document.getElementById("username").value = "";
+  document.getElementById("email").value = "";
   document.getElementById("password").value = "";
   document.getElementById("gateError").textContent = "";
-  document.getElementById("username").focus();
+  document.getElementById("email").focus();
 });
 
 /* ==================================================================
    DASHBOARD
    ================================================================== */
-function openDashboard(acc){
-  currentUser = acc;
+function openDashboard(who, supaUser){
+  currentUser = who;
   document.getElementById("gate").hidden = true;
   document.getElementById("dash").hidden = false;
+
+  if(supaUser && supaUser.user_metadata && supaUser.user_metadata.theme){
+    var t = supaUser.user_metadata.theme;
+    if(t === "dark" || t === "light" || t === "system"){
+      store(THEME_KEY, t === "system" ? null : t);
+      applyTheme(t === "system" ? null : t);
+    }
+  }
+
   paintGreeting();
   paintWord();
   renderTodos();
+  setSync(currentUser.offline ? "offline" : "syncing");
+  if(!currentUser.offline){ flush(); startSyncTimer(); }
+  refreshAllowance();
   document.getElementById("searchInput").focus();
 }
 
@@ -1278,15 +1405,48 @@ document.getElementById("lookupForm").addEventListener("submit",function(e){
     });
 });
 
-/* ---------- to-do ---------- */
-function getTodos(){ return recall(todoKey(currentUser.login), []); }
-function setTodos(list){ store(todoKey(currentUser.login), list); }
+/* ---------- to-do ----------
+   The list lives in Supabase and is mirrored locally. Edits are
+   applied locally first so the page always feels instant, then
+   pushed up. If the push fails the item keeps a "pending" mark and
+   is retried on the next sync, so nothing is lost offline.
+   ------------------------------------------------------------- */
+function uuid(){
+  try{
+    if(window.crypto && crypto.randomUUID) return crypto.randomUUID();
+  }catch(e){}
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g,function(c){
+    var r = Math.random()*16|0, v = c === "x" ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
+
+function todoKey(){ return "hl.todo." + (currentUser ? currentUser.uid : "anon"); }
+function getLocal(){
+  var l = recall(todoKey(), []);
+  return Object.prototype.toString.call(l) === "[object Array]" ? l : [];
+}
+function setLocal(list){ store(todoKey(), list); }
+
+function setSync(state){
+  var pill = document.getElementById("syncPill");
+  var text = document.getElementById("syncText");
+  if(!pill || !text) return;
+  pill.className = "sync" + (state === "ok" ? "" : " is-" + state);
+  text.textContent =
+    state === "syncing" ? "Syncing…" :
+    state === "offline" ? "Offline"      : "Synced";
+  pill.title =
+    state === "offline"
+      ? "Changes are saved on this device and will sync when you're back online."
+      : "Your list is saved to your account.";
+}
 
 function renderTodos(){
-  var list  = getTodos();
+  var list  = getLocal().filter(function(i){ return i.pending !== "delete"; });
   var host  = document.getElementById("todoList");
   var count = document.getElementById("todoCount");
-  host.innerHTML = "";
+  host.textContent = "";
 
   if(!list.length){
     var p = document.createElement("li");
@@ -1297,21 +1457,19 @@ function renderTodos(){
     return;
   }
 
-  list.forEach(function(item,idx){
+  list.forEach(function(item){
     var li = document.createElement("li");
     li.className = "todo-item" + (item.done ? " done" : "");
 
     var cb = document.createElement("input");
     cb.type = "checkbox";
     cb.checked = !!item.done;
-    cb.id = "todo-" + idx;
-    cb.addEventListener("change",function(){
-      var l = getTodos(); l[idx].done = cb.checked; setTodos(l); renderTodos();
-    });
+    cb.id = "todo-" + item.id;
+    cb.addEventListener("change",function(){ toggleItem(item.id, cb.checked); });
 
     var label = document.createElement("label");
     label.className = "todo-text";
-    label.setAttribute("for","todo-" + idx);
+    label.setAttribute("for", cb.id);
     label.textContent = item.text;
 
     var del = document.createElement("button");
@@ -1319,9 +1477,7 @@ function renderTodos(){
     del.type = "button";
     del.setAttribute("aria-label","Remove " + item.text);
     del.textContent = "×";
-    del.addEventListener("click",function(){
-      var l = getTodos(); l.splice(idx,1); setTodos(l); renderTodos();
-    });
+    del.addEventListener("click",function(){ removeItem(item.id); });
 
     li.appendChild(cb); li.appendChild(label); li.appendChild(del);
     host.appendChild(li);
@@ -1333,16 +1489,236 @@ function renderTodos(){
     : left + " left of " + list.length;
 }
 
+function addItem(text){
+  var list = getLocal();
+  list.push({ id:uuid(), text:text, done:false,
+              created_at:new Date().toISOString(), pending:"insert" });
+  setLocal(list); renderTodos(); flush();
+}
+function toggleItem(id, done){
+  var list = getLocal();
+  for(var i=0;i<list.length;i++){
+    if(list[i].id === id){
+      list[i].done = done;
+      if(list[i].pending !== "insert") list[i].pending = "update";
+    }
+  }
+  setLocal(list); renderTodos(); flush();
+}
+function removeItem(id){
+  var list = getLocal(), out = [];
+  for(var i=0;i<list.length;i++){
+    if(list[i].id !== id){ out.push(list[i]); continue; }
+    if(list[i].pending === "insert") continue;      /* never reached the server */
+    list[i].pending = "delete";
+    out.push(list[i]);
+  }
+  setLocal(out); renderTodos(); flush();
+}
+
 document.getElementById("todoForm").addEventListener("submit",function(e){
   e.preventDefault();
   var input = document.getElementById("todoInput");
   var text  = input.value.trim();
   if(!text) return;
-  var list = getTodos();
-  list.push({ text:text, done:false });
-  setTodos(list);
   input.value = "";
-  renderTodos();
+  addItem(text);
+});
+
+/* ---------- sync ---------- */
+var syncing   = false;
+var syncAgain = false;
+var syncTimer = null;
+
+function canSync(){ return !!(sb && currentUser && !currentUser.offline); }
+
+function pull(){
+  if(!canSync()) return Promise.resolve();
+  return sb.from("todos").select("*").order("created_at",{ ascending:true })
+    .then(function(r){
+      if(r.error) throw r.error;
+      var local = getLocal(), pending = {};
+      local.forEach(function(i){ if(i.pending) pending[i.id] = i; });
+
+      var merged = [];
+      (r.data||[]).forEach(function(row){
+        if(pending[row.id]){ merged.push(pending[row.id]); delete pending[row.id]; }
+        else merged.push({ id:row.id, text:row.text, done:row.done,
+                           created_at:row.created_at, pending:null });
+      });
+      Object.keys(pending).forEach(function(k){
+        if(pending[k].pending === "insert") merged.push(pending[k]);
+      });
+
+      setLocal(merged); renderTodos(); setSync("ok");
+    })
+    .catch(function(){ setSync("offline"); });
+}
+
+function flush(){
+  if(!canSync()) return Promise.resolve();
+  /* a sync is already running: note that another is due and let it finish */
+  if(syncing){ syncAgain = true; return Promise.resolve(); }
+  var ops = getLocal().filter(function(i){ return i.pending; });
+  if(!ops.length) return pull();
+
+  syncing = true;
+  setSync("syncing");
+
+  var chain = Promise.resolve();
+  ops.forEach(function(it){
+    chain = chain.then(function(){
+      if(it.pending === "insert")
+        return sb.from("todos").insert({ id:it.id, text:it.text, done:it.done });
+      if(it.pending === "update")
+        return sb.from("todos").update({ text:it.text, done:it.done }).eq("id", it.id);
+      return sb.from("todos").delete().eq("id", it.id);
+    }).then(function(r){
+      if(r && r.error) throw r.error;
+      var l = getLocal(), out = [];
+      for(var i=0;i<l.length;i++){
+        if(l[i].id === it.id){
+          if(it.pending === "delete") continue;
+          l[i].pending = null;
+        }
+        out.push(l[i]);
+      }
+      setLocal(out);
+    });
+  });
+
+  return chain
+    .then(function(){ syncing = false; return pull(); })
+    .catch(function(){ syncing = false; setSync("offline"); })
+    .then(function(){
+      if(syncAgain && canSync()){ syncAgain = false; return flush(); }
+    });
+}
+
+function startSyncTimer(){
+  stopSyncTimer();
+  syncTimer = setInterval(function(){ if(canSync()) flush(); }, 60000);
+}
+function stopSyncTimer(){
+  if(syncTimer){ clearInterval(syncTimer); syncTimer = null; }
+}
+
+window.addEventListener("online", function(){ if(canSync()) flush(); });
+window.addEventListener("offline", function(){ if(currentUser) setSync("offline"); });
+window.addEventListener("focus",  function(){ if(canSync()) flush(); });
+document.addEventListener("visibilitychange", function(){
+  if(!document.hidden && canSync()) flush();
+});
+
+/* ---------- explain a topic ----------
+   Calls the "explain" Edge Function, which holds the API key and
+   enforces the daily limit server-side. The page never sees the key
+   and can't raise its own allowance.
+   ------------------------------------------------------------- */
+var exBusy = false;
+
+function showExplainPanel(on){
+  var p = document.getElementById("explainPanel");
+  if(p) p.hidden = !on;
+}
+
+function setLeft(remaining, limit){
+  var el = document.getElementById("exLeft");
+  if(!el) return;
+  if(remaining === null || remaining === undefined){ el.textContent = ""; return; }
+  el.textContent = remaining + " of " + limit + " left today";
+}
+
+function exError(msg){
+  var e = document.getElementById("exErr");
+  e.textContent = msg;
+  e.hidden = !msg;
+}
+
+/* Turns the three-heading reply into headings and paragraphs. */
+function renderExplanation(text){
+  var out = document.getElementById("exOut");
+  out.textContent = "";
+  var heads = ["Explanation","Example","Check yourself"];
+  var lines = String(text).split(/\r?\n/);
+  var para = [];
+
+  function flush(){
+    var joined = para.join("\n").trim();
+    para = [];
+    if(!joined) return;
+    var p = document.createElement("p");
+    p.textContent = joined;
+    out.appendChild(p);
+  }
+
+  lines.forEach(function(raw){
+    var line = raw.replace(/^[#*\s]+|[*\s]+$/g,"").trim();
+    var isHead = false;
+    for(var i=0;i<heads.length;i++){
+      if(line.toLowerCase() === heads[i].toLowerCase()){ isHead = true; break; }
+    }
+    if(isHead){
+      flush();
+      var h4 = document.createElement("h4");
+      h4.textContent = line;
+      out.appendChild(h4);
+    }else{
+      para.push(raw);
+    }
+  });
+  flush();
+}
+
+function refreshAllowance(){
+  if(!canSync()) { showExplainPanel(false); return; }
+  showExplainPanel(true);
+  setLeft(null);
+  sb.functions.invoke("explain",{ body:{ check:true } }).then(function(r){
+    if(r.error || !r.data || typeof r.data.remaining !== "number"){
+      showExplainPanel(false);
+      return;
+    }
+    setLeft(r.data.remaining, r.data.limit);
+  }).catch(function(){ showExplainPanel(false); });
+}
+
+var exForm = document.getElementById("exForm");
+if(exForm) exForm.addEventListener("submit",function(e){
+  e.preventDefault();
+  if(exBusy || !canSync()) return;
+  var input = document.getElementById("exInput");
+  var btn   = document.getElementById("exBtn");
+  var topic = input.value.trim();
+  if(!topic) return;
+
+  exBusy = true;
+  exError("");
+  btn.disabled = true;
+  btn.textContent = "Thinking…";
+  document.getElementById("exOut").textContent = "";
+
+  sb.functions.invoke("explain",{ body:{ topic: topic } }).then(function(r){
+    var d = r.data || {};
+    if(r.error && !d.error){
+      exError("Couldn't reach the explainer. Check your connection and try again.");
+    }else if(d.error){
+      exError(d.error);
+      if(typeof d.remaining === "number") setLeft(d.remaining, d.limit || 10);
+    }else if(d.text){
+      renderExplanation(d.text);
+      setLeft(d.remaining, d.limit);
+      input.value = "";
+    }else{
+      exError("Nothing came back. Try rewording the topic.");
+    }
+  }).catch(function(){
+    exError("Couldn't reach the explainer. Check your connection and try again.");
+  }).then(function(){
+    exBusy = false;
+    btn.disabled = false;
+    btn.textContent = "Explain";
+  });
 });
 
 /* ---------- theme ---------- */
@@ -1354,24 +1730,41 @@ function applyTheme(mode){
   }
   var dark = mode === "dark" ||
     (mode !== "light" && window.matchMedia("(prefers-color-scheme: dark)").matches);
-  document.getElementById("themeBtn").textContent = dark ? "Light mode" : "Dark mode";
+  var btn = document.getElementById("themeBtn");
+  if(btn) btn.textContent = dark ? "Light mode" : "Dark mode";
 }
 document.getElementById("themeBtn").addEventListener("click",function(){
-  var now = document.documentElement.getAttribute("data-theme");
+  var now  = document.documentElement.getAttribute("data-theme");
   var dark = now === "dark" ||
     (!now && window.matchMedia("(prefers-color-scheme: dark)").matches);
   var next = dark ? "light" : "dark";
-  store(THEME_KEY,next);
+  store(THEME_KEY, next);
   applyTheme(next);
+  if(canSync()){
+    try{ sb.auth.updateUser({ data:{ theme: next } }); }catch(e){}
+  }
 });
 applyTheme(recall(THEME_KEY,null));
 
 /* ---------- boot ---------- */
 (function boot(){
-  var acc = restoreSession();
-  if(acc){ openDashboard(acc); }
-  else{ document.getElementById("username").focus(); }
+  var emailBox = document.getElementById("email");
+  var hint = recall(SESSION_HINT, null);
+  if(hint && typeof hint === "string") emailBox.value = hint;
+
+  if(!sb){ emailBox.focus(); return; }
+
+  sb.auth.getSession().then(function(r){
+    var s = r && r.data && r.data.session;
+    if(s && s.user){
+      openDashboard({ name:displayName(s.user.email), email:s.user.email,
+                      uid:s.user.id, offline:false }, s.user);
+    }else{
+      emailBox.focus();
+    }
+  }).catch(function(){ emailBox.focus(); });
 })();
+
 </script>
 </body>
 </html>
