@@ -555,6 +555,17 @@ footer{
 <!-- ============================================================
      DASHBOARD
      ============================================================ -->
+<div class="gate" id="waiting" hidden>
+  <div class="gate-card">
+    <h1>Nearly there</h1>
+    <p class="sub">Your account exists, but it hasn't been let in yet.</p>
+    <p class="gate-hint" style="margin-bottom:20px">
+      Ask Shiv to approve it, then sign in again. Nothing is lost in the meantime.
+    </p>
+    <button type="button" class="btn" id="waitingOut">Sign out</button>
+  </div>
+</div>
+
 <div class="shell" id="dash" hidden>
 
   <div class="topbar">
@@ -660,25 +671,14 @@ footer{
 <script async src="https://cse.google.com/cse.js?cx=074b14cfe7e434226"></script>
 <script>
 /* ==================================================================
-   ACCOUNTS — EDIT THIS BLOCK
+   DISPLAY NAMES
    ------------------------------------------------------------------
-   Passwords are stored scrambled, so they do not appear in this file.
-
-   TO CHANGE A PASSWORD:
-     1. Open this page in a browser and press F12 to open the console.
-     2. Type:   hashFor("User1", "yournewpassword")
-     3. Copy the long string it prints and paste it as the hash below.
-
-   This keeps passwords out of plain sight. It is not real security —
-   a short or obvious password can still be worked back out.
+   Only used to work out what to call someone in the greeting. There
+   are no passwords in this file: signing in goes through Supabase.
    ================================================================== */
-var SALT = "hl$2026$";
-
 var ACCOUNTS = [
-  { login:"User1", name:"Shiv",  full:"Shiv Kumar",  email:"26kush@hatchend.harrow.sch.uk",
-    hash:"b3f2854db4e0d083007e3d1093f4d1def946857297ed05e3d2aed06484fe8ce0" },
-  { login:"User2", name:"Shlok", full:"Shlok Patel", email:"",
-    hash:"7bb6f6af193ea5585ff219f9ed07be112678f2c11574840c3dad503ec6e9dd37" }
+  { name:"Shiv",  email:"26kush@hatchend.harrow.sch.uk" },
+  { name:"Shlok", email:"" }
 ];
 
 /* ==================================================================
@@ -704,74 +704,6 @@ try{
   }
 }catch(e){ sb = null; }
 
-/* --- password scrambling (SHA-256), works offline and on https --- */
-function sha256(ascii){
-  function rr(n,x){return (x>>>n)|(x<<(32-n));}
-  var K=[],H=[],i,j,p=2,isP;
-  if(!sha256.k){
-    K=[];H=[];p=2;
-    for(i=0;i<64;){
-      isP=true;
-      for(j=2;j*j<=p;j++){ if(p%j===0){isP=false;break;} }
-      if(isP){
-        if(i<8){ H[i]=(Math.pow(p,1/2)%1*4294967296)|0; }
-        K[i]=(Math.pow(p,1/3)%1*4294967296)|0;
-        i++;
-      }
-      p++;
-    }
-    sha256.k=K; sha256.h=H;
-  }
-  K=sha256.k; H=sha256.h.slice(0);
-
-  var bytes=[],c;
-  for(i=0;i<ascii.length;i++){
-    c=ascii.charCodeAt(i);
-    if(c<128){bytes.push(c);}
-    else if(c<2048){bytes.push(192|(c>>6),128|(c&63));}
-    else if(c<55296||c>=57344){bytes.push(224|(c>>12),128|((c>>6)&63),128|(c&63));}
-    else{ i++; c=65536+(((c&1023)<<10)|(ascii.charCodeAt(i)&1023));
-      bytes.push(240|(c>>18),128|((c>>12)&63),128|((c>>6)&63),128|(c&63)); }
-  }
-  var bitLen=bytes.length*8;
-  bytes.push(128);
-  while(bytes.length%64!==56){bytes.push(0);}
-  var hi=Math.floor(bitLen/4294967296), lo=bitLen>>>0;
-  bytes.push((hi>>>24)&255,(hi>>>16)&255,(hi>>>8)&255,hi&255,
-             (lo>>>24)&255,(lo>>>16)&255,(lo>>>8)&255,lo&255);
-
-  var w=new Array(64),a,b,cc,d,e,f,g,h,s0,s1,t1,t2,ch,maj;
-  for(j=0;j<bytes.length;j+=64){
-    for(i=0;i<16;i++){
-      w[i]=(bytes[j+i*4]<<24)|(bytes[j+i*4+1]<<16)|(bytes[j+i*4+2]<<8)|bytes[j+i*4+3];
-    }
-    for(i=16;i<64;i++){
-      s0=rr(7,w[i-15])^rr(18,w[i-15])^(w[i-15]>>>3);
-      s1=rr(17,w[i-2])^rr(19,w[i-2])^(w[i-2]>>>10);
-      w[i]=(w[i-16]+s0+w[i-7]+s1)|0;
-    }
-    a=H[0];b=H[1];cc=H[2];d=H[3];e=H[4];f=H[5];g=H[6];h=H[7];
-    for(i=0;i<64;i++){
-      s1=rr(6,e)^rr(11,e)^rr(25,e);
-      ch=(e&f)^(~e&g);
-      t1=(h+s1+ch+K[i]+w[i])|0;
-      s0=rr(2,a)^rr(13,a)^rr(22,a);
-      maj=(a&b)^(a&cc)^(b&cc);
-      t2=(s0+maj)|0;
-      h=g;g=f;f=e;e=(d+t1)|0;d=cc;cc=b;b=a;a=(t1+t2)|0;
-    }
-    H[0]=(H[0]+a)|0;H[1]=(H[1]+b)|0;H[2]=(H[2]+cc)|0;H[3]=(H[3]+d)|0;
-    H[4]=(H[4]+e)|0;H[5]=(H[5]+f)|0;H[6]=(H[6]+g)|0;H[7]=(H[7]+h)|0;
-  }
-  var out="";
-  for(i=0;i<8;i++){ out+=("00000000"+((H[i]>>>0).toString(16))).slice(-8); }
-  return out;
-}
-
-function hashFor(login, password){
-  return sha256(SALT + String(login).toLowerCase() + ":" + password);
-}
-window.hashFor = hashFor;
 
 
 /* ==================================================================
@@ -1278,7 +1210,6 @@ function accountFor(typed){
   var t = String(typed||"").trim().toLowerCase();
   for(var i=0;i<ACCOUNTS.length;i++){
     var a = ACCOUNTS[i];
-    if(t === a.login.toLowerCase()) return a;
     if(t === a.name.toLowerCase()) return a;
     if(a.email && t === a.email.toLowerCase()) return a;
   }
@@ -1298,18 +1229,6 @@ function isNetworkError(e){
   if(e.status === 0) return true;
   var m = String(e.message||"").toLowerCase();
   return m.indexOf("fetch") > -1 || m.indexOf("network") > -1 || m.indexOf("load failed") > -1;
-}
-
-function signInOffline(typed, pwd, err){
-  var acc = accountFor(typed);
-  if(acc && acc.hash && hashFor(acc.login, pwd) === acc.hash){
-    openDashboard({ name:acc.name, email:acc.email||"", uid:"local:"+acc.login, offline:true }, null);
-    return;
-  }
-  err.textContent = navigator.onLine
-    ? "That email and password don't match. Try again."
-    : "Can't reach the server right now, and the offline password didn't match.";
-  document.getElementById("password").value = "";
 }
 
 var gateMode = "signin";
@@ -1403,8 +1322,12 @@ document.getElementById("loginForm").addEventListener("submit",function(e){
     return;
   }
 
-  if(!sb || typed.indexOf("@") === -1){
-    signInOffline(typed, pwd, err);
+  if(!sb){
+    err.textContent = "Can't reach the server. Check your connection.";
+    return;
+  }
+  if(typed.indexOf("@") === -1){
+    err.textContent = "Sign in with your email address.";
     return;
   }
 
@@ -1414,11 +1337,10 @@ document.getElementById("loginForm").addEventListener("submit",function(e){
   sb.auth.signInWithPassword({ email:typed, password:pwd }).then(function(r){
     release();
     if(r.error){
-      if(isNetworkError(r.error)) signInOffline(typed, pwd, err);
-      else{
-        err.textContent = "That email and password don't match. Try again.";
-        document.getElementById("password").value = "";
-      }
+      err.textContent = isNetworkError(r.error)
+        ? "Can't reach the server. Check your connection."
+        : "That email and password don't match. Try again.";
+      document.getElementById("password").value = "";
       return;
     }
     var u = r.data.user;
@@ -1426,7 +1348,7 @@ document.getElementById("loginForm").addEventListener("submit",function(e){
     openDashboard({ name:displayName(u.email), email:u.email, uid:u.id, offline:false }, u);
   }).catch(function(){
     release();
-    signInOffline(typed, pwd, err);
+    err.textContent = "Can't reach the server. Check your connection.";
   });
 });
 
@@ -1446,9 +1368,40 @@ document.getElementById("switchBtn").addEventListener("click",function(){
 /* ==================================================================
    DASHBOARD
    ================================================================== */
+function showWaiting(){
+  document.getElementById("gate").hidden = true;
+  document.getElementById("dash").hidden = true;
+  document.getElementById("waiting").hidden = false;
+}
+
+document.getElementById("waitingOut").addEventListener("click",function(){
+  if(sb){ try{ sb.auth.signOut(); }catch(e){} }
+  currentUser = null;
+  document.getElementById("waiting").hidden = true;
+  document.getElementById("gate").hidden = false;
+  document.getElementById("email").value = "";
+  document.getElementById("password").value = "";
+  document.getElementById("gateError").textContent = "";
+});
+
+/* The database already refuses an unapproved account; this only saves
+   them from staring at a dashboard where nothing works. */
 function openDashboard(who, supaUser){
   currentUser = who;
+
+  if(sb){
+    sb.from("profiles").select("approved").eq("id", who.uid).maybeSingle()
+      .then(function(r){
+        if(r && !r.error && r.data && r.data.approved === false){
+          currentUser = null;
+          stopSyncTimer();
+          showWaiting();
+        }
+      }, function(){});
+  }
+
   document.getElementById("gate").hidden = true;
+  document.getElementById("waiting").hidden = true;
   document.getElementById("dash").hidden = false;
 
   if(supaUser && supaUser.user_metadata && supaUser.user_metadata.theme){
