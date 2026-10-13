@@ -244,8 +244,9 @@ button,input,select,textarea{font:inherit;color:inherit}
 .searchbar .btn{width:auto;flex:none;padding:12px 22px}
 
 /* ---------- GRID / SECTIONS ---------- */
-.columns{display:grid;grid-template-columns:1fr;gap:20px}
+.columns{display:grid;grid-template-columns:1fr;gap:20px;align-items:start}
 @media (min-width:900px){ .columns{grid-template-columns:1.45fr 1fr} }
+.col{display:flex;flex-direction:column;gap:20px;min-width:0}
 
 .panel{
   background:var(--card);
@@ -254,7 +255,6 @@ button,input,select,textarea{font:inherit;color:inherit}
   box-shadow:var(--shadow);
   padding:22px;
 }
-.panel + .panel{margin-top:20px}
 .panel-title{
   font-size:.7rem;font-weight:600;letter-spacing:.11em;
   text-transform:uppercase;color:var(--ink-faint);
@@ -479,27 +479,11 @@ footer{
 
   <div class="columns">
 
-    <!-- LEFT: links -->
-    <div>
+    <!-- LEFT: links + explainer -->
+    <div class="col">
       <div class="panel">
         <p class="panel-title">Everything in one place</p>
         <div id="tileGroups"></div>
-      </div>
-    </div>
-
-    <!-- RIGHT: word of the day + to-do -->
-    <div>
-      <div class="panel">
-        <p class="panel-title">Word of the day</p>
-        <p class="wotd-word" id="wotdWord">—</p>
-        <div class="wotd-pos" id="wotdPos"></div>
-        <p class="wotd-def" id="wotdDef"></p>
-        <p class="wotd-ex" id="wotdEx"></p>
-        <form class="lookup" id="lookupForm">
-          <input type="text" id="lookupInput" placeholder="Look up any word…" autocomplete="off" aria-label="Look up a word">
-          <button type="submit">Define</button>
-        </form>
-        <div class="lookup-result" id="lookupResult"></div>
       </div>
 
       <div class="panel" id="explainPanel" hidden>
@@ -512,6 +496,22 @@ footer{
         <div class="ex-out" id="exOut"></div>
         <p class="ex-err" id="exErr" hidden></p>
         <p class="ex-note">Explains topics so you can understand them. It won't do set work for you.</p>
+      </div>
+    </div>
+
+    <!-- RIGHT: word of the day + to-do -->
+    <div class="col">
+      <div class="panel">
+        <p class="panel-title">Word of the day</p>
+        <p class="wotd-word" id="wotdWord">—</p>
+        <div class="wotd-pos" id="wotdPos"></div>
+        <p class="wotd-def" id="wotdDef"></p>
+        <p class="wotd-ex" id="wotdEx"></p>
+        <form class="lookup" id="lookupForm">
+          <input type="text" id="lookupInput" placeholder="Look up any word…" autocomplete="off" aria-label="Look up a word">
+          <button type="submit">Define</button>
+        </form>
+        <div class="lookup-result" id="lookupResult"></div>
       </div>
 
       <div class="panel">
