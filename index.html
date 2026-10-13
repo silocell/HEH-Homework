@@ -243,6 +243,71 @@ button,input,select,textarea{font:inherit;color:inherit}
 }
 .searchbar .btn{width:auto;flex:none;padding:12px 22px}
 
+/* ---------- REVISION SEARCH (Google widget, restyled) ---------- */
+.cse-panel{margin-bottom:20px}
+.cse-head{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;
+}
+.cse-head .panel-title{margin:0}
+.cse-close{
+  background:none;border:none;color:var(--ink-faint);cursor:pointer;
+  font-size:.75rem;padding:3px 7px;border-radius:6px;
+}
+.cse-close:hover{color:var(--margin)}
+
+/* Google injects its own markup and inline styles, hence !important */
+.gsc-control-cse{
+  background:transparent!important;border:none!important;padding:0!important;
+  font-family:var(--font-body)!important;
+}
+.gsc-control-cse *{font-family:var(--font-body)!important}
+.gsc-above-wrapper-area{
+  border-bottom:1px solid var(--rule)!important;
+  padding:0 0 8px!important;margin-bottom:6px!important;
+}
+.gsc-result-info{color:var(--ink-faint)!important;font-size:.72rem!important;padding:0!important}
+.gsc-orderby-label,.gsc-selected-option-container,.gsc-option-menu-item{
+  color:var(--ink-faint)!important;background:var(--card)!important;
+}
+.gsc-option-menu{background:var(--card)!important;border:1px solid var(--rule)!important}
+.gsc-webResult.gsc-result{
+  background:transparent!important;border:none!important;
+  border-bottom:1px solid var(--rule)!important;
+  padding:13px 0!important;margin:0!important;
+}
+.gsc-webResult.gsc-result:last-child{border-bottom:none!important}
+.gsc-webResult.gsc-result:hover{background:transparent!important;border-color:var(--rule)!important}
+.gs-title,.gs-title b,a.gs-title:link,a.gs-title:visited,a.gs-title:hover,a.gs-title b{
+  color:var(--accent)!important;text-decoration:none!important;font-size:.95rem!important;
+}
+a.gs-title:hover{text-decoration:underline!important}
+.gs-snippet{color:var(--ink-soft)!important;font-size:.85rem!important;line-height:1.55!important}
+.gs-snippet b{color:var(--ink)!important}
+.gs-visibleUrl,.gs-visibleUrl-breadcrumb,.gs-visibleUrl-short,.gs-visibleUrl-long{
+  color:var(--ink-faint)!important;font-size:.74rem!important;
+}
+.gsc-table-result,.gsc-thumbnail-inside,.gsc-url-top{padding:0!important}
+.gsc-thumbnail img,.gs-image img{border-radius:7px!important}
+.gsc-tabsArea{border-bottom:1px solid var(--rule)!important;margin-bottom:8px!important}
+.gsc-tabHeader{
+  background:transparent!important;border:none!important;
+  color:var(--ink-faint)!important;font-size:.78rem!important;padding:6px 11px!important;
+}
+.gsc-tabHeader.gsc-tabhActive{color:var(--ink)!important;border-bottom:2px solid var(--accent)!important}
+.gsc-cursor-box{border-top:1px solid var(--rule)!important;padding-top:12px!important;margin-top:6px!important}
+.gsc-cursor-page{
+  color:var(--accent)!important;background:transparent!important;
+  border:none!important;padding:2px 7px!important;
+}
+.gsc-cursor-current-page{color:var(--ink)!important;font-weight:700!important}
+.gs-no-results-result .gs-snippet,.gs-error-result .gs-snippet{
+  background:transparent!important;border:none!important;
+  color:var(--ink-soft)!important;padding:0!important;
+}
+.gcsc-find-more-on-google,.gcsc-find-more-on-google-text{color:var(--accent)!important}
+.gcsc-find-more-on-google-magnifier{fill:var(--accent)!important}
+.gsc-adBlock{border-bottom:1px solid var(--rule)!important;padding-bottom:6px!important}
+
 /* ---------- GRID / SECTIONS ---------- */
 .columns{display:grid;grid-template-columns:1fr;gap:20px;align-items:start}
 @media (min-width:900px){ .columns{grid-template-columns:1.45fr 1fr} }
@@ -473,9 +538,18 @@ footer{
       <option value="https://www.google.com/search?q=">Google</option>
       <option value="https://www.bing.com/search?q=">Bing</option>
       <option value="https://duckduckgo.com/?q=">DuckDuckGo</option>
+      <option value="cse">Revision sites</option>
     </select>
     <button type="submit" class="btn">Search</button>
   </form>
+
+  <div class="panel cse-panel" id="csePanel" hidden>
+    <div class="cse-head">
+      <p class="panel-title">Results from revision sites</p>
+      <button class="cse-close" id="cseClose" type="button">Close</button>
+    </div>
+    <div class="gcse-searchresults-only" data-gname="rev" data-enableAutoComplete="false"></div>
+  </div>
 
   <div class="columns">
 
@@ -533,6 +607,7 @@ footer{
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.0/dist/umd/supabase.js"></script>
+<script async src="https://cse.google.com/cse.js?cx=074b14cfe7e434226"></script>
 <script>
 /* ==================================================================
    ACCOUNTS — EDIT THIS BLOCK
@@ -1283,13 +1358,47 @@ function paintGreeting(){
 })();
 
 /* ---------- web search ---------- */
+/* Google's widget renders the revision-site results in the page.
+   If it hasn't loaded, fall back to opening Google in a tab rather
+   than leaving the search doing nothing. */
+function cseElement(){
+  try{
+    var g = window.google;
+    if(g && g.search && g.search.cse && g.search.cse.element){
+      return g.search.cse.element.getElement("rev");
+    }
+  }catch(e){}
+  return null;
+}
+
+function runRevisionSearch(q){
+  var el = cseElement();
+  if(!el) return false;
+  try{
+    document.getElementById("csePanel").hidden = false;
+    el.execute(q);
+    return true;
+  }catch(e){ return false; }
+}
+
+document.getElementById("cseClose").addEventListener("click",function(){
+  document.getElementById("csePanel").hidden = true;
+});
+
 document.getElementById("searchForm").addEventListener("submit",function(e){
   e.preventDefault();
-  var q = document.getElementById("searchInput").value.trim();
+  var input = document.getElementById("searchInput");
+  var q = input.value.trim();
   if(!q) return;
   var base = document.getElementById("engineSelect").value;
+
+  if(base === "cse"){
+    if(runRevisionSearch(q)) return;   /* keep the text so it can be refined */
+    base = "https://www.google.com/search?q=";
+  }
+
   window.open(base + encodeURIComponent(q), "_blank", "noopener");
-  document.getElementById("searchInput").value = "";
+  input.value = "";
 });
 
 /* ---------- word of the day ---------- */
