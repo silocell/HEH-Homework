@@ -166,6 +166,18 @@ button,input,select,textarea{font:inherit;color:inherit}
 .gate-hint{
   font-size:.75rem;color:var(--ink-faint);line-height:1.5;margin:0 0 16px;
 }
+.or{
+  display:flex;align-items:center;gap:10px;
+  margin:16px 0;color:var(--ink-faint);font-size:.75rem;
+}
+.or::before,.or::after{content:"";flex:1;height:1px;background:var(--rule)}
+.btn.google{
+  background:var(--card);color:var(--ink);
+  border:1px solid var(--rule);
+  display:flex;align-items:center;justify-content:center;gap:10px;
+}
+.btn.google:hover{filter:none;border-color:var(--accent)}
+.btn.google svg{width:17px;height:17px;flex:none}
 .gate-error{
   color:var(--margin);
   font-size:.85rem;
@@ -542,6 +554,11 @@ footer{
         <input type="password" id="password" name="password" autocomplete="current-password" required>
       </div>
       <button type="submit" class="btn" id="loginBtn">Sign in</button>
+      <div class="or"><span>or</span></div>
+      <button type="button" class="btn google" id="googleBtn">
+        <svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#4285F4" d="M45.1 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h11.8c-.5 2.7-2 5-4.4 6.6v5.5h7.1c4.1-3.8 6.6-9.4 6.6-16.1z"/><path fill="#34A853" d="M24 46c6 0 11-2 14.6-5.4l-7.1-5.5c-2 1.3-4.5 2.1-7.5 2.1-5.8 0-10.7-3.9-12.4-9.1H4.3v5.7C7.9 41.1 15.4 46 24 46z"/><path fill="#FBBC05" d="M11.6 28.1c-.4-1.3-.7-2.7-.7-4.1s.3-2.8.7-4.1v-5.7H4.3C2.8 17.1 2 20.4 2 24s.8 6.9 2.3 9.8l7.3-5.7z"/><path fill="#EA4335" d="M24 10.8c3.3 0 6.2 1.1 8.5 3.3l6.3-6.3C35 4.1 30 2 24 2 15.4 2 7.9 6.9 4.3 14.2l7.3 5.7c1.7-5.2 6.6-9.1 12.4-9.1z"/></svg>
+        Continue with Google
+      </button>
       <p class="gate-error" id="gateError"></p>
       <p class="gate-ok" id="gateOk" hidden></p>
     </form>
@@ -572,7 +589,7 @@ footer{
     <div class="brand"><span class="dot"></span> Homework Launchpad</div>
     <div class="topbar-actions">
       <span class="sync" id="syncPill" title="Sync status"><span class="sync-dot"></span><span id="syncText">Synced</span></span>
-      <a class="ghost-btn" id="adminBtn" href="admin.html" hidden>Admin panel</a>
+      <a class="ghost-btn" id="moreBtn" href="notes.html" hidden>Admin panel</a>
       <button class="ghost-btn" id="themeBtn" type="button">Dark mode</button>
       <button class="ghost-btn" id="switchBtn" type="button">Sign out</button>
     </div>
@@ -1231,6 +1248,20 @@ function isNetworkError(e){
   return m.indexOf("fetch") > -1 || m.indexOf("network") > -1 || m.indexOf("load failed") > -1;
 }
 
+document.getElementById("googleBtn").addEventListener("click",function(){
+  var err = document.getElementById("gateError");
+  if(!sb){ err.textContent = "Can't reach the server. Check your connection."; return; }
+  err.textContent = "";
+  sb.auth.signInWithOAuth({
+    provider: "google",
+    options:{ redirectTo: location.origin + location.pathname }
+  }).then(function(r){
+    if(r.error) err.textContent = r.error.message;
+  }).catch(function(){
+    err.textContent = "Couldn't start Google sign-in.";
+  });
+});
+
 var gateMode = "signin";
 
 function setGateMode(mode){
@@ -1354,7 +1385,7 @@ document.getElementById("loginForm").addEventListener("submit",function(e){
 
 document.getElementById("switchBtn").addEventListener("click",function(){
   stopSyncTimer();
-  document.getElementById("adminBtn").hidden = true;
+  document.getElementById("moreBtn").hidden = true;
   if(sb){ try{ sb.auth.signOut(); }catch(e){} }
   currentUser = null;
   document.getElementById("dash").hidden = true;
@@ -1418,7 +1449,7 @@ function openDashboard(who, supaUser){
   setSync(currentUser.offline ? "offline" : "syncing");
   if(!currentUser.offline){ flush(); startSyncTimer(); }
   refreshAllowance();
-  showAdminButton();
+  showOwnerButton();
   document.getElementById("searchInput").focus();
 }
 
@@ -2033,20 +2064,20 @@ if(exForm) exForm.addEventListener("submit",function(e){
   });
 });
 
-/* ---------- admin ----------
-   The panel lives on admin.html. This only decides whether to show the
-   link; the page behind it checks the account on the server anyway.
+/* ---------- settings link ----------
+   Decides only whether to show the link. The page behind it checks the
+   account on the server, so this is convenience, not a lock.
    ------------------------------------------------------------- */
-var ADMIN_EMAIL = "shivkforindia@gmail.com";
+var OWNER_EMAIL = "shivkforindia@gmail.com";
 
-function isAdmin(){
+function isOwner(){
   return !!(currentUser && !currentUser.offline &&
-            String(currentUser.email||"").toLowerCase() === ADMIN_EMAIL);
+            String(currentUser.email||"").toLowerCase() === OWNER_EMAIL);
 }
 
-function showAdminButton(){
-  var b = document.getElementById("adminBtn");
-  if(b) b.hidden = !isAdmin();
+function showOwnerButton(){
+  var b = document.getElementById("moreBtn");
+  if(b) b.hidden = !isOwner();
 }
 
 /* ---------- theme ---------- */
