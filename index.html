@@ -480,6 +480,18 @@ a.gs-title:hover{text-decoration:underline!important}
 .ex-out h4:first-child{margin-top:0}
 .ex-out p{margin:0 0 10px;white-space:pre-wrap}
 .ex-out p:last-child{margin-bottom:0}
+.asked{display:flex;flex-direction:column;gap:2px;margin-bottom:12px}
+.asked button{
+  appearance:none;background:none;border:none;text-align:left;cursor:pointer;
+  font:inherit;color:var(--ink);padding:8px 10px;border-radius:8px;
+  display:flex;align-items:baseline;gap:9px;line-height:1.35;
+}
+.asked button:hover,.asked button:focus-visible{background:var(--paper)}
+.asked .n{
+  flex:0 0 auto;font-size:.66rem;color:var(--ink-faint);
+  font-variant-numeric:tabular-nums;
+}
+.asked .t{flex:1 1 auto;min-width:0}
 .ex-note{
   margin-top:14px;padding-top:12px;border-top:1px solid var(--rule);
   font-size:.72rem;color:var(--ink-faint);line-height:1.5;
@@ -727,6 +739,12 @@ footer{
         </form>
         <ul class="todo-list" id="todoList"></ul>
         <div class="todo-count" id="todoCount"></div>
+      </div>
+
+      <div class="panel" id="askedPanel" hidden>
+        <p class="panel-title">What people are asking</p>
+        <div class="asked" id="askedList"></div>
+        <p class="ex-note">Already explained, so these come back straight away and don't use up your ten.</p>
       </div>
     </div>
 
@@ -2078,6 +2096,50 @@ function readInvokeError(err){
   return Promise.resolve(null);
 }
 
+
+/* ---------- what people are asking ----------
+   Everything here is already stored, so tapping one costs nobody any
+   quota and comes back instantly. It also quietly steers people towards
+   answers that already exist, which makes the store more useful the
+   more it gets used. */
+function loadAsked(){
+  if(!canSync()) return;
+  sb.functions.invoke("explain",{ body:{ popular:true } }).then(function(r){
+    var panel = document.getElementById("askedPanel");
+    var host  = document.getElementById("askedList");
+    if(!panel || !host) return;
+
+    var topics = (r && r.data && r.data.topics) || [];
+    if(r.error || !topics.length){ panel.hidden = true; return; }
+
+    host.textContent = "";
+    topics.forEach(function(t){
+      var b = document.createElement("button");
+      b.type = "button";
+
+      var n = document.createElement("span");
+      n.className = "n";
+      n.textContent = t.hits > 1 ? "\u00d7" + t.hits : "new";
+
+      var label = document.createElement("span");
+      label.className = "t";
+      label.textContent = t.topic;
+
+      b.appendChild(n); b.appendChild(label);
+      b.addEventListener("click",function(){
+        var input = document.getElementById("exInput");
+        if(!input) return;
+        input.value = t.topic;
+        var form = document.getElementById("exForm");
+        if(form) form.dispatchEvent(new Event("submit",{ cancelable:true, bubbles:true }));
+      });
+
+      host.appendChild(b);
+    });
+    panel.hidden = false;
+  }).catch(function(){});
+}
+
 function refreshAllowance(){
   if(!canSync()) { showExplainPanel(false); return; }
   /* Stay hidden until the server confirms this account may use it, so an
@@ -2091,6 +2153,7 @@ function refreshAllowance(){
     }
     showExplainPanel(true);
     setLeft(r.data.remaining, r.data.limit);
+    loadAsked();
   }).catch(function(){ showExplainPanel(false); });
 }
 
