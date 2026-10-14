@@ -2080,13 +2080,16 @@ function readInvokeError(err){
 
 function refreshAllowance(){
   if(!canSync()) { showExplainPanel(false); return; }
-  showExplainPanel(true);
+  /* Stay hidden until the server confirms this account may use it, so an
+     account without the explainer never sees it appear and vanish. */
+  showExplainPanel(false);
   setLeft(null);
   sb.functions.invoke("explain",{ body:{ check:true } }).then(function(r){
     if(r.error || !r.data || typeof r.data.remaining !== "number"){
       showExplainPanel(false);
       return;
     }
+    showExplainPanel(true);
     setLeft(r.data.remaining, r.data.limit);
   }).catch(function(){ showExplainPanel(false); });
 }
@@ -2261,8 +2264,18 @@ function loadChat(initial){
     }, function(){});
 }
 
+/* Invite only. Without the flag nothing is revealed, nothing is subscribed
+   to, and the database refuses the reads anyway - so there is no chat here
+   to find, rather than a locked one. */
 function startChat(){
-  if(!canSync()) return;
+  if(!canSync() || !currentUser) return;
+  sb.from("profiles").select("chat_ok").eq("id", currentUser.uid).maybeSingle()
+    .then(function(r){
+      if(r && !r.error && r.data && r.data.chat_ok === true) openChat();
+    }, function(){});
+}
+
+function openChat(){
   document.getElementById("chatPanel").hidden = false;
   loadChat(true);
 
