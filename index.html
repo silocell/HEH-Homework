@@ -496,6 +496,12 @@ a.gs-title:hover{text-decoration:underline!important}
   margin-top:14px;padding-top:12px;border-top:1px solid var(--rule);
   font-size:.72rem;color:var(--ink-faint);line-height:1.5;
 }
+.ex-clear{
+  appearance:none;background:none;border:1px solid var(--rule);cursor:pointer;
+  font:inherit;font-size:.72rem;color:var(--ink-faint);
+  padding:5px 11px;border-radius:7px;margin-top:12px;
+}
+.ex-clear:hover,.ex-clear:focus-visible{color:var(--ink);border-color:var(--ink-faint)}
 .ex-err{color:var(--margin);font-size:.85rem;margin-top:12px;line-height:1.5}
 
 /* ---------- CHAT ---------- */
@@ -711,6 +717,7 @@ footer{
           <button type="submit" id="exBtn">Explain</button>
         </form>
         <div class="ex-out" id="exOut"></div>
+        <button type="button" class="ex-clear" id="exClear" hidden>Clear this</button>
         <p class="ex-err" id="exErr" hidden></p>
         <p class="ex-note">Explains topics so you can understand them. It won't do set work for you.</p>
       </div>
@@ -2043,9 +2050,24 @@ function exError(msg){
 }
 
 /* Turns the three-heading reply into headings and paragraphs. */
+function showClear(on){
+  var b = document.getElementById("exClear");
+  if(b) b.hidden = !on;
+}
+
+function clearExplanation(){
+  var out = document.getElementById("exOut");
+  if(out) out.textContent = "";
+  exError("");
+  showClear(false);
+  var input = document.getElementById("exInput");
+  if(input){ input.value = ""; input.focus(); }
+}
+
 function renderExplanation(text){
   var out = document.getElementById("exOut");
   out.textContent = "";
+  showClear(true);
   var heads = ["Explanation","Example","Check yourself"];
   var lines = String(text).split(/\r?\n/);
   var para = [];
@@ -2156,6 +2178,9 @@ function refreshAllowance(){
     loadAsked();
   }).catch(function(){ showExplainPanel(false); });
 }
+
+var exClearBtn = document.getElementById("exClear");
+if(exClearBtn) exClearBtn.addEventListener("click", clearExplanation);
 
 var exForm = document.getElementById("exForm");
 if(exForm) exForm.addEventListener("submit",function(e){
