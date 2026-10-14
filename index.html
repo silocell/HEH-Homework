@@ -486,6 +486,59 @@ a.gs-title:hover{text-decoration:underline!important}
 }
 .ex-err{color:var(--margin);font-size:.85rem;margin-top:12px;line-height:1.5}
 
+/* ---------- CHAT ---------- */
+.chat{margin-top:20px}
+.chat-head{
+  display:flex;align-items:baseline;justify-content:space-between;
+  gap:12px;flex-wrap:wrap;margin-bottom:12px;
+}
+.chat-head .panel-title{margin:0}
+.chat-watch{
+  font-size:.72rem;color:var(--ink-faint);line-height:1.4;
+}
+.chat-log{
+  height:clamp(220px,38vh,380px);overflow-y:auto;
+  border:1px solid var(--rule);border-radius:10px;
+  background:var(--paper);padding:12px 14px;
+  display:flex;flex-direction:column;gap:12px;
+}
+.msg{display:flex;gap:10px;align-items:flex-start;min-width:0}
+.msg-who{
+  flex:0 0 auto;font-size:.76rem;font-weight:700;color:var(--accent);
+  min-width:62px;
+}
+.msg-who.me{color:var(--good)}
+.msg-body{flex:1;min-width:0;font-size:.87rem;line-height:1.5;overflow-wrap:anywhere}
+.msg-time{
+  font-family:var(--font-mono);font-size:.66rem;color:var(--ink-faint);
+  flex:none;font-variant-numeric:tabular-nums;
+}
+.msg-del{
+  flex:none;background:none;border:none;color:var(--ink-faint);
+  cursor:pointer;font-size:.9rem;line-height:1;padding:1px 5px;border-radius:5px;
+}
+.msg-del:hover{color:var(--margin);background:var(--card)}
+.chat-empty{color:var(--ink-faint);font-size:.85rem;margin:auto;text-align:center;line-height:1.5}
+.chat-form{display:flex;gap:8px;margin-top:12px}
+.chat-form input{
+  flex:1;min-width:0;background:var(--paper);
+  border:1px solid var(--rule);border-radius:9px;
+  padding:10px 12px;font-size:.88rem;
+}
+.chat-form input:focus{border-color:var(--accent);outline:none}
+.chat-form button{
+  flex:none;background:var(--accent);color:#fff;border:none;
+  border-radius:9px;padding:10px 16px;font-size:.85rem;font-weight:600;cursor:pointer;
+}
+.chat-form button[disabled]{opacity:.55;cursor:default}
+.chat-msg{font-size:.8rem;margin:10px 0 0;line-height:1.5;min-height:1.1em}
+.chat-msg.err{color:var(--margin)}
+.live-dot{
+  display:inline-block;width:6px;height:6px;border-radius:50%;
+  background:var(--good);margin-right:5px;vertical-align:middle;
+}
+.live-dot.slow{background:var(--ink-faint)}
+
 /* ---------- TODO ---------- */
 .todo-add{display:flex;gap:8px;margin-bottom:14px}
 .todo-add input{
@@ -677,6 +730,19 @@ footer{
       </div>
     </div>
 
+  </div>
+
+  <div class="panel chat" id="chatPanel" hidden>
+    <div class="chat-head">
+      <p class="panel-title">Year chat</p>
+      <p class="chat-watch"><span class="live-dot" id="liveDot"></span><span id="liveText">Live</span> &middot; Shiv can see everything posted here, including anything deleted.</p>
+    </div>
+    <div class="chat-log" id="chatLog"></div>
+    <form class="chat-form" id="chatForm">
+      <input type="text" id="chatInput" maxlength="500" autocomplete="off" placeholder="Say something…" aria-label="Message">
+      <button type="submit" id="chatBtn">Send</button>
+    </form>
+    <p class="chat-msg" id="chatErr"></p>
   </div>
 
   <footer>
@@ -1385,6 +1451,7 @@ document.getElementById("loginForm").addEventListener("submit",function(e){
 
 document.getElementById("switchBtn").addEventListener("click",function(){
   stopSyncTimer();
+  stopChat();
   document.getElementById("moreBtn").hidden = true;
   if(sb){ try{ sb.auth.signOut(); }catch(e){} }
   currentUser = null;
@@ -1450,6 +1517,7 @@ function openDashboard(who, supaUser){
   if(!currentUser.offline){ flush(); startSyncTimer(); }
   refreshAllowance();
   showOwnerButton();
+  startChat();
   document.getElementById("searchInput").focus();
 }
 
@@ -2079,6 +2147,185 @@ function showOwnerButton(){
   var b = document.getElementById("moreBtn");
   if(b) b.hidden = !isOwner();
 }
+
+/* ---------- chat ----------
+   Reading comes straight from the database, which only lets approved
+   people see the room. Posting goes through the "chat" function, which
+   checks the message before storing it — the page cannot write here.
+   Live updates arrive by subscription, with a slow poll behind it so a
+   dropped connection means late messages rather than none.
+   ------------------------------------------------------------- */
+var CHAT_LIMIT = 80;
+var chatSeen = {};
+var chatChannel = null;
+var chatPoll = null;
+var chatBusy = false;
+
+function chatSay(text, bad){
+  var el = document.getElementById("chatErr");
+  if(!el) return;
+  el.textContent = text || "";
+  el.className = "chat-msg" + (bad ? " err" : "");
+}
+
+function setLive(on){
+  var dot = document.getElementById("liveDot");
+  var txt = document.getElementById("liveText");
+  if(!dot || !txt) return;
+  dot.className = "live-dot" + (on ? "" : " slow");
+  txt.textContent = on ? "Live" : "Checking every 20s";
+}
+
+function clockOf(iso){
+  try{
+    return new Date(iso).toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"});
+  }catch(e){ return ""; }
+}
+
+function addMessage(m, atTop){
+  if(!m || !m.id || chatSeen[m.id]) return;
+  chatSeen[m.id] = true;
+
+  var log = document.getElementById("chatLog");
+  var empty = log.querySelector(".chat-empty");
+  if(empty) empty.remove();
+
+  var row = document.createElement("div");
+  row.className = "msg";
+  row.setAttribute("data-id", m.id);
+
+  var who = document.createElement("span");
+  who.className = "msg-who" + (currentUser && m.user_id === currentUser.uid ? " me" : "");
+  who.textContent = m.name || "Someone";
+
+  var body = document.createElement("span");
+  body.className = "msg-body";
+  body.textContent = m.body;
+
+  var time = document.createElement("span");
+  time.className = "msg-time";
+  time.textContent = clockOf(m.created_at);
+
+  row.appendChild(who); row.appendChild(body); row.appendChild(time);
+
+  if(isOwner()){
+    var del = document.createElement("button");
+    del.className = "msg-del";
+    del.type = "button";
+    del.setAttribute("aria-label","Delete this message");
+    del.textContent = "×";
+    del.addEventListener("click",function(){
+      del.disabled = true;
+      sb.functions.invoke("chat",{ body:{ action:"delete", id:m.id } }).then(function(r){
+        if(r.error || (r.data && r.data.error)){
+          chatSay((r.data && r.data.error) || "Couldn't delete that.", true);
+          del.disabled = false;
+          return;
+        }
+        row.remove();
+      }).catch(function(){ chatSay("Couldn't delete that.", true); del.disabled = false; });
+    });
+    row.appendChild(del);
+  }
+
+  if(atTop) log.insertBefore(row, log.firstChild);
+  else log.appendChild(row);
+}
+
+function atBottom(log){
+  return log.scrollHeight - log.scrollTop - log.clientHeight < 60;
+}
+
+function loadChat(initial){
+  if(!canSync()) return Promise.resolve();
+  var log = document.getElementById("chatLog");
+  var stick = initial || atBottom(log);
+
+  return sb.from("messages").select("*")
+    .order("created_at",{ ascending:false }).limit(CHAT_LIMIT)
+    .then(function(r){
+      if(r.error) return;
+      var rows = (r.data || []).slice().reverse();
+      if(initial){
+        log.textContent = "";
+        chatSeen = {};
+        if(!rows.length){
+          var p = document.createElement("p");
+          p.className = "chat-empty";
+          p.textContent = "Nothing here yet. Messages are kept for a week, then clear themselves.";
+          log.appendChild(p);
+        }
+      }
+      rows.forEach(function(m){ addMessage(m); });
+      if(stick) log.scrollTop = log.scrollHeight;
+    }, function(){});
+}
+
+function startChat(){
+  if(!canSync()) return;
+  document.getElementById("chatPanel").hidden = false;
+  loadChat(true);
+
+  try{
+    if(chatChannel) sb.removeChannel(chatChannel);
+    chatChannel = sb.channel("room")
+      .on("postgres_changes",
+          { event:"INSERT", schema:"public", table:"messages" },
+          function(p){
+            var log = document.getElementById("chatLog");
+            var stick = atBottom(log);
+            addMessage(p.new);
+            if(stick) log.scrollTop = log.scrollHeight;
+          })
+      .subscribe(function(status){
+        setLive(status === "SUBSCRIBED");
+      });
+  }catch(e){ setLive(false); }
+
+  /* Behind the subscription, in case it quietly dies. */
+  if(chatPoll) clearInterval(chatPoll);
+  chatPoll = setInterval(function(){ if(canSync()) loadChat(false); }, 20000);
+}
+
+function stopChat(){
+  if(chatPoll){ clearInterval(chatPoll); chatPoll = null; }
+  try{ if(chatChannel) sb.removeChannel(chatChannel); }catch(e){}
+  chatChannel = null;
+  chatSeen = {};
+  var p = document.getElementById("chatPanel");
+  if(p) p.hidden = true;
+}
+
+document.getElementById("chatForm").addEventListener("submit",function(e){
+  e.preventDefault();
+  if(chatBusy || !canSync()) return;
+  var input = document.getElementById("chatInput");
+  var btn   = document.getElementById("chatBtn");
+  var text  = input.value.trim();
+  if(!text) return;
+
+  chatBusy = true;
+  btn.disabled = true;
+  chatSay("");
+
+  sb.functions.invoke("chat",{ body:{ action:"send", body:text } }).then(function(r){
+    var d = r.data || {};
+    if(d.ok){
+      input.value = "";
+      loadChat(false);
+      return;
+    }
+    if(d.error){ chatSay(d.error, true); return; }
+    return readInvokeError(r.error).then(function(msg){
+      chatSay(msg || "Couldn't send that. Try again.", true);
+    });
+  }).catch(function(){
+    chatSay("Couldn't send that. Check your connection.", true);
+  }).then(function(){
+    chatBusy = false;
+    btn.disabled = false;
+  });
+});
 
 /* ---------- theme ---------- */
 function applyTheme(mode){
