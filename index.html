@@ -414,6 +414,37 @@ a.gs-title:hover{text-decoration:underline!important}
 }
 .tile-sub{font-size:.7rem;color:var(--ink-faint);line-height:1.2;margin-top:2px}
 
+/* ---------- SHORTCUTS YOU CHOOSE ---------- */
+/* The tiles only become editable when asked. The rest of the time this is
+   the same quiet grid it has always been. */
+.tiles-head{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+}
+.tile-wrap{position:relative;min-width:0}
+.tile-x{
+  position:absolute;top:-7px;right:-7px;
+  width:22px;height:22px;border-radius:50%;
+  border:1px solid var(--rule);background:var(--paper);color:var(--ink);
+  font-size:.8rem;line-height:1;cursor:pointer;
+  display:none;place-items:center;padding:0;
+}
+.tiles-editing .tile-x{display:grid}
+.tiles-editing .tile{pointer-events:none}
+.tile-x:hover{border-color:#d2403c;color:#d2403c}
+
+.addlink{
+  display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;
+  margin-top:12px;
+}
+.addlink input{
+  flex:1 1 150px;min-width:0;
+  padding:9px 10px;border:1px solid var(--rule);border-radius:9px;
+  background:var(--paper);color:var(--ink);font:inherit;font-size:.85rem;
+}
+.addlink button{flex:none}
+.link-msg{font-size:.76rem;color:var(--ink-faint);margin:8px 0 0}
+.link-msg.err{color:#d2403c}
+
 /* ---------- WORD OF THE DAY ---------- */
 .wotd-word{
   font-family:var(--font-display);
@@ -705,8 +736,17 @@ footer{
     <!-- LEFT: links + explainer -->
     <div class="col">
       <div class="panel">
-        <p class="panel-title">Everything in one place</p>
+        <div class="tiles-head">
+          <p class="panel-title" style="margin:0">Everything in one place</p>
+          <button class="ghost-btn" id="tilesEdit" type="button">Edit</button>
+        </div>
         <div id="tileGroups"></div>
+        <form class="addlink" id="addLinkForm" hidden>
+          <input type="text" id="linkLabel" placeholder="Name" maxlength="24" autocomplete="off" aria-label="Shortcut name">
+          <input type="url" id="linkUrl" placeholder="https://…" autocomplete="off" aria-label="Shortcut address">
+          <button type="submit" class="btn" id="linkAdd">Add</button>
+        </form>
+        <p class="link-msg" id="linkMsg" hidden></p>
       </div>
 
       <div class="panel" id="explainPanel" hidden>
@@ -1544,6 +1584,7 @@ function openDashboard(who, supaUser){
 
   paintGreeting();
   paintWord();
+  loadLinks();
   renderTodos();
   setSync(currentUser.offline ? "offline" : "syncing");
   if(!currentUser.offline){ flush(); startSyncTimer(); }
@@ -1562,30 +1603,259 @@ function paintGreeting(){
     now.toLocaleDateString("en-GB",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
 }
 
-/* ---------- tiles ---------- */
-(function buildTiles(){
-  var host = document.getElementById("tileGroups");
-  var html = "";
-  for(var g=0; g<GROUPS.length; g++){
-    html += '<p class="group-label">' + GROUPS[g].label + '</p><div class="tiles">';
-    for(var i=0; i<GROUPS[g].items.length; i++){
-      var it = GROUPS[g].items[i];
-      var badge = (it.icon && ICONS[it.icon])
-        ? '<span class="chip"><img src="' + ICONS[it.icon] + '" alt=""></span>'
-        : '<span class="chip mono" style="background:' + it.color + '">' + it.mark + '</span>';
-      html +=
-        '<a class="tile" href="' + it.url + '" target="_blank" rel="noopener noreferrer">' +
-          badge +
-          '<span style="min-width:0">' +
-            '<span class="tile-name">' + it.name + '</span>' +
-            '<span class="tile-sub" style="display:block">' + it.sub + '</span>' +
-          '</span>' +
-        '</a>';
-    }
-    html += '</div>';
+/* ---------- tiles ----------
+   Three sources, one grid: the built-in groups below, whatever the admin
+   panel has pinned for everybody, and whatever this person has added. Any
+   tile can be put away; that is remembered by address, so one list covers
+   all three kinds.
+
+   Everything here is built with real elements rather than glued-together
+   HTML, because a name somebody typed must never be read as markup. */
+
+var myLinks = [];
+var sharedLinks = [];
+var hiddenUrls = {};
+var tilesEditing = false;
+
+/* Two letters where there is no icon: the initials of the first two words,
+   or the first two letters of a single word. */
+function initialsOf(name){
+  var words = String(name || "").trim().split(/\s+/).filter(Boolean);
+  if(!words.length) return "?";
+  if(words.length === 1) return words[0].slice(0,2).toUpperCase();
+  return (words[0][0] + words[1][0]).toUpperCase();
+}
+
+/* A stable colour per name, so a tile keeps the same one every visit. */
+function colourOf(name){
+  var h = 0, str = String(name || "");
+  for(var i=0;i<str.length;i++) h = (h*31 + str.charCodeAt(i)) % 360;
+  return "hsl(" + h + ",48%,42%)";
+}
+
+function hostOf(url){
+  try{ return new URL(url).hostname; }catch(e){ return ""; }
+}
+
+/* Only ever http(s). The database refuses anything else too, but a link
+   already stored from elsewhere shouldn't get a chance to be clicked. */
+function safeUrl(url){
+  return /^https?:\/\//i.test(String(url || "")) ? url : null;
+}
+
+/* The site's own icon first, so nothing about what anyone has saved
+   leaves this page. If that 404s, DuckDuckGo's icon service. If that
+   fails too, fall back to letters. */
+function chipFor(item){
+  var span = document.createElement("span");
+
+  if(item.icon && ICONS[item.icon]){
+    span.className = "chip";
+    var known = document.createElement("img");
+    known.src = ICONS[item.icon];
+    known.alt = "";
+    span.appendChild(known);
+    return span;
   }
-  host.innerHTML = html;
-})();
+
+  var host = hostOf(item.url);
+  function toLetters(){
+    span.className = "chip mono";
+    span.style.background = item.color || colourOf(item.name);
+    span.textContent = item.mark || initialsOf(item.name);
+  }
+  if(!host){ toLetters(); return span; }
+
+  span.className = "chip";
+  var img = document.createElement("img");
+  img.alt = "";
+  img.referrerPolicy = "no-referrer";
+  var tried = 0;
+  img.addEventListener("error", function(){
+    tried++;
+    if(tried === 1){
+      img.src = "https://icons.duckduckgo.com/ip3/" + host + ".ico";
+      return;
+    }
+    span.textContent = "";
+    toLetters();
+  });
+  img.src = "https://" + host + "/favicon.ico";
+  span.appendChild(img);
+  return span;
+}
+
+function tileEl(item, onRemove){
+  var wrap = document.createElement("div");
+  wrap.className = "tile-wrap";
+
+  var a = document.createElement("a");
+  a.className = "tile";
+  a.href = safeUrl(item.url) || "#";
+  a.target = "_blank";
+  a.rel = "noopener noreferrer";
+
+  a.appendChild(chipFor(item));
+
+  var text = document.createElement("span");
+  text.style.minWidth = "0";
+
+  var name = document.createElement("span");
+  name.className = "tile-name";
+  name.textContent = item.name;
+  text.appendChild(name);
+
+  if(item.sub){
+    var sub = document.createElement("span");
+    sub.className = "tile-sub";
+    sub.style.display = "block";
+    sub.textContent = item.sub;
+    text.appendChild(sub);
+  }
+
+  a.appendChild(text);
+  wrap.appendChild(a);
+
+  var x = document.createElement("button");
+  x.type = "button";
+  x.className = "tile-x";
+  x.textContent = "×";
+  x.title = "Put this one away";
+  x.addEventListener("click", function(e){
+    e.preventDefault();
+    onRemove(item);
+  });
+  wrap.appendChild(x);
+
+  return wrap;
+}
+
+function groupEl(label, items, onRemove){
+  var frag = document.createDocumentFragment();
+  if(!items.length) return frag;
+
+  var head = document.createElement("p");
+  head.className = "group-label";
+  head.textContent = label;
+  frag.appendChild(head);
+
+  var grid = document.createElement("div");
+  grid.className = "tiles";
+  items.forEach(function(it){ grid.appendChild(tileEl(it, onRemove)); });
+  frag.appendChild(grid);
+  return frag;
+}
+
+function buildTiles(){
+  var host = document.getElementById("tileGroups");
+  host.textContent = "";
+  host.classList.toggle("tiles-editing", tilesEditing);
+
+  function visible(list){
+    return list.filter(function(it){ return !hiddenUrls[it.url]; });
+  }
+
+  GROUPS.forEach(function(g){
+    var items = visible(g.items.map(function(it){
+      return { name:it.name, sub:it.sub, url:it.url, icon:it.icon, mark:it.mark, color:it.color };
+    }));
+    host.appendChild(groupEl(g.label, items, hideTile));
+  });
+
+  var shared = visible(sharedLinks.map(function(r){
+    return { name:r.label, sub:hostOf(r.url), url:r.url };
+  }));
+  host.appendChild(groupEl("From school", shared, hideTile));
+
+  var mine = visible(myLinks.map(function(r){
+    return { id:r.id, name:r.label, sub:hostOf(r.url), url:r.url, own:true };
+  }));
+  host.appendChild(groupEl("Mine", mine, removeMine));
+}
+
+/* Put away a tile that isn't yours to delete — a built-in or a school one.
+   It goes back if the admin ever removes and re-adds it, which is fine. */
+function hideTile(item){
+  hiddenUrls[item.url] = true;
+  buildTiles();
+  if(currentUser.offline || !sb) return;
+  sb.from("link_hidden").insert({ user_id: currentUser.uid, url: item.url })
+    .then(function(){}, function(){});
+}
+
+function removeMine(item){
+  myLinks = myLinks.filter(function(r){ return r.id !== item.id; });
+  buildTiles();
+  if(currentUser.offline || !sb) return;
+  sb.from("links").delete().eq("id", item.id).then(function(){}, function(){});
+}
+
+function linkSay(text, bad){
+  var el = document.getElementById("linkMsg");
+  el.textContent = text || "";
+  el.hidden = !text;
+  el.classList.toggle("err", !!bad);
+}
+
+function loadLinks(){
+  if(currentUser.offline || !sb){ buildTiles(); return; }
+  Promise.all([
+    sb.from("links").select("id,label,url,position").order("position",{ ascending:true }),
+    sb.from("shared_links").select("id,label,url,position").order("position",{ ascending:true }),
+    sb.from("link_hidden").select("url")
+  ]).then(function(res){
+    myLinks     = (res[0] && res[0].data) || [];
+    sharedLinks = (res[1] && res[1].data) || [];
+    hiddenUrls  = {};
+    (((res[2] && res[2].data) || [])).forEach(function(r){ hiddenUrls[r.url] = true; });
+    buildTiles();
+  }).catch(function(){ buildTiles(); });
+}
+
+document.getElementById("tilesEdit").addEventListener("click", function(){
+  tilesEditing = !tilesEditing;
+  this.textContent = tilesEditing ? "Done" : "Edit";
+  document.getElementById("addLinkForm").hidden = !tilesEditing;
+  if(!tilesEditing) linkSay("");
+  buildTiles();
+});
+
+document.getElementById("addLinkForm").addEventListener("submit", function(e){
+  e.preventDefault();
+  var labelEl = document.getElementById("linkLabel");
+  var urlEl   = document.getElementById("linkUrl");
+  var btn     = document.getElementById("linkAdd");
+
+  var label = labelEl.value.trim();
+  var url   = urlEl.value.trim();
+  if(!/^https?:\/\//i.test(url)) url = "https://" + url;
+
+  if(!label)            return linkSay("Give it a name.", true);
+  if(!safeUrl(url))     return linkSay("That doesn't look like a web address.", true);
+  if(!hostOf(url))      return linkSay("That doesn't look like a web address.", true);
+  if(currentUser.offline || !sb) return linkSay("You're offline — try again once you're back.", true);
+
+  btn.disabled = true;
+  linkSay("Adding…");
+  sb.from("links")
+    .insert({ user_id: currentUser.uid, label: label, url: url, position: myLinks.length })
+    .select("id,label,url,position")
+    .then(function(r){
+      btn.disabled = false;
+      if(r.error){ linkSay(r.error.message, true); return; }
+      var row = (r.data && r.data[0]) || null;
+      if(row){
+        myLinks.push(row);
+        delete hiddenUrls[row.url];
+      }
+      labelEl.value = ""; urlEl.value = "";
+      linkSay("Added.");
+      buildTiles();
+    }, function(err){
+      btn.disabled = false;
+      linkSay((err && err.message) || "Couldn't add that.", true);
+    });
+});
 
 /* ---------- web search ---------- */
 /* Google's widget renders the revision-site results in the page.

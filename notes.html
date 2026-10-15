@@ -277,6 +277,26 @@ button,input,select,textarea{font:inherit;color:inherit}
         <p class="amsg" id="newUserMsg">Any address works here &mdash; school, Hotmail, Gmail. No confirmation email is sent. The explainer and the chat start switched off.</p>
       </div>
 
+      <div class="sec">
+        <p class="sec-h">Shortcuts everyone gets</p>
+        <p class="amsg">These appear on everybody&rsquo;s dashboard under &ldquo;From school&rdquo;. Each person can put one away if they don&rsquo;t use it.</p>
+        <div id="sharedRows"></div>
+        <form id="sharedForm">
+          <div class="arow" style="margin-top:10px">
+            <div class="afield">
+              <label for="slLabel">Name</label>
+              <input type="text" id="slLabel" maxlength="24" autocomplete="off">
+            </div>
+            <div class="afield">
+              <label for="slUrl">Address</label>
+              <input type="text" id="slUrl" placeholder="https://…" autocomplete="off">
+            </div>
+            <button type="submit" class="abtn" id="slBtn">Add</button>
+          </div>
+        </form>
+        <p class="amsg" id="sharedMsg"></p>
+      </div>
+
       <div class="sec" id="allowSec" hidden>
         <p class="sec-h">Exceptions left open</p>
         <p class="amsg">These addresses are allowed in but no account was made. That means a create didn&rsquo;t finish, and the way in is still standing open. Clear them.</p>
@@ -787,6 +807,72 @@ document.getElementById("refreshUsers").addEventListener("click", function(){
   loadUsers(); loadAllows();
 });
 
+/* ---------- shortcuts everyone gets ---------- */
+function loadShared(){
+  call({ action:"sharedlinks" }).then(function(d){
+    var box = document.getElementById("sharedRows");
+    box.textContent = "";
+    var rows = d.links || [];
+    if(!rows.length){
+      var none = document.createElement("p");
+      none.className = "amsg";
+      none.textContent = "None yet.";
+      box.appendChild(none);
+      return;
+    }
+    rows.forEach(function(l){
+      var row = document.createElement("div");
+      row.className = "acct-row";
+
+      var nm = document.createElement("span");
+      nm.textContent = l.label;
+      row.appendChild(nm);
+
+      var ur = document.createElement("span");
+      ur.className = "acct-meta";
+      ur.textContent = l.url;
+      row.appendChild(ur);
+
+      var go = document.createElement("button");
+      go.type = "button";
+      go.className = "abtn quiet";
+      go.textContent = "Remove";
+      go.addEventListener("click", function(){
+        go.disabled = true;
+        say("sharedMsg","Removing…");
+        call({ action:"delshared", id:l.id }).then(function(){
+          say("sharedMsg","Removed " + l.label + ".","ok");
+          loadShared();
+        }).catch(function(err){
+          say("sharedMsg", err.message, "err");
+          go.disabled = false;
+        });
+      });
+      row.appendChild(go);
+
+      box.appendChild(row);
+    });
+  }).catch(function(){
+    /* Older admin function. Say nothing. */
+  });
+}
+
+document.getElementById("sharedForm").addEventListener("submit", function(e){
+  e.preventDefault();
+  var btn = document.getElementById("slBtn");
+  var lb  = document.getElementById("slLabel");
+  var ur  = document.getElementById("slUrl");
+  btn.disabled = true;
+  say("sharedMsg","Adding…");
+  call({ action:"addshared", label:lb.value.trim(), url:ur.value.trim() }).then(function(){
+    say("sharedMsg","Added.","ok");
+    lb.value = ""; ur.value = "";
+    loadShared();
+  }).catch(function(err){
+    say("sharedMsg", err.message, "err");
+  }).then(function(){ btn.disabled = false; });
+});
+
 /* ---------- exceptions left open ----------
    Making an account for a non-school address needs a note in the database
    saying that address is allowed. The server tears the note up straight
@@ -1291,6 +1377,7 @@ applyTheme(recall(THEME_KEY,null));
     show("mainPanel");
     loadUsers();
     loadAllows();
+    loadShared();
     loadWords();
     cacheStats();
     loadSwitches();
