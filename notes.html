@@ -554,15 +554,20 @@ function loadUsers(){
         tdX.appendChild(okBtn);
       }
 
-      var pwBtn = document.createElement("button");
-      pwBtn.className = "abtn quiet";
-      pwBtn.type = "button";
-      pwBtn.style.padding = "6px 11px";
-      pwBtn.style.fontSize = ".76rem";
-      pwBtn.style.marginRight = "6px";
-      pwBtn.textContent = "Password";
-      pwBtn.addEventListener("click",function(){ askPassword(u); });
-      tdX.appendChild(pwBtn);
+      /* The owner signs in with Google and has no password. Offering to set
+         one would quietly re-open a password route into this page, which is
+         the thing that was deliberately closed. */
+      if(!u.isAdmin){
+        var pwBtn = document.createElement("button");
+        pwBtn.className = "abtn quiet";
+        pwBtn.type = "button";
+        pwBtn.style.padding = "6px 11px";
+        pwBtn.style.fontSize = ".76rem";
+        pwBtn.style.marginRight = "6px";
+        pwBtn.textContent = "Password";
+        pwBtn.addEventListener("click",function(){ askPassword(u); });
+        tdX.appendChild(pwBtn);
+      }
 
       if(!u.isAdmin){
         var del = document.createElement("button");
