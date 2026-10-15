@@ -241,6 +241,12 @@ button,input,select,textarea{font:inherit;color:inherit}
   <div class="panel" id="mainPanel" hidden>
 
 
+      <div class="sec" id="switchSec" hidden>
+        <p class="sec-h">Switches</p>
+        <div class="arow" id="switchRow"></div>
+        <p class="amsg" id="switchMsg">These apply to everyone at once, above the per-person ones. Yours keep working either way, so you can check before opening it back up.</p>
+      </div>
+
       <div class="sec">
         <p class="sec-h">Accounts</p>
         <div class="stats" id="stats"></div>
@@ -356,6 +362,14 @@ button,input,select,textarea{font:inherit;color:inherit}
         </div>
         <div class="log" id="logBox"></div>
         <p class="amsg" id="logMsg">Live messages, ones you deleted, and ones the filter turned away — newest first.</p>
+      </div>
+
+      <div class="sec" id="backupSec" hidden>
+        <p class="sec-h">Backup</p>
+        <div class="arow">
+          <button type="button" class="abtn quiet" id="backupBtn">Download a backup</button>
+        </div>
+        <p class="amsg" id="backupMsg">Everything in the database as one file. Keep it in OneDrive. A mistyped SQL command is the realistic way this loses data.</p>
       </div>
 
       <div class="sec">
@@ -883,6 +897,62 @@ document.getElementById("askForm").addEventListener("submit",function(e){
 });
 
 
+/* ---------- the switches that apply to everyone ---------- */
+function loadSwitches(){
+  call({ action:"switches" }).then(function(d){
+    var host = document.getElementById("switchRow");
+    if(!host) return;
+    host.textContent = "";
+
+    var label = { explainer:"Explainer", chat:"Chat" };
+    var order = ["explainer","chat"];
+    var by = {};
+    (d.switches||[]).forEach(function(r){ by[r.key] = r; });
+
+    order.forEach(function(k){
+      var row = by[k] || { key:k, on_now:true };
+      var on = row.on_now !== false;
+
+      var b = document.createElement("button");
+      b.type = "button";
+      b.className = on ? "abtn" : "abtn quiet";
+      b.textContent = label[k] + (on ? " on" : " off");
+      b.addEventListener("click",function(){
+        if(on && !window.confirm("Turn the " + label[k].toLowerCase() +
+            " off for everyone? You'll still be able to use it yourself.")) return;
+        b.disabled = true;
+        call({ action:"switch", key:k, on:!on })
+          .then(function(){
+            say("switchMsg", label[k] + (on ? " is now off for everyone."
+                                            : " is back on."), "ok");
+            loadSwitches();
+          })
+          .catch(function(e){ say("switchMsg", e.message, "err"); b.disabled = false; });
+      });
+      host.appendChild(b);
+    });
+
+    document.getElementById("switchSec").hidden = false;
+
+    var changed = (d.switches||[]).filter(function(r){ return r.changed_at; })
+      .sort(function(a,b){ return a.changed_at < b.changed_at ? 1 : -1; })[0];
+    if(changed && changed.changed_at){
+      var when = new Date(changed.changed_at);
+      var note = document.createElement("span");
+      note.className = "acct-meta";
+      note.style.margin = "0 0 0 4px";
+      note.textContent = "last changed " +
+        when.toLocaleDateString("en-GB",{day:"numeric",month:"short"}) + " " +
+        when.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"});
+      host.appendChild(note);
+    }
+  }).catch(function(){
+    /* The function hasn't been redeployed yet, so there is nothing to
+       show. Better a missing block than three buttons that error. */
+    document.getElementById("switchSec").hidden = true;
+  });
+}
+
 /* ---------- stored explanations ---------- */
 function cacheStats(){
   call({ action:"cache", mode:"stats" }).then(function(d){
@@ -1035,6 +1105,43 @@ function loadLog(){
 
 document.getElementById("loadLog").addEventListener("click", loadLog);
 
+/* ---------- backup ---------- */
+function checkBackup(){
+  /* "switches" is the cheapest action the new function understands. If
+     it answers, this build is deployed and the button will work. */
+  call({ action:"switches" })
+    .then(function(){ document.getElementById("backupSec").hidden = false; })
+    .catch(function(){ document.getElementById("backupSec").hidden = true; });
+}
+
+document.getElementById("backupBtn").addEventListener("click",function(){
+  var b = document.getElementById("backupBtn");
+  b.disabled = true;
+  say("backupMsg","Gathering it up\u2026");
+  call({ action:"backup" }).then(function(d){
+    var text = JSON.stringify(d, null, 2);
+    var when = new Date().toISOString().slice(0,10);
+    var blob = new Blob([text], { type:"application/json" });
+    var url  = URL.createObjectURL(blob);
+
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = "heh-homework-backup-" + when + ".json";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 2000);
+
+    var rows = 0;
+    Object.keys(d).forEach(function(k){
+      if(Array.isArray(d[k])) rows += d[k].length;
+    });
+    say("backupMsg", "Saved. " + rows + " rows, " +
+        Math.round(text.length/1024) + " KB. Put it somewhere that isn't this laptop.", "ok");
+  }).catch(function(e){ say("backupMsg", e.message, "err"); })
+    .then(function(){ b.disabled = false; });
+});
+
 /* ---------- diagnostics ---------- */
 document.getElementById("runDiag").addEventListener("click",function(){
   var out = document.getElementById("diagOut");
@@ -1117,6 +1224,8 @@ applyTheme(recall(THEME_KEY,null));
     loadUsers();
     loadWords();
     cacheStats();
+    loadSwitches();
+    checkBackup();
     refreshAskAllowance();
   }).catch(function(){ show("deadEnd"); });
 })();
