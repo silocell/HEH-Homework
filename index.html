@@ -611,6 +611,33 @@ a.gs-title:hover{text-decoration:underline!important}
   gap:12px;flex-wrap:wrap;margin-bottom:12px;
 }
 .chat-head .panel-title{margin:0}
+/* ---------- PANELS THAT GROW ----------
+   An explanation, a long to-do list and a wordy definition all grow
+   without limit, and whichever column they land in drags its side of the
+   page down past the other. Capping them keeps the two columns level
+   however much is in them.
+
+   Only above 900px, where the two columns exist. On a phone everything
+   is one column already, so a scrolling box inside a scrolling page is
+   just a worse way to read the same text. */
+@media (min-width:900px){
+  .ex-out{ max-height:clamp(200px,36vh,360px); overflow-y:auto; padding-right:6px }
+  .todo-list{ max-height:clamp(160px,30vh,300px); overflow-y:auto }
+  .wotd-scroll{ max-height:clamp(120px,22vh,220px); overflow-y:auto; padding-right:6px }
+}
+
+/* A faint rule at the top so a scrolled box reads as "there is more
+   above" rather than as text that has been chopped. */
+.ex-out::-webkit-scrollbar,
+.todo-list::-webkit-scrollbar,
+.wotd-scroll::-webkit-scrollbar{ width:8px }
+.ex-out::-webkit-scrollbar-thumb,
+.todo-list::-webkit-scrollbar-thumb,
+.wotd-scroll::-webkit-scrollbar-thumb{
+  background:var(--rule); border-radius:4px;
+}
+.ex-out, .todo-list, .wotd-scroll{ scrollbar-width:thin }
+
 .chat-watch{
   font-size:.72rem;color:var(--ink-faint);line-height:1.4;
 }
@@ -852,8 +879,10 @@ footer{
         <p class="panel-title">Word of the day</p>
         <p class="wotd-word" id="wotdWord">—</p>
         <div class="wotd-pos" id="wotdPos"></div>
-        <p class="wotd-def" id="wotdDef"></p>
-        <p class="wotd-ex" id="wotdEx"></p>
+        <div class="wotd-scroll">
+          <p class="wotd-def" id="wotdDef"></p>
+          <p class="wotd-ex" id="wotdEx"></p>
+        </div>
         <form class="lookup" id="lookupForm">
           <input type="text" id="lookupInput" placeholder="Look up any word…" autocomplete="off" aria-label="Look up a word">
           <button type="submit">Define</button>
