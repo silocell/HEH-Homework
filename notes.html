@@ -274,7 +274,14 @@ button,input,select,textarea{font:inherit;color:inherit}
             <button type="submit" class="abtn" id="nuBtn">Create</button>
           </div>
         </form>
-        <p class="amsg" id="newUserMsg">No confirmation email is sent — the account works straight away.</p>
+        <p class="amsg" id="newUserMsg">Any address works here &mdash; school, Hotmail, Gmail. No confirmation email is sent. The explainer and the chat start switched off.</p>
+      </div>
+
+      <div class="sec" id="allowSec" hidden>
+        <p class="sec-h">Exceptions left open</p>
+        <p class="amsg">These addresses are allowed in but no account was made. That means a create didn&rsquo;t finish, and the way in is still standing open. Clear them.</p>
+        <div id="allowRows"></div>
+        <p class="amsg" id="allowMsg"></p>
       </div>
 
       <div class="sec">
@@ -776,7 +783,61 @@ function askDelete(u, card){
   card.appendChild(box);
   inp.focus();
 }
-document.getElementById("refreshUsers").addEventListener("click", loadUsers);
+document.getElementById("refreshUsers").addEventListener("click", function(){
+  loadUsers(); loadAllows();
+});
+
+/* ---------- exceptions left open ----------
+   Making an account for a non-school address needs a note in the database
+   saying that address is allowed. The server tears the note up straight
+   after. If one is still here, something went wrong halfway and the hole
+   is still open — so this section only appears when there is one. */
+function loadAllows(){
+  call({ action:"allows" }).then(function(d){
+    var rows = d.allows || [];
+    var sec  = document.getElementById("allowSec");
+    var box  = document.getElementById("allowRows");
+    box.textContent = "";
+    if(!rows.length){ sec.hidden = true; return; }
+    sec.hidden = false;
+    rows.forEach(function(a){
+      var row = document.createElement("div");
+      row.className = "acct-row";
+
+      var who = document.createElement("span");
+      who.textContent = a.email;
+      row.appendChild(who);
+
+      var when = document.createElement("span");
+      when.className = "acct-meta";
+      when.textContent = a.added_at ? new Date(a.added_at).toLocaleString() : "";
+      row.appendChild(when);
+
+      var go = document.createElement("button");
+      go.type = "button";
+      go.className = "abtn";
+      go.textContent = "Clear";
+      go.addEventListener("click", function(){
+        go.disabled = true;
+        say("allowMsg","Clearing…");
+        call({ action:"unallow", email:a.email }).then(function(){
+          say("allowMsg","Cleared " + a.email + ".","ok");
+          loadAllows();
+        }).catch(function(err){
+          say("allowMsg", err.message, "err");
+          go.disabled = false;
+        });
+      });
+      row.appendChild(go);
+
+      box.appendChild(row);
+    });
+  }).catch(function(){
+    /* An older admin function doesn't know this action. Say nothing and
+       leave the section hidden rather than showing a scary error. */
+    document.getElementById("allowSec").hidden = true;
+  });
+}
 
 document.getElementById("newUserForm").addEventListener("submit",function(e){
   e.preventDefault();
@@ -786,12 +847,14 @@ document.getElementById("newUserForm").addEventListener("submit",function(e){
   btn.disabled = true;
   say("newUserMsg","Creating…");
   call({ action:"create", email:em, password:pw }).then(function(){
-    say("newUserMsg","Made " + em + ". They can sign in now.","ok");
+    say("newUserMsg","Made " + em + ". They can sign in now — switch on the explainer and the chat above when you're ready.","ok");
     document.getElementById("nuEmail").value = "";
     document.getElementById("nuPass").value = "";
     loadUsers();
+    loadAllows();
   }).catch(function(err){
     say("newUserMsg", err.message, "err");
+    loadAllows();
   }).then(function(){ btn.disabled = false; });
 });
 
@@ -1227,6 +1290,7 @@ applyTheme(recall(THEME_KEY,null));
     unlocked = true;
     show("mainPanel");
     loadUsers();
+    loadAllows();
     loadWords();
     cacheStats();
     loadSwitches();
