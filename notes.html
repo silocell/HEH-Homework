@@ -82,7 +82,18 @@ button,input,select,textarea{font:inherit;color:inherit}
 
 
 .shell{max-width:960px;margin:0 auto;padding:28px 20px 72px}
-.topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:24px}
+/* The page runs to nearly three thousand pixels, so a topbar that scrolls
+   away means no way back to the dashboard without scrolling all the way
+   up again. Stuck to the top it is reachable from wherever you are. The
+   backdrop keeps the page from showing through behind it. */
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  gap:16px;flex-wrap:wrap;margin-bottom:24px;
+  position:sticky;top:0;z-index:50;
+  padding:12px 0;
+  background:var(--paper);
+  border-bottom:1px solid var(--rule);
+}
 .brand{font-family:var(--font-display);font-weight:800;font-size:1rem;letter-spacing:-.01em;display:flex;align-items:center;gap:9px}
 .brand .dot{width:9px;height:9px;border-radius:50%;background:var(--margin);flex:none}
 .topbar-actions{display:flex;align-items:center;gap:8px}
@@ -409,12 +420,6 @@ button,input,select,textarea{font:inherit;color:inherit}
         </div>
         <div id="diagOut"></div>
         <p class="amsg" id="diagMsg"></p>
-      </div>
-
-      <div class="sec">
-        <div class="arow">
-          <a class="abtn quiet" href="./" style="text-decoration:none">Back to the dashboard</a>
-        </div>
       </div>
 
   </div>
