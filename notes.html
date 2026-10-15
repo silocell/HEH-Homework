@@ -186,6 +186,8 @@ button,input,select,textarea{font:inherit;color:inherit}
 }
 .logrow.gone .what{text-decoration:line-through;color:var(--ink-faint)}
 .logrow.stopped .what{color:var(--margin)}
+.logrow.hashed .what{color:var(--margin)}
+.logrow.hashed .why{color:var(--margin)}
 .logrow.stopped .why{color:var(--margin)}
 .logempty{padding:18px 12px;color:var(--ink-faint);font-size:.83rem}
 .check{
@@ -1043,7 +1045,8 @@ function loadLog(){
 
     var host = document.getElementById("logStats");
     host.textContent = "";
-    [[d.live||0,"in the chat"],[d.gone||0,"deleted"],[d.stopped||0,"refused"]]
+    [[d.live||0,"in the chat"],[d.hashed||0,"hashed out"],
+     [d.gone||0,"deleted"],[d.stopped||0,"refused"]]
       .forEach(function(pair){
         var b = document.createElement("div"); b.className = "stat";
         var n = document.createElement("div"); n.className = "stat-n"; n.textContent = String(pair[0]);
@@ -1063,7 +1066,9 @@ function loadLog(){
     rows.forEach(function(r){
       var row = document.createElement("div");
       row.className = "logrow" +
-        (r.kind === "deleted" ? " gone" : r.kind === "refused" ? " stopped" : "");
+        (r.kind === "deleted" ? " gone"
+          : r.kind === "refused" ? " stopped"
+          : r.kind === "masked" ? " hashed" : "");
 
       var w = document.createElement("span"); w.className = "when"; w.textContent = when(r.at);
       var who = document.createElement("span"); who.className = "who";
@@ -1073,7 +1078,7 @@ function loadLog(){
 
       row.appendChild(w); row.appendChild(who); row.appendChild(what);
 
-      if(r.kind === "live"){
+      if(r.kind === "live" || r.kind === "masked"){
         var del = document.createElement("button");
         del.type = "button"; del.className = "abtn quiet";
         del.style.padding = "3px 9px"; del.style.fontSize = ".68rem";
