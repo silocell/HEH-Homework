@@ -116,6 +116,21 @@ button,input,select,textarea{font:inherit;color:inherit}
 }
 .atable td{padding:9px 10px 9px 0;border-top:1px solid var(--rule);vertical-align:top}
 .atable td.num{font-family:var(--font-mono);font-variant-numeric:tabular-nums;color:var(--ink-soft)}
+.acct{
+  border:1px solid var(--rule);border-radius:11px;
+  padding:14px 16px;margin-bottom:11px;
+}
+.acct-top{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:11px}
+.acct-email{font-weight:600;font-size:.88rem;overflow-wrap:anywhere;margin-right:2px}
+.acct-row{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:10px}
+.acct-row label{
+  font-size:.64rem;font-weight:600;letter-spacing:.09em;
+  text-transform:uppercase;color:var(--ink-faint);
+}
+.acct-name{width:150px}
+.acct-meta{font-size:.74rem;color:var(--ink-faint);margin-bottom:12px;line-height:1.5}
+.acct-acts{display:flex;gap:9px;flex-wrap:wrap;align-items:center}
+.acct-inline{border-top:1px solid var(--rule);margin-top:13px;padding-top:13px}
 .atable{min-width:900px}
 .atable .email{font-weight:600;overflow-wrap:anywhere;min-width:210px}
 .tag{
@@ -229,15 +244,7 @@ button,input,select,textarea{font:inherit;color:inherit}
       <div class="sec">
         <p class="sec-h">Accounts</p>
         <div class="stats" id="stats"></div>
-        <div class="ascroll">
-          <table class="atable" id="userTable">
-            <thead><tr>
-              <th>Email</th><th>Called</th><th>Access</th><th>Approved</th><th>Confirmed</th><th>Last signed in</th>
-              <th>AI today</th><th>To-do</th><th></th>
-            </tr></thead>
-            <tbody id="userRows"></tbody>
-          </table>
-        </div>
+        <div id="userRows"></div>
         <p class="amsg" id="usersMsg"></p>
         <div class="arow" style="margin-top:14px">
           <button type="button" class="abtn quiet" id="refreshUsers">Refresh</button>
@@ -455,9 +462,6 @@ function flagBtn(u, flag, onNow, labelOn, labelOff){
   var b = document.createElement("button");
   b.type = "button";
   b.className = onNow ? "abtn" : "abtn quiet";
-  b.style.padding = "6px 11px";
-  b.style.fontSize = ".76rem";
-  b.style.marginRight = "6px";
   b.textContent = onNow ? labelOn : labelOff;
   b.addEventListener("click",function(){
     b.disabled = true;
@@ -477,32 +481,58 @@ function flagBtn(u, flag, onNow, labelOn, labelOff){
 function loadUsers(){
   say("usersMsg","Loading…");
   call({ action:"list" }).then(function(d){
-    var body = document.getElementById("userRows");
-    body.textContent = "";
-    (d.users||[]).forEach(function(u){
-      var tr = document.createElement("tr");
+    var host = document.getElementById("userRows");
+    host.textContent = "";
 
-      var tdE = document.createElement("td");
-      tdE.className = "email";
-      tdE.textContent = u.email;
+    (d.users||[]).forEach(function(u){
+      var card = document.createElement("div");
+      card.className = "acct";
+
+      /* ---- who ---- */
+      var top = document.createElement("div");
+      top.className = "acct-top";
+
+      var em = document.createElement("span");
+      em.className = "acct-email";
+      em.textContent = u.email;
+      top.appendChild(em);
+
       if(u.isAdmin){
         var adm = document.createElement("span");
         adm.className = "tag adm";
         adm.textContent = "owner";
-        adm.style.marginLeft = "7px";
-        tdE.appendChild(adm);
+        top.appendChild(adm);
       }
 
-      var tdName = document.createElement("td");
+      var okTag = document.createElement("span");
+      okTag.className = "tag " + (u.approved ? "yes" : "no");
+      okTag.textContent = u.approved ? "in" : "waiting";
+      top.appendChild(okTag);
+
+      if(!u.confirmed){
+        var cf = document.createElement("span");
+        cf.className = "tag no";
+        cf.textContent = "unconfirmed";
+        top.appendChild(cf);
+      }
+      card.appendChild(top);
+
+      /* ---- what to call them, and what they can use ---- */
+      var row = document.createElement("div");
+      row.className = "acct-row";
+
+      var lab = document.createElement("label");
+      lab.textContent = "Called";
+      lab.setAttribute("for", "nm_" + u.id);
+      row.appendChild(lab);
+
       var nameIn = document.createElement("input");
       nameIn.type = "text";
+      nameIn.id = "nm_" + u.id;
+      nameIn.className = "acct-name";
       nameIn.value = u.name || "";
-      nameIn.placeholder = "—";
+      nameIn.placeholder = "their first name";
       nameIn.autocomplete = "off";
-      nameIn.style.width = "96px";
-      nameIn.style.padding = "5px 7px";
-      nameIn.style.fontSize = ".78rem";
-      nameIn.title = "What the greeting and the chat call them";
       function saveName(){
         var v = nameIn.value.trim();
         if(v === (u.name || "")) return;
@@ -510,8 +540,9 @@ function loadUsers(){
         call({ action:"setname", userId:u.id, name:v })
           .then(function(){
             u.name = v;
-            say("usersMsg", v ? ("Calling " + u.email + " \u201c" + v + "\u201d now.")
-                              : ("Cleared the name for " + u.email + "."), "ok");
+            say("usersMsg", v
+              ? ("Calling " + u.email + " “" + v + "” now.")
+              : ("Cleared the name for " + u.email + "."), "ok");
           })
           .catch(function(e){ nameIn.value = u.name || ""; say("usersMsg", e.message, "err"); })
           .then(function(){ nameIn.disabled = false; });
@@ -520,56 +551,39 @@ function loadUsers(){
       nameIn.addEventListener("keydown", function(e){
         if(e.key === "Enter"){ e.preventDefault(); nameIn.blur(); }
       });
-      tdName.appendChild(nameIn);
+      row.appendChild(nameIn);
 
-      var tdAcc = document.createElement("td");
-      tdAcc.style.whiteSpace = "nowrap";
       if(u.isAdmin){
-        var own = document.createElement("span");
-        own.className = "tag adm";
-        own.textContent = "all";
-        tdAcc.appendChild(own);
+        var all = document.createElement("span");
+        all.className = "tag adm";
+        all.textContent = "everything on";
+        row.appendChild(all);
       } else {
-        tdAcc.appendChild(flagBtn(u,"ai_ok",   u.aiOk,   "AI on",   "AI off"));
-        tdAcc.appendChild(flagBtn(u,"chat_ok", u.chatOk, "Chat on", "Chat off"));
+        row.appendChild(flagBtn(u,"ai_ok",   u.aiOk,   "Explainer on",  "Explainer off"));
+        row.appendChild(flagBtn(u,"chat_ok", u.chatOk, "Chat on",       "Chat off"));
       }
+      card.appendChild(row);
 
-      var tdOk = document.createElement("td");
-      var okTag = document.createElement("span");
-      okTag.className = "tag " + (u.approved ? "yes" : "no");
-      okTag.textContent = u.approved ? "in" : "waiting";
-      tdOk.appendChild(okTag);
-
-      var tdC = document.createElement("td");
-      var tag = document.createElement("span");
-      tag.className = "tag " + (u.confirmed ? "yes" : "no");
-      tag.textContent = u.confirmed ? "yes" : "no";
-      tdC.appendChild(tag);
-
-      var tdL = document.createElement("td");
-      tdL.className = "num";
-      tdL.textContent = u.lastSignIn
+      /* ---- the quiet facts ---- */
+      var meta = document.createElement("div");
+      meta.className = "acct-meta";
+      var seen = u.lastSignIn
         ? new Date(u.lastSignIn).toLocaleDateString("en-GB",{day:"numeric",month:"short"})
         : "never";
+      meta.textContent =
+        "Last here " + seen +
+        " · " + u.aiToday + " explanation" + (u.aiToday === 1 ? "" : "s") + " today" +
+        " · " + u.todosOpen + " of " + u.todosAll + " jobs outstanding";
+      card.appendChild(meta);
 
-      var tdA = document.createElement("td");
-      tdA.className = "num";
-      tdA.textContent = String(u.aiToday);
-
-      var tdT = document.createElement("td");
-      tdT.className = "num";
-      tdT.textContent = u.todosOpen + " / " + u.todosAll;
-
-      var tdX = document.createElement("td");
-      tdX.style.whiteSpace = "nowrap";
+      /* ---- the things you can do ---- */
+      var acts = document.createElement("div");
+      acts.className = "acct-acts";
 
       if(!u.isAdmin){
         var okBtn = document.createElement("button");
         okBtn.className = u.approved ? "abtn quiet" : "abtn";
         okBtn.type = "button";
-        okBtn.style.padding = "6px 11px";
-        okBtn.style.fontSize = ".76rem";
-        okBtn.style.marginRight = "6px";
         okBtn.textContent = u.approved ? "Shut out" : "Let in";
         okBtn.addEventListener("click",function(){
           okBtn.disabled = true;
@@ -581,59 +595,50 @@ function loadUsers(){
             })
             .catch(function(e){ say("usersMsg", e.message, "err"); okBtn.disabled = false; });
         });
-        tdX.appendChild(okBtn);
-      }
+        acts.appendChild(okBtn);
 
-      /* The owner signs in with Google and has no password. Offering to set
-         one would quietly re-open a password route into this page, which is
-         the thing that was deliberately closed. */
-      if(!u.isAdmin){
         var pwBtn = document.createElement("button");
         pwBtn.className = "abtn quiet";
         pwBtn.type = "button";
-        pwBtn.style.padding = "6px 11px";
-        pwBtn.style.fontSize = ".76rem";
-        pwBtn.style.marginRight = "6px";
-        pwBtn.textContent = "Password";
-        pwBtn.addEventListener("click",function(){ askPassword(u); });
-        tdX.appendChild(pwBtn);
-      }
+        pwBtn.textContent = "Change password";
+        pwBtn.addEventListener("click",function(){ askPassword(u, card); });
+        acts.appendChild(pwBtn);
 
-      if(!u.isAdmin){
         var del = document.createElement("button");
         del.className = "abtn danger";
         del.type = "button";
-        del.style.padding = "6px 11px";
-        del.style.fontSize = ".76rem";
         del.textContent = "Delete";
-        del.addEventListener("click",function(){ askDelete(u); });
-        tdX.appendChild(del);
+        del.addEventListener("click",function(){ askDelete(u, card); });
+        acts.appendChild(del);
+      } else {
+        var note = document.createElement("span");
+        note.className = "acct-meta";
+        note.style.margin = "0";
+        note.textContent = "Signs in with Google. No password to change, and it can't be deleted from here.";
+        acts.appendChild(note);
       }
+      card.appendChild(acts);
 
-      tr.appendChild(tdE); tr.appendChild(tdName); tr.appendChild(tdAcc); tr.appendChild(tdOk); tr.appendChild(tdC);
-      tr.appendChild(tdL); tr.appendChild(tdA); tr.appendChild(tdT);
-      tr.appendChild(tdX);
-      body.appendChild(tr);
+      host.appendChild(card);
     });
+
     paintStats(d.users || []);
     say("usersMsg", (d.users||[]).length + " accounts");
   }).catch(function(e){ say("usersMsg", e.message, "err"); });
 }
-
-function askPassword(u){
-  var body = document.getElementById("userRows");
-  var tr = document.createElement("tr");
-  var td = document.createElement("td");
-  td.colSpan = 9;
+function askPassword(u, card){
+  var box = document.createElement("div");
+  box.className = "acct-inline";
 
   var p = document.createElement("p");
   p.className = "amsg";
-  p.style.margin = "0 0 8px";
+  p.style.margin = "0 0 9px";
   p.textContent = "New password for " + u.email
                 + ". They'll be signed out everywhere and will need the new one.";
 
   var row = document.createElement("div");
   row.className = "arow";
+  row.style.marginBottom = "0";
 
   var f = document.createElement("div");
   f.className = "afield";
@@ -650,7 +655,7 @@ function askPassword(u){
   go.addEventListener("click",function(){
     var pw = inp.value;
     if(pw.length < 8){
-      say("usersMsg","That password is too short \u2014 use at least 8 characters.","err");
+      say("usersMsg","That password is too short — use at least 8 characters.","err");
       return;
     }
     go.disabled = true;
@@ -667,12 +672,11 @@ function askPassword(u){
   no.className = "abtn quiet";
   no.type = "button";
   no.textContent = "Cancel";
-  no.addEventListener("click",function(){ loadUsers(); });
+  no.addEventListener("click",function(){ box.remove(); });
 
   row.appendChild(f); row.appendChild(go); row.appendChild(no);
-  td.appendChild(p); td.appendChild(row);
-  tr.appendChild(td);
-  body.appendChild(tr);
+  box.appendChild(p); box.appendChild(row);
+  card.appendChild(box);
   inp.focus();
 }
 
@@ -708,20 +712,20 @@ function paintStats(users){
   });
 }
 
-function askDelete(u){
-  var body = document.getElementById("userRows");
-  var tr = document.createElement("tr");
-  var td = document.createElement("td");
-  td.colSpan = 9;
+function askDelete(u, card){
+  var box = document.createElement("div");
+  box.className = "acct-inline";
 
   var p = document.createElement("p");
   p.className = "amsg err";
-  p.style.margin = "0 0 8px";
+  p.style.margin = "0 0 9px";
   p.textContent = "This removes " + u.email + " and their whole to-do list, for good. "
                 + "Type the email to confirm.";
 
   var row = document.createElement("div");
   row.className = "arow";
+  row.style.marginBottom = "0";
+
   var f = document.createElement("div");
   f.className = "afield";
   var inp = document.createElement("input");
@@ -749,15 +753,13 @@ function askDelete(u){
   no.className = "abtn quiet";
   no.type = "button";
   no.textContent = "Keep it";
-  no.addEventListener("click",function(){ loadUsers(); });
+  no.addEventListener("click",function(){ box.remove(); });
 
   row.appendChild(f); row.appendChild(go); row.appendChild(no);
-  td.appendChild(p); td.appendChild(row);
-  tr.appendChild(td);
-  body.appendChild(tr);
+  box.appendChild(p); box.appendChild(row);
+  card.appendChild(box);
   inp.focus();
 }
-
 document.getElementById("refreshUsers").addEventListener("click", loadUsers);
 
 document.getElementById("newUserForm").addEventListener("submit",function(e){
