@@ -146,6 +146,32 @@ button,input,select,textarea{font:inherit;color:inherit}
 .amsg.err{color:var(--margin)}
 .amsg.ok{color:var(--good)}
 .ascroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.log{
+  max-height:420px;overflow-y:auto;border:1px solid var(--rule);
+  border-radius:9px;-webkit-overflow-scrolling:touch;
+}
+.logrow{
+  display:flex;gap:10px;align-items:baseline;padding:7px 12px;
+  border-top:1px solid var(--rule);font-size:.83rem;
+}
+.logrow:first-child{border-top:none}
+.logrow .when{
+  flex:0 0 92px;font-size:.67rem;color:var(--ink-faint);
+  font-variant-numeric:tabular-nums;
+}
+.logrow .who{
+  flex:0 0 100px;font-weight:600;overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap;
+}
+.logrow .what{flex:1 1 auto;min-width:0;overflow-wrap:anywhere}
+.logrow .why{
+  flex:0 0 auto;font-size:.6rem;letter-spacing:.06em;
+  text-transform:uppercase;color:var(--ink-faint);
+}
+.logrow.gone .what{text-decoration:line-through;color:var(--ink-faint)}
+.logrow.stopped .what{color:var(--margin)}
+.logrow.stopped .why{color:var(--margin)}
+.logempty{padding:18px 12px;color:var(--ink-faint);font-size:.83rem}
 .check{
   display:flex;align-items:baseline;gap:10px;padding:8px 0;
   border-top:1px solid var(--rule);font-size:.84rem;
@@ -205,7 +231,7 @@ button,input,select,textarea{font:inherit;color:inherit}
         <div class="ascroll">
           <table class="atable" id="userTable">
             <thead><tr>
-              <th>Email</th><th>Approved</th><th>Confirmed</th><th>Last signed in</th>
+              <th>Email</th><th>Access</th><th>Approved</th><th>Confirmed</th><th>Last signed in</th>
               <th>AI today</th><th>To-do</th><th></th>
             </tr></thead>
             <tbody id="userRows"></tbody>
@@ -290,6 +316,38 @@ button,input,select,textarea{font:inherit;color:inherit}
         <div class="ask-out" id="askOut"></div>
         <p class="ex-left" id="askLeft" style="margin-top:10px"></p>
         <p class="amsg" id="askMsg">Knows how this dashboard is put together.</p>
+      </div>
+
+      <div class="sec">
+        <p class="sec-h">Stored explanations</p>
+        <div class="stats" id="cacheStats"></div>
+        <form id="cacheForm">
+          <div class="arow">
+            <div class="afield">
+              <label for="cacheTerm">Search what's stored</label>
+              <input type="text" id="cacheTerm" autocomplete="off" placeholder="e.g. hastings">
+            </div>
+            <button type="submit" class="abtn" id="cacheGo">Search</button>
+            <button type="button" class="abtn quiet" id="cacheWipe">Delete all matching</button>
+          </div>
+        </form>
+        <p class="amsg" id="cacheMsg">A word to look for, not a command. Leave it empty for the most-asked.</p>
+        <div class="ascroll" style="margin-top:12px">
+          <table class="atable" id="cacheTable">
+            <thead><tr><th>Topic</th><th>Served</th><th>Made by</th><th></th></tr></thead>
+            <tbody id="cacheRows"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="sec">
+        <p class="sec-h">Chat log</p>
+        <div class="stats" id="logStats"></div>
+        <div class="arow">
+          <button type="button" class="abtn quiet" id="loadLog">Load the last 30 days</button>
+        </div>
+        <div class="log" id="logBox"></div>
+        <p class="amsg" id="logMsg">Live messages, ones you deleted, and ones the filter turned away — newest first.</p>
       </div>
 
       <div class="sec">
@@ -389,6 +447,32 @@ function call(payload){
 }
 
 /* ---------- accounts ---------- */
+
+/* One feature, one person. Approval is the heavier switch and lives in its
+   own button; these two just hand out the explainer and the chat. */
+function flagBtn(u, flag, onNow, labelOn, labelOff){
+  var b = document.createElement("button");
+  b.type = "button";
+  b.className = onNow ? "abtn" : "abtn quiet";
+  b.style.padding = "6px 11px";
+  b.style.fontSize = ".76rem";
+  b.style.marginRight = "6px";
+  b.textContent = onNow ? labelOn : labelOff;
+  b.addEventListener("click",function(){
+    b.disabled = true;
+    call({ action:"flag", userId:u.id, flag:flag, on:!onNow })
+      .then(function(){
+        say("usersMsg",
+            (onNow ? "Took the " : "Gave the ") +
+            (flag === "ai_ok" ? "explainer " : "chat ") +
+            (onNow ? "away from " : "to ") + u.email + ".", "ok");
+        loadUsers();
+      })
+      .catch(function(e){ say("usersMsg", e.message, "err"); b.disabled = false; });
+  });
+  return b;
+}
+
 function loadUsers(){
   say("usersMsg","Loading…");
   call({ action:"list" }).then(function(d){
@@ -406,6 +490,18 @@ function loadUsers(){
         adm.textContent = "owner";
         adm.style.marginLeft = "7px";
         tdE.appendChild(adm);
+      }
+
+      var tdAcc = document.createElement("td");
+      tdAcc.style.whiteSpace = "nowrap";
+      if(u.isAdmin){
+        var own = document.createElement("span");
+        own.className = "tag adm";
+        own.textContent = "all";
+        tdAcc.appendChild(own);
+      } else {
+        tdAcc.appendChild(flagBtn(u,"ai_ok",   u.aiOk,   "AI on",   "AI off"));
+        tdAcc.appendChild(flagBtn(u,"chat_ok", u.chatOk, "Chat on", "Chat off"));
       }
 
       var tdOk = document.createElement("td");
@@ -479,7 +575,7 @@ function loadUsers(){
         tdX.appendChild(del);
       }
 
-      tr.appendChild(tdE); tr.appendChild(tdOk); tr.appendChild(tdC);
+      tr.appendChild(tdE); tr.appendChild(tdAcc); tr.appendChild(tdOk); tr.appendChild(tdC);
       tr.appendChild(tdL); tr.appendChild(tdA); tr.appendChild(tdT);
       tr.appendChild(tdX);
       body.appendChild(tr);
@@ -493,7 +589,7 @@ function askPassword(u){
   var body = document.getElementById("userRows");
   var tr = document.createElement("tr");
   var td = document.createElement("td");
-  td.colSpan = 7;
+  td.colSpan = 8;
 
   var p = document.createElement("p");
   p.className = "amsg";
@@ -581,7 +677,7 @@ function askDelete(u){
   var body = document.getElementById("userRows");
   var tr = document.createElement("tr");
   var td = document.createElement("td");
-  td.colSpan = 7;
+  td.colSpan = 8;
 
   var p = document.createElement("p");
   p.className = "amsg err";
@@ -749,6 +845,159 @@ document.getElementById("askForm").addEventListener("submit",function(e){
   });
 });
 
+
+/* ---------- stored explanations ---------- */
+function cacheStats(){
+  call({ action:"cache", mode:"stats" }).then(function(d){
+    var host = document.getElementById("cacheStats");
+    if(!host) return;
+    host.textContent = "";
+    [[d.stored||0,"stored"],[d.served||0,"served free"]].forEach(function(pair){
+      var box = document.createElement("div");
+      box.className = "stat";
+      var n = document.createElement("div"); n.className = "stat-n"; n.textContent = String(pair[0]);
+      var l = document.createElement("div"); l.className = "stat-l"; l.textContent = pair[1];
+      box.appendChild(n); box.appendChild(l); host.appendChild(box);
+    });
+  }).catch(function(){});
+}
+
+function cacheFind(){
+  var term = (document.getElementById("cacheTerm").value || "").trim();
+  say("cacheMsg","Looking…");
+  call({ action:"cache", mode:"find", term:term }).then(function(d){
+    var body = document.getElementById("cacheRows");
+    body.textContent = "";
+    var rows = d.rows || [];
+    if(!rows.length){
+      say("cacheMsg", term ? "Nothing stored matching that." : "Nothing stored yet.");
+      return;
+    }
+    rows.forEach(function(r){
+      var tr = document.createElement("tr");
+
+      var t = document.createElement("td"); t.textContent = r.topic || ""; tr.appendChild(t);
+      var h = document.createElement("td"); h.className = "num";
+      h.textContent = String(r.hits || 0); tr.appendChild(h);
+      var p = document.createElement("td"); p.textContent = r.provider || ""; tr.appendChild(p);
+
+      var x = document.createElement("td");
+      var b = document.createElement("button");
+      b.type = "button"; b.className = "abtn quiet";
+      b.style.padding = "6px 11px"; b.style.fontSize = ".76rem";
+      b.textContent = "Delete";
+      b.addEventListener("click",function(){
+        b.disabled = true;
+        call({ action:"cache", mode:"delete", key:r.key }).then(function(){
+          tr.remove(); cacheStats();
+          say("cacheMsg","Gone. It'll be written fresh next time someone asks.","ok");
+        }).catch(function(e){ b.disabled = false; say("cacheMsg", e.message, "err"); });
+      });
+      x.appendChild(b); tr.appendChild(x);
+
+      body.appendChild(tr);
+    });
+    say("cacheMsg", rows.length + " shown, most asked first.");
+  }).catch(function(e){ say("cacheMsg", e.message, "err"); });
+}
+
+document.getElementById("cacheForm").addEventListener("submit",function(e){
+  e.preventDefault(); cacheFind();
+});
+
+document.getElementById("cacheWipe").addEventListener("click",function(){
+  var term = (document.getElementById("cacheTerm").value || "").trim();
+  if(!term){
+    say("cacheMsg","Type something to match first — this won't empty the lot.","err");
+    return;
+  }
+  var showing = document.getElementById("cacheRows").children.length;
+  if(!window.confirm("Delete every stored answer matching \u201c" + term + "\u201d?" +
+                     (showing ? "\n\n" + showing + " shown below." : ""))) return;
+  call({ action:"cache", mode:"delete", term:term }).then(function(d){
+    say("cacheMsg","Deleted " + (d.removed || 0) + ".","ok");
+    cacheFind(); cacheStats();
+  }).catch(function(e){ say("cacheMsg", e.message, "err"); });
+});
+
+/* ---------- chat log ---------- */
+function when(iso){
+  var d = new Date(iso);
+  return d.toLocaleDateString("en-GB",{day:"numeric",month:"short"}) + " " +
+         d.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"});
+}
+
+function loadLog(){
+  var box = document.getElementById("logBox");
+  say("logMsg","Loading…");
+  call({ action:"messages" }).then(function(d){
+    box.textContent = "";
+    var rows = d.rows || [];
+
+    var host = document.getElementById("logStats");
+    host.textContent = "";
+    [[d.live||0,"in the chat"],[d.gone||0,"deleted"],[d.stopped||0,"refused"]]
+      .forEach(function(pair){
+        var b = document.createElement("div"); b.className = "stat";
+        var n = document.createElement("div"); n.className = "stat-n"; n.textContent = String(pair[0]);
+        var l = document.createElement("div"); l.className = "stat-l"; l.textContent = pair[1];
+        b.appendChild(n); b.appendChild(l); host.appendChild(b);
+      });
+
+    if(!rows.length){
+      var e = document.createElement("p");
+      e.className = "logempty";
+      e.textContent = "Nothing in the last 30 days.";
+      box.appendChild(e);
+      say("logMsg","");
+      return;
+    }
+
+    rows.forEach(function(r){
+      var row = document.createElement("div");
+      row.className = "logrow" +
+        (r.kind === "deleted" ? " gone" : r.kind === "refused" ? " stopped" : "");
+
+      var w = document.createElement("span"); w.className = "when"; w.textContent = when(r.at);
+      var who = document.createElement("span"); who.className = "who";
+      who.textContent = r.name || r.email || "";
+      who.title = r.email || "";
+      var what = document.createElement("span"); what.className = "what"; what.textContent = r.body || "";
+
+      row.appendChild(w); row.appendChild(who); row.appendChild(what);
+
+      if(r.kind === "live"){
+        var del = document.createElement("button");
+        del.type = "button"; del.className = "abtn quiet";
+        del.style.padding = "3px 9px"; del.style.fontSize = ".68rem";
+        del.textContent = "Delete";
+        del.addEventListener("click",function(){
+          del.disabled = true;
+          call({ action:"delmsg", id:r.id }).then(function(){
+            row.className = "logrow gone";
+            del.remove();
+            var why = document.createElement("span");
+            why.className = "why"; why.textContent = "deleted by you";
+            row.appendChild(why);
+            say("logMsg","Taken out of the chat. Still here, for 30 days.","ok");
+          }).catch(function(e){ del.disabled = false; say("logMsg", e.message, "err"); });
+        });
+        row.appendChild(del);
+      } else {
+        var note = document.createElement("span");
+        note.className = "why"; note.textContent = r.note || r.kind;
+        row.appendChild(note);
+      }
+
+      box.appendChild(row);
+    });
+
+    say("logMsg", rows.length + " entries, newest first.");
+  }).catch(function(e){ say("logMsg", e.message, "err"); });
+}
+
+document.getElementById("loadLog").addEventListener("click", loadLog);
+
 /* ---------- diagnostics ---------- */
 document.getElementById("runDiag").addEventListener("click",function(){
   var out = document.getElementById("diagOut");
@@ -770,11 +1019,13 @@ document.getElementById("runDiag").addEventListener("click",function(){
 
 document.getElementById("testExplain").addEventListener("click",function(){
   say("diagMsg","Asking the explainer about gravity…");
-  sb.functions.invoke("explain",{ body:{ topic:"gravity" } }).then(function(r){
+  /* diag:true spends the test pot, not your own ten and not anybody else's. */
+  sb.functions.invoke("explain",{ body:{ topic:"gravity", diag:true } }).then(function(r){
     var d = r.data || {};
     if(d.text){
       say("diagMsg","Explainer replied with " + d.text.length +
-                         " characters. " + d.remaining + " left today.","ok");
+                         " characters. " + d.remaining +
+                         " of " + (d.limit || 10) + " test runs left today.","ok");
       return;
     }
     if(d.error){ say("diagMsg","Explainer said: " + d.error,"err"); return; }
@@ -828,6 +1079,7 @@ applyTheme(recall(THEME_KEY,null));
     show("mainPanel");
     loadUsers();
     loadWords();
+    cacheStats();
     refreshAskAllowance();
   }).catch(function(){ show("deadEnd"); });
 })();
