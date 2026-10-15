@@ -96,6 +96,29 @@
 :root[data-theme="dark"][data-accent="pink"]{--accent:#f488b4;--accent-soft:#30161f}
 :root[data-theme="dark"][data-accent="teal"]{--accent:#5fd0c4;--accent-soft:#0f2a28}
 
+/* ---------- EASIER-TO-READ TEXT ----------
+   Atkinson Hyperlegible was drawn by the Braille Institute specifically
+   so that letters which usually blur into one another — I l 1, O 0, b d —
+   stay apart. It replaces every font at once rather than only the body,
+   because headings and the word of the day are text too. The stylesheet
+   is only fetched when somebody turns this on, so nobody else pays for
+   it. A slightly taller line and looser letters come with it; those help
+   as much as the shapes do. */
+:root[data-font="plain"]{
+  --font-display:"Atkinson Hyperlegible","Public Sans",system-ui,sans-serif;
+  --font-body:"Atkinson Hyperlegible",-apple-system,"Segoe UI",sans-serif;
+  --font-mono:"Atkinson Hyperlegible",ui-monospace,monospace;
+}
+:root[data-font="plain"] body{
+  line-height:1.65;
+  letter-spacing:.01em;
+}
+:root[data-font="plain"] .tile-name,
+:root[data-font="plain"] .msg-body,
+:root[data-font="plain"] .todo-list{
+  letter-spacing:.015em;
+}
+
 /* ---------- THE APPEARANCE PANEL ---------- */
 .swatches{display:flex;flex-wrap:wrap;gap:9px;margin-top:4px}
 .swatch{
@@ -841,6 +864,10 @@ footer{
           <button type="button" class="mode-btn" data-mode="light">Light</button>
           <button type="button" class="mode-btn" data-mode="dark">Dark</button>
           <button type="button" class="mode-btn" data-mode="system">Match my device</button>
+        </div>
+        <div class="modes" id="fonts">
+          <button type="button" class="mode-btn" data-font="">Normal text</button>
+          <button type="button" class="mode-btn" data-font="plain">Easier to read</button>
         </div>
       </div>
 
@@ -2847,6 +2874,46 @@ function applyTheme(mode){
    bits. Keeping them apart means five extra colours instead of ten extra
    themes, and every one of them works in both. */
 var ACCENT_KEY = "hl.accent";
+var FONT_KEY   = "hl.font";
+
+/* Fetched the first time somebody asks for it and not before, so the
+   people who never turn it on never wait for it. */
+function loadReadableFont(){
+  if(document.getElementById("hlFont")) return;
+  var link = document.createElement("link");
+  link.id   = "hlFont";
+  link.rel  = "stylesheet";
+  link.href = "https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&display=swap";
+  document.head.appendChild(link);
+}
+
+function applyFont(id){
+  if(id === "plain"){
+    loadReadableFont();
+    document.documentElement.setAttribute("data-font","plain");
+  }else{
+    document.documentElement.removeAttribute("data-font");
+  }
+  paintFonts();
+}
+
+function currentFont(){
+  return document.documentElement.getAttribute("data-font") || "";
+}
+
+function paintFonts(){
+  var now = currentFont();
+  var host = document.getElementById("fonts");
+  if(!host) return;
+  Array.prototype.forEach.call(host.children, function(b){
+    b.setAttribute("aria-pressed", (b.dataset.font || "") === now ? "true" : "false");
+  });
+}
+
+function setFont(id){
+  applyFont(id);
+  rememberLook(FONT_KEY, id === "plain" ? "plain" : null);
+}
 var ACCENTS = [
   { id:"blue",   name:"Blue",   swatch:"#1f4fd8" },
   { id:"green",  name:"Green",  swatch:"#15803d" },
@@ -2898,7 +2965,7 @@ function rememberLook(key, value){
   store(key, value);
   if(canSync()){
     var patch = {};
-    patch[key === ACCENT_KEY ? "accent" : "theme"] = value;
+    patch[key === ACCENT_KEY ? "accent" : key === FONT_KEY ? "font" : "theme"] = value;
     try{ sb.auth.updateUser({ data: patch }); }catch(e){}
   }
 }
@@ -2931,6 +2998,14 @@ function setAccent(id){
   });
 })();
 
+(function wireFonts(){
+  var host = document.getElementById("fonts");
+  if(!host) return;
+  Array.prototype.forEach.call(host.children, function(b){
+    b.addEventListener("click", function(){ setFont(b.dataset.font || ""); });
+  });
+})();
+
 (function wireModes(){
   var host = document.getElementById("modes");
   if(!host) return;
@@ -2953,8 +3028,14 @@ function pullLook(supaUser){
     store(ACCENT_KEY, a);
     applyAccent(a);
   }
+  if(typeof meta.font !== "undefined"){
+    var f = meta.font === null ? null : meta.font;
+    store(FONT_KEY, f);
+    applyFont(f);
+  }
   paintModes();
   paintSwatches();
+  paintFonts();
 }
 
 document.getElementById("themeBtn").addEventListener("click",function(){
@@ -2965,6 +3046,7 @@ document.getElementById("themeBtn").addEventListener("click",function(){
 });
 applyTheme(recall(THEME_KEY,null));
 applyAccent(recall(ACCENT_KEY,null));
+applyFont(recall(FONT_KEY,null));
 paintModes();
 
 /* ---------- boot ---------- */
