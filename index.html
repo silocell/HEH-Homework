@@ -1513,12 +1513,19 @@ function openDashboard(who, supaUser){
   currentUser = who;
 
   if(sb){
-    sb.from("profiles").select("approved").eq("id", who.uid).maybeSingle()
+    sb.from("profiles").select("approved,name").eq("id", who.uid).maybeSingle()
       .then(function(r){
         if(r && !r.error && r.data && r.data.approved === false){
           currentUser = null;
           stopSyncTimer();
           showWaiting();
+          return;
+        }
+        /* A name set in the admin panel beats anything guessed from an
+           address. "26paaa@..." does not mangle into a person's name. */
+        if(r && !r.error && r.data && r.data.name && currentUser){
+          currentUser.name = r.data.name;
+          paintGreeting();
         }
       }, function(){});
   }

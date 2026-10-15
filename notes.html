@@ -231,7 +231,7 @@ button,input,select,textarea{font:inherit;color:inherit}
         <div class="ascroll">
           <table class="atable" id="userTable">
             <thead><tr>
-              <th>Email</th><th>Access</th><th>Approved</th><th>Confirmed</th><th>Last signed in</th>
+              <th>Email</th><th>Called</th><th>Access</th><th>Approved</th><th>Confirmed</th><th>Last signed in</th>
               <th>AI today</th><th>To-do</th><th></th>
             </tr></thead>
             <tbody id="userRows"></tbody>
@@ -492,6 +492,35 @@ function loadUsers(){
         tdE.appendChild(adm);
       }
 
+      var tdName = document.createElement("td");
+      var nameIn = document.createElement("input");
+      nameIn.type = "text";
+      nameIn.value = u.name || "";
+      nameIn.placeholder = "—";
+      nameIn.autocomplete = "off";
+      nameIn.style.width = "96px";
+      nameIn.style.padding = "5px 7px";
+      nameIn.style.fontSize = ".78rem";
+      nameIn.title = "What the greeting and the chat call them";
+      function saveName(){
+        var v = nameIn.value.trim();
+        if(v === (u.name || "")) return;
+        nameIn.disabled = true;
+        call({ action:"setname", userId:u.id, name:v })
+          .then(function(){
+            u.name = v;
+            say("usersMsg", v ? ("Calling " + u.email + " \u201c" + v + "\u201d now.")
+                              : ("Cleared the name for " + u.email + "."), "ok");
+          })
+          .catch(function(e){ nameIn.value = u.name || ""; say("usersMsg", e.message, "err"); })
+          .then(function(){ nameIn.disabled = false; });
+      }
+      nameIn.addEventListener("blur", saveName);
+      nameIn.addEventListener("keydown", function(e){
+        if(e.key === "Enter"){ e.preventDefault(); nameIn.blur(); }
+      });
+      tdName.appendChild(nameIn);
+
       var tdAcc = document.createElement("td");
       tdAcc.style.whiteSpace = "nowrap";
       if(u.isAdmin){
@@ -580,7 +609,7 @@ function loadUsers(){
         tdX.appendChild(del);
       }
 
-      tr.appendChild(tdE); tr.appendChild(tdAcc); tr.appendChild(tdOk); tr.appendChild(tdC);
+      tr.appendChild(tdE); tr.appendChild(tdName); tr.appendChild(tdAcc); tr.appendChild(tdOk); tr.appendChild(tdC);
       tr.appendChild(tdL); tr.appendChild(tdA); tr.appendChild(tdT);
       tr.appendChild(tdX);
       body.appendChild(tr);
@@ -594,7 +623,7 @@ function askPassword(u){
   var body = document.getElementById("userRows");
   var tr = document.createElement("tr");
   var td = document.createElement("td");
-  td.colSpan = 8;
+  td.colSpan = 9;
 
   var p = document.createElement("p");
   p.className = "amsg";
@@ -682,7 +711,7 @@ function askDelete(u){
   var body = document.getElementById("userRows");
   var tr = document.createElement("tr");
   var td = document.createElement("td");
-  td.colSpan = 8;
+  td.colSpan = 9;
 
   var p = document.createElement("p");
   p.className = "amsg err";
