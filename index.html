@@ -647,6 +647,14 @@ a.gs-title:hover{text-decoration:underline!important}
   background:var(--paper);padding:12px 14px;
   display:flex;flex-direction:column;gap:12px;
 }
+/* A message of your own that has been typed but not yet checked. Only
+   ever visible to the person who wrote it — nothing is shown to anyone
+   else until the checker has passed it and it is in the database. */
+.msg.pending{opacity:.5}
+.msg.pending .msg-time{font-style:italic}
+@keyframes msg-wait{0%,100%{opacity:.35}50%{opacity:.7}}
+.msg.pending{animation:msg-wait 1.4s ease-in-out infinite}
+
 .msg{display:flex;gap:10px;align-items:flex-start;min-width:0}
 .msg-who{
   flex:0 0 auto;font-size:.76rem;font-weight:700;color:var(--accent);
@@ -2695,6 +2703,52 @@ function clockOf(iso){
   }catch(e){ return ""; }
 }
 
+/* ---------- a message that is still being checked ----------
+   Pre-moderation means a message does not exist until the checker has
+   passed it, so there is nothing for anyone to see until then. The person
+   who typed it should not have to stare at nothing in the meantime, so
+   their own copy goes up at once, greyed, and is replaced by the real one
+   when it lands. Nobody else's screen changes. */
+function showPending(text){
+  var log = document.getElementById("chatLog");
+  var empty = log.querySelector(".chat-empty");
+  if(empty) empty.remove();
+
+  var row = document.createElement("div");
+  row.className = "msg pending";
+  row.setAttribute("data-pending", text);
+
+  var who = document.createElement("span");
+  who.className = "msg-who me";
+  who.textContent = (currentUser && currentUser.name) || "You";
+
+  var body = document.createElement("span");
+  body.className = "msg-body";
+  body.textContent = text;
+
+  var time = document.createElement("span");
+  time.className = "msg-time";
+  time.textContent = "sending…";
+
+  row.appendChild(who); row.appendChild(body); row.appendChild(time);
+  log.appendChild(row);
+  scrollChatDown();
+  return row;
+}
+
+/* The real message can arrive by subscription before the send call has
+   returned, so the greyed copy is cleared from both directions. */
+function clearPending(row){
+  if(row && row.parentNode) row.remove();
+}
+function clearPendingLike(text){
+  var log = document.getElementById("chatLog");
+  if(!log) return;
+  Array.prototype.forEach.call(log.querySelectorAll(".msg.pending"), function(r){
+    if(r.getAttribute("data-pending") === text) r.remove();
+  });
+}
+
 function addMessage(m, atTop){
   if(!m || !m.id || chatSeen[m.id]) return;
   chatSeen[m.id] = true;
@@ -2702,6 +2756,13 @@ function addMessage(m, atTop){
   var log = document.getElementById("chatLog");
   var empty = log.querySelector(".chat-empty");
   if(empty) empty.remove();
+
+  /* Your own message has arrived properly — the greyed copy can go. The
+     masked text is compared too, so a hashed-out message still clears. */
+  if(currentUser && m.user_id === currentUser.uid){
+    clearPendingLike(m.original || m.body);
+    clearPendingLike(m.body);
+  }
 
   var row = document.createElement("div");
   row.className = "msg";
@@ -2843,6 +2904,16 @@ document.getElementById("chatForm").addEventListener("submit",function(e){
   btn.disabled = true;
   chatSay("");
 
+  /* Up straight away, greyed, and the box is cleared so the next thing can
+     be typed. If it is refused the text comes back rather than being lost. */
+  var pending = showPending(text);
+  input.value = "";
+
+  function putItBack(){
+    clearPending(pending);
+    if(!input.value) input.value = text;
+  }
+
   /* The message is checked by a moderation service before it is stored, so
      a send is slower than a normal request. Twenty seconds is generous for
      that and still short enough not to feel stuck. */
@@ -2852,12 +2923,16 @@ document.getElementById("chatForm").addEventListener("submit",function(e){
   ).then(function(r){
     var d = (r && r.data) || {};
     if(d.ok){
-      input.value = "";
-      /* You just sent it, so show it, whether or not you had scrolled up. */
-      return loadChat(false).then(scrollChatDown);
+      /* The subscription may have replaced it already; this covers the
+         case where it has not. */
+      return loadChat(false).then(function(){
+        clearPending(pending);
+        scrollChatDown();
+      });
     }
-    if(d.error){ chatSay(d.error, true); return; }
+    if(d.error){ putItBack(); chatSay(d.error, true); return; }
     return readInvokeError(r && r.error).then(function(msg){
+      putItBack();
       chatSay(msg || "Couldn't send that. Try again.", true);
     });
   }).catch(function(err){
@@ -2867,20 +2942,23 @@ document.getElementById("chatForm").addEventListener("submit",function(e){
       chatSay("That's taking a while. Checking whether it arrived…");
       return loadChat(false).then(function(){
         scrollChatDown();
-        var mine = document.getElementById("chatLog").lastElementChild;
-        var sent = mine && mine.textContent && mine.textContent.indexOf(text) !== -1;
-        if(sent){ input.value = ""; chatSay(""); }
-        else chatSay("No answer from the server. Try sending it again.", true);
+        var log = document.getElementById("chatLog");
+        var landed = Array.prototype.some.call(
+          log.querySelectorAll(".msg:not(.pending) .msg-body"),
+          function(el){ return el.textContent === text; }
+        );
+        if(landed){ clearPending(pending); chatSay(""); }
+        else { putItBack(); chatSay("No answer from the server. Try sending it again.", true); }
       });
     }
+    putItBack();
     chatSay("Couldn't send that. Check your connection.", true);
-  }).then(function(){
+  }).then(done, done);
+
+  function done(){
     chatBusy = false;
     btn.disabled = false;
-  }, function(){
-    chatBusy = false;
-    btn.disabled = false;
-  });
+  }
 });
 
 /* ---------- theme ---------- */
