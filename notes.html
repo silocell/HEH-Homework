@@ -404,6 +404,16 @@ button,input,select,textarea{font:inherit;color:inherit}
         <p class="amsg" id="logMsg">Live messages, ones you deleted, and ones the filter turned away — newest first.</p>
       </div>
 
+      <div class="sec">
+        <p class="sec-h">Board log</p>
+        <div class="stats" id="boardStats"></div>
+        <div class="arow">
+          <button type="button" class="abtn quiet" id="loadBoardLog">Load the last 30 days</button>
+        </div>
+        <div class="log" id="boardBox"></div>
+        <p class="amsg" id="boardLogMsg">Notices, questions and replies &mdash; live, hashed out, and removed. Anything the filter refused is in the chat log above, since both share it.</p>
+      </div>
+
       <div class="sec" id="backupSec" hidden>
         <p class="sec-h">Backup</p>
         <div class="arow">
@@ -877,6 +887,74 @@ document.getElementById("sharedForm").addEventListener("submit", function(e){
     say("sharedMsg", err.message, "err");
   }).then(function(){ btn.disabled = false; });
 });
+
+/* ---------- board log ---------- */
+function loadBoardLog(){
+  var box = document.getElementById("boardBox");
+  say("boardLogMsg","Loading…");
+  call({ action:"boardlog" }).then(function(d){
+    box.textContent = "";
+    var rows = d.rows || [];
+
+    var host = document.getElementById("boardStats");
+    host.textContent = "";
+    [[d.live||0,"on the board"],[d.hashed||0,"hashed out"],[d.gone||0,"removed"]]
+      .forEach(function(pair){
+        var b = document.createElement("div"); b.className = "stat";
+        var n = document.createElement("div"); n.className = "stat-n"; n.textContent = String(pair[0]);
+        var l = document.createElement("div"); l.className = "stat-l"; l.textContent = pair[1];
+        b.appendChild(n); b.appendChild(l); host.appendChild(b);
+      });
+
+    if(!rows.length){
+      var e = document.createElement("p");
+      e.className = "logempty";
+      e.textContent = "Nothing on the board in the last 30 days.";
+      box.appendChild(e);
+      say("boardLogMsg","");
+      return;
+    }
+
+    rows.forEach(function(r){
+      var row = document.createElement("div");
+      row.className = "logrow" +
+        (r.kind === "deleted" ? " gone" : r.kind === "masked" ? " hashed" : "");
+
+      var w = document.createElement("span"); w.className = "when"; w.textContent = when(r.at);
+      var who = document.createElement("span"); who.className = "who";
+      who.textContent = (r.name || r.email || "") + " · " + (r.label || "");
+      who.title = r.email || "";
+      var what = document.createElement("span"); what.className = "what"; what.textContent = r.body || "";
+      row.appendChild(w); row.appendChild(who); row.appendChild(what);
+
+      if(r.kind !== "deleted"){
+        var del = document.createElement("button");
+        del.type = "button"; del.className = "abtn quiet";
+        del.style.padding = "3px 9px"; del.style.fontSize = ".68rem";
+        del.textContent = "Remove";
+        del.addEventListener("click",function(){
+          del.disabled = true;
+          call({ action:"delboard", id:r.id, table:r.table }).then(function(){
+            row.className = "logrow gone";
+            del.remove();
+            var why = document.createElement("span");
+            why.className = "why"; why.textContent = "removed by you";
+            row.appendChild(why);
+            say("boardLogMsg","Taken off the board. Still here, for 30 days.","ok");
+          }).catch(function(e){ del.disabled = false; say("boardLogMsg", e.message, "err"); });
+        });
+        row.appendChild(del);
+      }else if(r.note){
+        var why2 = document.createElement("span");
+        why2.className = "why"; why2.textContent = r.note;
+        row.appendChild(why2);
+      }
+      box.appendChild(row);
+    });
+    say("boardLogMsg","");
+  }).catch(function(e){ say("boardLogMsg", e.message, "err"); });
+}
+document.getElementById("loadBoardLog").addEventListener("click", loadBoardLog);
 
 /* ---------- exceptions left open ----------
    Making an account for a non-school address needs a note in the database
