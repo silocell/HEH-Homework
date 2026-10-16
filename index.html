@@ -622,6 +622,38 @@ a.gs-title:hover{text-decoration:underline!important}
 }
 .ex-clear:hover,.ex-clear:focus-visible{color:var(--ink);border-color:var(--ink-faint)}
 .ex-err{color:var(--margin);font-size:.85rem;margin-top:12px;line-height:1.5}
+/* ---- Wikipedia lookup: three rungs, first two free ---- */
+.wiki-src{
+  font-size:.75rem;color:var(--ink-faint);text-transform:uppercase;
+  letter-spacing:.06em;margin:14px 0 6px
+}
+.wiki-out{font-size:.9rem;line-height:1.6}
+.wiki-out:empty{margin:0}
+.wiki-title{font-weight:600;margin:0 0 6px;font-size:1rem}
+.wiki-extract{margin:0 0 10px;white-space:pre-wrap}
+.wiki-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.wiki-link{
+  font-size:.85rem;color:var(--accent);text-decoration:none;
+  border-bottom:1px solid transparent
+}
+.wiki-link:hover,.wiki-link:focus-visible{border-bottom-color:var(--accent)}
+.wiki-up{
+  font:inherit;font-size:.82rem;cursor:pointer;background:none;
+  color:var(--ink-faint);border:1px solid var(--ink-faint);
+  border-radius:7px;padding:5px 10px
+}
+.wiki-up:hover,.wiki-up:focus-visible{color:var(--ink);border-color:var(--ink)}
+.wiki-up[disabled]{opacity:.55;cursor:default}
+.wiki-guesses{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.wiki-guess{
+  font:inherit;font-size:.82rem;cursor:pointer;background:none;
+  color:var(--ink);border:1px solid var(--ink-faint);
+  border-radius:7px;padding:5px 10px
+}
+.wiki-guess:hover,.wiki-guess:focus-visible{border-color:var(--accent)}
+.wiki-fell{font-size:.8rem;color:var(--ink-faint);margin:0 0 8px}
+.wiki-err{color:var(--margin);font-size:.85rem;margin-top:12px;line-height:1.5}
+
 
 /* ---------- CHAT ---------- */
 .chat{margin-top:20px}
@@ -645,6 +677,7 @@ a.gs-title:hover{text-decoration:underline!important}
   .todo-list{ max-height:clamp(160px,30vh,300px); overflow-y:auto }
   .wotd-scroll{ max-height:clamp(120px,22vh,220px); overflow-y:auto; padding-right:6px }
   .asked{ max-height:clamp(140px,26vh,260px); overflow-y:auto; padding-right:6px }
+  .wiki-out{ max-height:clamp(200px,36vh,360px); overflow-y:auto; padding-right:6px }
 }
 
 /* A faint rule at the top so a scrolled box reads as "there is more
@@ -659,7 +692,7 @@ a.gs-title:hover{text-decoration:underline!important}
 .asked::-webkit-scrollbar-thumb{
   background:var(--rule); border-radius:4px;
 }
-.ex-out, .todo-list, .wotd-scroll, .asked{ scrollbar-width:thin }
+.ex-out, .todo-list, .wotd-scroll, .asked, .wiki-out{ scrollbar-width:thin }
 
 /* ---------- THE BOARD ----------
    Notices and questions share one panel and one look, because they are
@@ -955,6 +988,17 @@ footer{
           <button type="submit" class="btn" id="linkAdd">Add</button>
         </form>
         <p class="link-msg" id="linkMsg" hidden></p>
+      </div>
+
+      <div class="panel" id="wikiPanel">
+        <p class="panel-title">Look it up</p>
+        <form class="ex-form" id="wikiForm">
+          <input type="text" id="wikiInput" placeholder="e.g. the Romans, igneous rock…" autocomplete="off" aria-label="Topic to look up">
+          <button type="submit" id="wikiBtn">Look up</button>
+        </form>
+        <div class="wiki-out" id="wikiOut"></div>
+        <p class="wiki-err" id="wikiErr" hidden></p>
+        <p class="ex-note">Straight from Wikipedia, so it's free and doesn't touch your ten.</p>
       </div>
 
       <div class="panel" id="explainPanel" hidden>
@@ -2787,6 +2831,208 @@ if(exForm) exForm.addEventListener("submit",function(e){
     btn.disabled = false;
     btn.textContent = "Explain";
   }
+});
+
+
+/* ---------- LOOK IT UP: three rungs ----------
+   Simple English Wikipedia first, because it is written for people still
+   learning English and a Year 7 can actually read it. If Simple hasn't got
+   the article — it has about 260,000 against English Wikipedia's 7 million
+   — fall through to English rather than show a dead end.
+
+   Both rungs are fetched by this page straight from wikipedia.org. Nothing
+   goes through our server, so they cost nothing, and the school's web
+   filter still sees every request and applies its own rules. That is the
+   difference between this and framing another site: we are not standing
+   in the middle of it.
+
+   The third rung, the explainer, costs one of the ten, so it only ever
+   happens on a press and the button says the price on it.
+   ------------------------------------------------------------------- */
+var wikiBusy = false;
+
+function wikiError(msg){
+  var e = document.getElementById("wikiErr");
+  if(!e) return;
+  e.textContent = msg;
+  e.hidden = !msg;
+}
+
+/* Wikipedia is quick when it answers at all. Eight seconds then give up,
+   so a flaky school connection doesn't leave the button stuck. */
+function wikiGet(url){
+  var ctl = new AbortController();
+  var timer = setTimeout(function(){ ctl.abort(); }, 8000);
+  return fetch(url, { signal: ctl.signal, headers: { "Accept": "application/json" } })
+    .then(function(r){
+      clearTimeout(timer);
+      if(r.status === 404) return null;        /* no such article */
+      if(!r.ok) throw new Error("http " + r.status);
+      return r.json();
+    }, function(e){ clearTimeout(timer); throw e; });
+}
+
+function wikiSummary(host, title){
+  var path = encodeURIComponent(String(title).trim().replace(/\s+/g, "_"));
+  return wikiGet("https://" + host + ".wikipedia.org/api/rest_v1/page/summary/" + path);
+}
+
+/* Three nearest article titles, for when the spelling is slightly off. */
+function wikiGuesses(term){
+  var u = "https://en.wikipedia.org/w/api.php?action=query&list=search" +
+          "&srsearch=" + encodeURIComponent(term) +
+          "&format=json&origin=*&srlimit=3";
+  return wikiGet(u).then(function(d){
+    var hits = (d && d.query && d.query.search) || [];
+    return hits.map(function(h){ return h.title; });
+  }).catch(function(){ return []; });
+}
+
+function wikiWhy(d){
+  if(!d) return "missing";
+  if(d.type === "disambiguation") return "ambiguous";   /* a list of meanings, not an answer */
+  if(!(d.extract && d.extract.trim().length > 20)) return "missing";
+  return "";
+}
+
+function renderWiki(d, host, fellBack){
+  var out = document.getElementById("wikiOut");
+  out.textContent = "";
+
+  var src = document.createElement("p");
+  src.className = "wiki-src";
+  src.textContent = host === "simple" ? "Simple English Wikipedia" : "English Wikipedia";
+  out.appendChild(src);
+
+  if(fellBack){
+    var note = document.createElement("p");
+    note.className = "wiki-fell";
+    note.textContent = fellBack === "ambiguous"
+      ? "Simple English only lists different meanings of this, so this is the full version."
+      : "Simple English hasn't got this one, so this is the full version.";
+    out.appendChild(note);
+  }
+
+  var h = document.createElement("p");
+  h.className = "wiki-title";
+  h.textContent = d.title || "";
+  out.appendChild(h);
+
+  var p = document.createElement("p");
+  p.className = "wiki-extract";
+  p.textContent = d.extract;
+  out.appendChild(p);
+
+  var row = document.createElement("div");
+  row.className = "wiki-actions";
+
+  var url = (d.content_urls && d.content_urls.desktop && d.content_urls.desktop.page) || "";
+  if(url){
+    var a = document.createElement("a");
+    a.className = "wiki-link";
+    a.href = url;
+    a.target = "_blank";
+    a.rel = "noopener noreferrer";
+    a.textContent = "Read the full article";
+    row.appendChild(a);
+  }
+
+  /* The paid rung. Only offered when the explainer is actually available,
+     and it never fires on its own — five misspelt words should not quietly
+     cost half of somebody's allowance for the day. */
+  var exPanel = document.getElementById("explainPanel");
+  if(exPanel && !exPanel.hidden){
+    var up = document.createElement("button");
+    up.type = "button";
+    up.className = "wiki-up";
+    up.textContent = "Explain this properly — uses 1 of your 10";
+    up.addEventListener("click", function(){
+      var input = document.getElementById("exInput");
+      var form  = document.getElementById("exForm");
+      if(!input || !form) return;
+      input.value = d.title || "";
+      exPanel.scrollIntoView({ behavior:"smooth", block:"nearest" });
+      if(typeof form.requestSubmit === "function") form.requestSubmit();
+      else form.dispatchEvent(new Event("submit",{ cancelable:true, bubbles:true }));
+    });
+    row.appendChild(up);
+  }
+
+  if(row.childNodes.length) out.appendChild(row);
+}
+
+function renderWikiGuesses(term, titles){
+  var out = document.getElementById("wikiOut");
+  out.textContent = "";
+
+  var p = document.createElement("p");
+  p.className = "wiki-fell";
+  p.textContent = titles.length
+    ? "Wikipedia hasn't got an article called that. Did you mean:"
+    : "Wikipedia hasn't got an article on that. Try different wording.";
+  out.appendChild(p);
+
+  if(!titles.length) return;
+
+  var wrap = document.createElement("div");
+  wrap.className = "wiki-guesses";
+  titles.forEach(function(t){
+    var b = document.createElement("button");
+    b.type = "button";
+    b.className = "wiki-guess";
+    b.textContent = t;
+    b.addEventListener("click", function(){
+      var input = document.getElementById("wikiInput");
+      if(input) input.value = t;
+      wikiLookup(t);
+    });
+    wrap.appendChild(b);
+  });
+  out.appendChild(wrap);
+}
+
+function wikiLookup(term){
+  term = String(term || "").trim();
+  if(!term || wikiBusy) return;
+
+  var btn = document.getElementById("wikiBtn");
+  var out = document.getElementById("wikiOut");
+  wikiBusy = true;
+  wikiError("");
+  out.textContent = "";
+  btn.disabled = true;
+  btn.textContent = "Looking…";
+
+  /* Rung one, then rung two, then the near misses. */
+  wikiSummary("simple", term).then(function(d){
+    var why = wikiWhy(d);
+    if(!why){ renderWiki(d, "simple", ""); return; }
+    return wikiSummary("en", term).then(function(d2){
+      if(!wikiWhy(d2)){ renderWiki(d2, "en", why); return; }
+      return wikiGuesses(term).then(function(titles){
+        renderWikiGuesses(term, titles);
+      });
+    });
+  }).catch(function(err){
+    if(err && err.name === "AbortError"){
+      wikiError("Wikipedia didn't answer in time. Try again in a moment.");
+    }else{
+      wikiError("Couldn't reach Wikipedia. It may be blocked on this network, or your connection dropped.");
+    }
+  }).then(done, done);
+
+  function done(){
+    wikiBusy = false;
+    btn.disabled = false;
+    btn.textContent = "Look up";
+  }
+}
+
+var wikiForm = document.getElementById("wikiForm");
+if(wikiForm) wikiForm.addEventListener("submit", function(e){
+  e.preventDefault();
+  var input = document.getElementById("wikiInput");
+  if(input) wikiLookup(input.value);
 });
 
 /* ---------- settings link ----------
