@@ -647,6 +647,84 @@ a.gs-title:hover{text-decoration:underline!important}
 }
 .ex-out, .todo-list, .wotd-scroll, .asked{ scrollbar-width:thin }
 
+/* ---------- THE BOARD ----------
+   Notices and questions share one panel and one look, because they are
+   the same thing with different expectations: a notice is a post, a
+   question is a post waiting for a reply. */
+.board-tabs{display:flex;gap:8px;margin:0 0 14px}
+.board-tab{
+  padding:7px 14px;border-radius:999px;font:inherit;font-size:.82rem;
+  border:1px solid var(--rule);background:var(--paper);color:var(--ink-soft);
+  cursor:pointer;
+}
+.board-tab[aria-pressed="true"]{
+  background:var(--accent-soft);border-color:var(--accent);color:var(--accent);
+  font-weight:600;
+}
+
+.board-form{display:flex;gap:10px;align-items:flex-end}
+.board-form textarea{
+  flex:1 1 auto;min-width:0;resize:vertical;
+  padding:10px 12px;border:1px solid var(--rule);border-radius:10px;
+  background:var(--paper);color:var(--ink);font:inherit;font-size:.9rem;
+  line-height:1.5;
+}
+.board-form button{flex:none}
+
+.board-list{
+  display:flex;flex-direction:column;gap:12px;margin-top:16px;
+  max-height:clamp(260px,50vh,560px);overflow-y:auto;padding-right:6px;
+}
+.board-list::-webkit-scrollbar{width:8px}
+.board-list::-webkit-scrollbar-thumb{background:var(--rule);border-radius:4px}
+.board-list{scrollbar-width:thin}
+
+.post{
+  border:1px solid var(--rule);border-radius:11px;
+  background:var(--paper);padding:13px 14px;
+}
+.post-top{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap;margin-bottom:6px}
+.post-who{font-weight:600;font-size:.84rem}
+.post-when{font-size:.72rem;color:var(--ink-faint)}
+.post-body{font-size:.9rem;line-height:1.55;overflow-wrap:anywhere;white-space:pre-wrap}
+.post-acts{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.post-acts button{
+  padding:5px 11px;border-radius:999px;font:inherit;font-size:.74rem;
+  border:1px solid var(--rule);background:var(--card);color:var(--ink-soft);
+  cursor:pointer;
+}
+.post-acts button:hover{border-color:var(--accent);color:var(--accent)}
+
+/* An answered question steps back so the open ones stand out. */
+.post.solved{opacity:.62}
+.tag{
+  font-size:.68rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
+  padding:2px 8px;border-radius:999px;
+}
+.tag.open{background:var(--accent-soft);color:var(--accent)}
+.tag.done{background:var(--chip);color:var(--good);border:1px solid var(--rule)}
+
+.replies{
+  margin:11px 0 0;padding:11px 0 0;border-top:1px solid var(--rule);
+  display:flex;flex-direction:column;gap:9px;
+}
+.reply{display:flex;gap:9px;align-items:flex-start;font-size:.85rem;min-width:0}
+.reply-who{font-weight:600;flex:none;color:var(--ink-soft)}
+.reply-body{flex:1 1 auto;min-width:0;overflow-wrap:anywhere;line-height:1.5}
+.reply-x{
+  flex:none;border:none;background:none;color:var(--ink-faint);
+  cursor:pointer;font-size:.9rem;line-height:1;padding:0 2px;
+}
+.reply-x:hover{color:var(--margin)}
+
+.reply-form{display:flex;gap:8px;margin-top:10px}
+.reply-form input{
+  flex:1 1 auto;min-width:0;
+  padding:8px 10px;border:1px solid var(--rule);border-radius:9px;
+  background:var(--card);color:var(--ink);font:inherit;font-size:.84rem;
+}
+.board-empty{font-size:.85rem;color:var(--ink-faint);padding:6px 0}
+
 .chat-watch{
   font-size:.72rem;color:var(--ink-faint);line-height:1.4;
 }
@@ -936,6 +1014,27 @@ footer{
       <button type="submit" id="chatBtn">Send</button>
     </form>
     <p class="chat-msg" id="chatErr"></p>
+  </div>
+
+  <div class="panel board" id="boardPanel" hidden>
+    <div class="chat-head">
+      <p class="panel-title">The board</p>
+      <p class="chat-watch">Notices last two weeks. Questions stay until they&rsquo;re answered. Shiv can see everything here, including anything deleted.</p>
+    </div>
+
+    <div class="board-tabs" id="boardTabs">
+      <button type="button" class="board-tab" data-kind="notice" aria-pressed="true">Noticeboard</button>
+      <button type="button" class="board-tab" data-kind="question" aria-pressed="false">Homework questions</button>
+    </div>
+
+    <form class="board-form" id="boardForm">
+      <textarea id="boardInput" maxlength="600" rows="2" aria-label="What do you want to post?"
+                placeholder="Does anyone have Friday&rsquo;s French sheet?"></textarea>
+      <button type="submit" id="boardBtn">Post</button>
+    </form>
+    <p class="chat-msg" id="boardErr"></p>
+
+    <div class="board-list" id="boardList"></div>
   </div>
 
   <footer>
@@ -1645,6 +1744,7 @@ document.getElementById("loginForm").addEventListener("submit",function(e){
 document.getElementById("switchBtn").addEventListener("click",function(){
   stopSyncTimer();
   stopChat();
+  stopBoard();
   document.getElementById("moreBtn").hidden = true;
   if(sb){ try{ sb.auth.signOut(); }catch(e){} }
   currentUser = null;
@@ -1720,6 +1820,7 @@ function openDashboard(who, supaUser){
   refreshAllowance();
   showOwnerButton();
   startChat();
+  startBoard();
   document.getElementById("searchInput").focus();
 }
 
@@ -2979,6 +3080,290 @@ document.getElementById("chatForm").addEventListener("submit",function(e){
 
   function done(){
     chatBusy = false;
+    btn.disabled = false;
+  }
+});
+
+/* ==================================================================
+   THE BOARD
+   ------------------------------------------------------------------
+   Notices and homework questions. Reading comes from the database,
+   which only lets invited people see it. Posting goes through the chat
+   function, which runs every post through the same filter and the same
+   checker as a chat message — one pipeline, so the two can never drift
+   apart and let something through one but not the other.
+
+   Everything here is built from real elements. Not one character that
+   somebody typed is ever handed to the page as markup.
+   ================================================================== */
+var boardKind = "notice";
+var boardBusy = false;
+var boardPoll = null;
+
+function boardSay(text, bad){
+  var el = document.getElementById("boardErr");
+  if(!el) return;
+  el.textContent = text || "";
+  el.className = "chat-msg" + (bad ? " err" : "");
+}
+
+function whenOf(iso){
+  try{
+    var d = new Date(iso), now = new Date();
+    var sameDay = d.toDateString() === now.toDateString();
+    return sameDay
+      ? d.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"})
+      : d.toLocaleDateString("en-GB",{day:"numeric",month:"short"});
+  }catch(e){ return ""; }
+}
+
+function actBtn(label, onClick){
+  var b = document.createElement("button");
+  b.type = "button";
+  b.textContent = label;
+  b.addEventListener("click", onClick);
+  return b;
+}
+
+function replyEl(r, mine){
+  var row = document.createElement("div");
+  row.className = "reply";
+
+  var who = document.createElement("span");
+  who.className = "reply-who";
+  who.textContent = (r.name || "Someone") + ":";
+  row.appendChild(who);
+
+  var body = document.createElement("span");
+  body.className = "reply-body";
+  body.textContent = r.body;
+  row.appendChild(body);
+
+  if(mine || isOwner()){
+    var x = document.createElement("button");
+    x.type = "button";
+    x.className = "reply-x";
+    x.textContent = "×";
+    x.setAttribute("aria-label","Remove this reply");
+    x.addEventListener("click", function(){
+      x.disabled = true;
+      boardCall({ action:"delreply", id:r.id }).then(loadBoard, function(err){
+        boardSay(err.message, true); x.disabled = false;
+      });
+    });
+    row.appendChild(x);
+  }
+  return row;
+}
+
+function postEl(p, replies, meId){
+  var mine = p.user_id === meId;
+  var answered = !!p.solved_at || replies.length > 0;
+
+  var card = document.createElement("div");
+  card.className = "post" + (p.solved_at ? " solved" : "");
+
+  var top = document.createElement("div");
+  top.className = "post-top";
+
+  var who = document.createElement("span");
+  who.className = "post-who";
+  who.textContent = p.name || "Someone";
+  top.appendChild(who);
+
+  var when = document.createElement("span");
+  when.className = "post-when";
+  when.textContent = whenOf(p.created_at);
+  top.appendChild(when);
+
+  if(p.kind === "question"){
+    var tag = document.createElement("span");
+    tag.className = "tag " + (p.solved_at ? "done" : "open");
+    tag.textContent = p.solved_at ? "answered" : (answered ? "has replies" : "unanswered");
+    top.appendChild(tag);
+  }
+  card.appendChild(top);
+
+  var body = document.createElement("div");
+  body.className = "post-body";
+  body.textContent = p.body;
+  card.appendChild(body);
+
+  if(replies.length){
+    var box = document.createElement("div");
+    box.className = "replies";
+    replies.forEach(function(r){
+      box.appendChild(replyEl(r, r.user_id === meId));
+    });
+    card.appendChild(box);
+  }
+
+  var acts = document.createElement("div");
+  acts.className = "post-acts";
+
+  acts.appendChild(actBtn("Reply", function(){
+    if(card.querySelector(".reply-form")) return;
+    var f = document.createElement("form");
+    f.className = "reply-form";
+    var i = document.createElement("input");
+    i.type = "text";
+    i.maxLength = 600;
+    i.placeholder = "Write a reply…";
+    i.setAttribute("aria-label","Reply");
+    var go = document.createElement("button");
+    go.type = "submit";
+    go.textContent = "Send";
+    f.appendChild(i); f.appendChild(go);
+    f.addEventListener("submit", function(e){
+      e.preventDefault();
+      var text = i.value.trim();
+      if(!text) return;
+      go.disabled = true;
+      boardSay("Checking…");
+      boardCall({ action:"reply", postId:p.id, text:text }).then(function(){
+        boardSay("");
+        loadBoard();
+      }, function(err){
+        boardSay(err.message, true);
+        go.disabled = false;
+      });
+    });
+    card.appendChild(f);
+    i.focus();
+  }));
+
+  /* Whoever asked knows when they have their answer. */
+  if(p.kind === "question" && (mine || isOwner())){
+    acts.appendChild(actBtn(p.solved_at ? "Mark unanswered" : "Mark answered", function(){
+      boardCall({ action:"solve", id:p.id, solved: !p.solved_at })
+        .then(loadBoard, function(err){ boardSay(err.message, true); });
+    }));
+  }
+
+  if(mine || isOwner()){
+    acts.appendChild(actBtn("Remove", function(){
+      boardCall({ action:"delpost", id:p.id })
+        .then(loadBoard, function(err){ boardSay(err.message, true); });
+    }));
+  }
+
+  card.appendChild(acts);
+  return card;
+}
+
+function boardCall(payload){
+  if(currentUser.offline || !sb){
+    return Promise.reject(new Error("You're offline just now."));
+  }
+  return withTimeout(sb.functions.invoke("chat",{ body: payload }), 20000)
+    .then(function(r){
+      var d = (r && r.data) || {};
+      if(d.error) throw new Error(d.error);
+      if(r && r.error && !d.error){
+        return readInvokeError(r.error).then(function(m){
+          throw new Error(m || "Couldn't reach the board.");
+        });
+      }
+      return d;
+    }, function(err){
+      throw new Error(err && err.message === "timeout"
+        ? "That took too long. Try again."
+        : "Couldn't reach the board.");
+    });
+}
+
+function loadBoard(){
+  if(currentUser.offline || !sb) return Promise.resolve();
+  return boardCall({ action:"board", kind: boardKind }).then(function(d){
+    var list = document.getElementById("boardList");
+    list.textContent = "";
+
+    var posts = d.posts || [];
+    var byPost = {};
+    (d.replies || []).forEach(function(r){
+      (byPost[r.post_id] = byPost[r.post_id] || []).push(r);
+    });
+
+    if(!posts.length){
+      var none = document.createElement("p");
+      none.className = "board-empty";
+      none.textContent = boardKind === "notice"
+        ? "Nothing on the board yet. Put the first thing up."
+        : "No questions yet. Ask one and someone will answer.";
+      list.appendChild(none);
+      return;
+    }
+
+    posts.forEach(function(p){
+      list.appendChild(postEl(p, byPost[p.id] || [], d.me));
+    });
+  }, function(err){
+    boardSay(err.message, true);
+  });
+}
+
+function startBoard(){
+  if(!canSync() || !currentUser) return;
+  /* Same gate as the chat: without the flag there is nothing here to
+     find, rather than something locked. */
+  sb.from("profiles").select("chat_ok").eq("id", currentUser.uid).maybeSingle()
+    .then(function(r){
+      if(r && !r.error && r.data && r.data.chat_ok === true){
+        document.getElementById("boardPanel").hidden = false;
+        loadBoard();
+        if(boardPoll) clearInterval(boardPoll);
+        boardPoll = setInterval(function(){ if(canSync()) loadBoard(); }, 45000);
+      }
+    }, function(){});
+}
+
+function stopBoard(){
+  if(boardPoll){ clearInterval(boardPoll); boardPoll = null; }
+  var p = document.getElementById("boardPanel");
+  if(p) p.hidden = true;
+}
+
+(function wireBoard(){
+  var tabs = document.getElementById("boardTabs");
+  if(!tabs) return;
+  Array.prototype.forEach.call(tabs.children, function(b){
+    b.addEventListener("click", function(){
+      boardKind = b.dataset.kind;
+      Array.prototype.forEach.call(tabs.children, function(x){
+        x.setAttribute("aria-pressed", x === b ? "true" : "false");
+      });
+      document.getElementById("boardInput").placeholder = boardKind === "notice"
+        ? "Does anyone have Friday’s French sheet?"
+        : "Stuck on question 4 of the maths — what am I missing?";
+      boardSay("");
+      loadBoard();
+    });
+  });
+})();
+
+document.getElementById("boardForm").addEventListener("submit", function(e){
+  e.preventDefault();
+  if(boardBusy) return;
+  var input = document.getElementById("boardInput");
+  var btn   = document.getElementById("boardBtn");
+  var text  = input.value.trim();
+  if(!text) return;
+
+  boardBusy = true;
+  btn.disabled = true;
+  boardSay("Checking…");
+
+  boardCall({ action:"post", kind: boardKind, text: text }).then(function(){
+    input.value = "";
+    boardSay("");
+    return loadBoard();
+  }, function(err){
+    /* The words stay in the box if it was refused. */
+    boardSay(err.message, true);
+  }).then(done, done);
+
+  function done(){
+    boardBusy = false;
     btn.disabled = false;
   }
 });
