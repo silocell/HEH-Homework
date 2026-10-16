@@ -271,7 +271,6 @@ button,input,select,textarea{font:inherit;color:inherit}
 /* ---------- SHELL ---------- */
 .shell{max-width:1120px;margin:0 auto;padding:28px 20px 72px}
 .topbar{
-  position:sticky;top:0;z-index:50;
   padding-top:12px;padding-bottom:12px;
   background:var(--paper);
   border-bottom:1px solid var(--rule);
@@ -487,6 +486,21 @@ a.gs-title:hover{text-decoration:underline!important}
   overflow-wrap:anywhere;
 }
 .tile-sub{font-size:.7rem;color:var(--ink-faint);line-height:1.2;margin-top:2px}
+
+/* Pinned only where there is room. On a phone it wraps to two rows and
+   would sit on a fifth of the screen for ever; the top is one flick of
+   the thumb away there anyway. */
+@media (min-width:900px){
+  .topbar{position:sticky;top:0;z-index:50}
+}
+
+/* Two tiles across on a phone instead of a single column eleven long. */
+@media (max-width:480px){
+  .tiles{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .tile{padding:11px 10px;gap:9px}
+  .chip{width:32px;height:32px}
+  .tile-sub{display:none !important}
+}
 
 /* ---------- SHORTCUTS YOU CHOOSE ---------- */
 /* The tiles only become editable when asked. The rest of the time this is
@@ -1030,7 +1044,7 @@ footer{
     <form class="board-form" id="boardForm">
       <textarea id="boardInput" maxlength="600" rows="2" aria-label="What do you want to post?"
                 placeholder="Does anyone have Friday&rsquo;s French sheet?"></textarea>
-      <button type="submit" id="boardBtn">Post</button>
+      <button type="submit" class="btn" id="boardBtn">Post</button>
     </form>
     <p class="chat-msg" id="boardErr"></p>
 
