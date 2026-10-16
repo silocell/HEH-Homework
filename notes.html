@@ -1399,14 +1399,23 @@ document.getElementById("runDiag").addEventListener("click",function(){
 });
 
 document.getElementById("testExplain").addEventListener("click",function(){
-  say("diagMsg","Asking the explainer about gravity…");
+  say("diagMsg","Asking the explainer…");
   /* diag:true spends the test pot, not your own ten and not anybody else's. */
   sb.functions.invoke("explain",{ body:{ topic:"gravity", diag:true } }).then(function(r){
     var d = r.data || {};
     if(d.text){
-      say("diagMsg","Explainer replied with " + d.text.length +
-                         " characters. " + d.remaining +
-                         " of " + (d.limit || 10) + " test runs left today.","ok");
+      /* A test that came back from the cache has tested the database, not
+         the AI. It shouldn't happen any more — the server skips the cache
+         for a test run — but if it ever does, say so rather than calling
+         it a pass. */
+      if(d.cached){
+        say("diagMsg","Answer came from the cache, so the AI itself wasn't " +
+                      "reached. Deploy the current explain function.","err");
+        return;
+      }
+      say("diagMsg","AI answered: " + d.text.length + " characters from " +
+                    (d.provider || "the explainer") + ". " + d.remaining +
+                    " of " + (d.limit || 10) + " test runs left today.","ok");
       return;
     }
     if(d.error){ say("diagMsg","Explainer said: " + d.error,"err"); return; }
