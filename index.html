@@ -856,7 +856,7 @@ footer{
         <div id="tileGroups"></div>
         <form class="addlink" id="addLinkForm" hidden>
           <input type="text" id="linkLabel" placeholder="Name" maxlength="24" autocomplete="off" aria-label="Shortcut name">
-          <input type="url" id="linkUrl" placeholder="https://…" autocomplete="off" aria-label="Shortcut address">
+          <input type="text" id="linkUrl" placeholder="bbc.co.uk" autocomplete="off" aria-label="Shortcut address">
           <button type="submit" class="btn" id="linkAdd">Add</button>
         </form>
         <p class="link-msg" id="linkMsg" hidden></p>
@@ -1957,11 +1957,24 @@ document.getElementById("addLinkForm").addEventListener("submit", function(e){
 
   var label = labelEl.value.trim();
   var url   = urlEl.value.trim();
+
+  /* Nobody should have to know what https means to save a shortcut. Type
+     bbc.co.uk and the rest is filled in. The field is plain text rather
+     than type="url" on purpose: the browser's own check rejects anything
+     without a scheme before this code gets a chance to add one, which is
+     what made it look like the site was demanding it. */
+  url = url.replace(/^\/+/, "");
   if(!/^https?:\/\//i.test(url)) url = "https://" + url;
 
-  if(!label)            return linkSay("Give it a name.", true);
-  if(!safeUrl(url))     return linkSay("That doesn't look like a web address.", true);
-  if(!hostOf(url))      return linkSay("That doesn't look like a web address.", true);
+  if(!label)        return linkSay("Give it a name.", true);
+  if(!safeUrl(url)) return linkSay("That doesn't look like a web address.", true);
+
+  /* A name with no dot in it is not a website — catches a typo or someone
+     typing what they meant to search for. */
+  var host = hostOf(url);
+  if(!host || host.indexOf(".") === -1){
+    return linkSay("That doesn't look like a web address — try something like bbc.co.uk.", true);
+  }
   if(currentUser.offline || !sb) return linkSay("You're offline — try again once you're back.", true);
 
   btn.disabled = true;
