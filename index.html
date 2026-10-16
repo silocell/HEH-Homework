@@ -1587,12 +1587,29 @@ var SESSION_HINT = "hl.lastuser";
 var ALLOWED_DOMAIN = "@hatchend.harrow.sch.uk";
 var ALLOWED_EXTRA  = ["shivkforindia@gmail.com"];
 
+/* The same rule the database enforces, checked here first only so the
+   message is clear before anything is sent. The database is the real
+   boundary; this is a courtesy. */
+var YEAR7 = /^26[a-z]{4}@hatchend\.harrow\.sch\.uk$/;
+
 function emailAllowed(e){
   e = String(e||"").trim().toLowerCase();
-  if(e.length > ALLOWED_DOMAIN.length &&
-     e.slice(-ALLOWED_DOMAIN.length) === ALLOWED_DOMAIN) return true;
+  if(YEAR7.test(e)) return true;
   for(var i=0;i<ALLOWED_EXTRA.length;i++){ if(e === ALLOWED_EXTRA[i]) return true; }
   return false;
+}
+
+/* Says which part is wrong rather than one message for everything. */
+function emailProblem(e){
+  e = String(e||"").trim().toLowerCase();
+  if(e.indexOf("@") === -1) return "That isn't an email address.";
+  if(e.slice(-ALLOWED_DOMAIN.length) !== ALLOWED_DOMAIN){
+    return "Use your school email address — it ends @hatchend.harrow.sch.uk.";
+  }
+  if(!/^26/.test(e)){
+    return "Only Year 7 can join at the moment. Your school address should start with 26.";
+  }
+  return "That doesn't look like a school address \u2014 they're two numbers, four letters, then @hatchend.harrow.sch.uk.";
 }
 
 function accountFor(typed){
@@ -1661,7 +1678,7 @@ function handleSignUp(typed, pwd, err, release){
 
   if(!emailAllowed(typed)){
     release();
-    err.textContent = "Accounts are limited to Hatch End school email addresses.";
+    err.textContent = emailProblem(typed);
     return;
   }
   if(pwd.length < 8){
@@ -1681,7 +1698,7 @@ function handleSignUp(typed, pwd, err, release){
       if(m.indexOf("already") > -1 || m.indexOf("registered") > -1){
         err.textContent = "There's already an account with that email. Try signing in.";
       }else if(m.indexOf("database error") > -1 || m.indexOf("limited") > -1){
-        err.textContent = "Accounts are limited to Hatch End school email addresses.";
+        err.textContent = "Only Year 7 Hatch End addresses can join at the moment.";
       }else if(isNetworkError(r.error)){
         err.textContent = "Couldn't reach the server. Check your connection.";
       }else{
