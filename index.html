@@ -529,7 +529,7 @@ a.gs-title:hover{text-decoration:underline!important}
   padding:9px 10px;border:1px solid var(--rule);border-radius:9px;
   background:var(--paper);color:var(--ink);font:inherit;font-size:.85rem;
 }
-.addlink button{flex:none}
+.addlink button{flex:none;width:auto}
 .link-msg{font-size:.76rem;color:var(--ink-faint);margin:8px 0 0}
 .link-msg.err{color:#d2403c}
 
@@ -683,7 +683,10 @@ a.gs-title:hover{text-decoration:underline!important}
   background:var(--paper);color:var(--ink);font:inherit;font-size:.9rem;
   line-height:1.5;
 }
-.board-form button{flex:none}
+/* .btn carries width:100% for the sign-in page. In a flex row that makes
+   the button claim the whole width and squash the textarea to a sliver,
+   so the width is given back here. */
+.board-form button{flex:none;width:auto}
 
 .board-list{
   display:flex;flex-direction:column;gap:12px;margin-top:16px;
