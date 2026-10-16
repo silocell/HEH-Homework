@@ -438,6 +438,20 @@ button,input,select,textarea{font:inherit;color:inherit}
         <div class="arow">
           <button type="button" class="abtn quiet" id="backupBtn">Download a backup</button>
         </div>
+        <div class="arow" style="margin-top:14px">
+          <label class="abtn quiet" for="restoreFile" style="cursor:pointer">Choose a backup file&hellip;</label>
+          <input type="file" id="restoreFile" accept="application/json,.json" hidden>
+          <button type="button" class="abtn" id="restoreGo" hidden>Put it back</button>
+        </div>
+        <div class="arow" id="restoreFixRow" hidden>
+          <label style="display:flex;align-items:center;gap:8px;font-size:.8rem;color:var(--ink-soft)">
+            <input type="checkbox" id="restoreFix">
+            Also mend rows that exist but have been changed
+          </label>
+        </div>
+        <div id="restoreRows"></div>
+        <p class="amsg" id="restoreMsg">Puts back anything missing. Tick the box as well if a bad command changed rows rather than deleting them &mdash; that only applies to things the computer generated, like the explanation cache. The chat log, the board and who&rsquo;s approved can only ever be added to, never overwritten.</p>
+
         <p class="amsg" id="backupMsg">Every table in the database as one file &mdash; the list comes from the database itself, so anything added later is included without this needing changing. Keep it in OneDrive. It holds real messages and email addresses, so treat it like a document with people&rsquo;s names in it. A mistyped SQL command is the realistic way this loses data.</p>
       </div>
 
@@ -917,6 +931,127 @@ document.getElementById("sharedForm").addEventListener("submit", function(e){
   }).catch(function(err){
     say("sharedMsg", err.message, "err");
   }).then(function(){ btn.disabled = false; });
+});
+
+/* ---------- putting a backup back ----------
+   Table by table and 500 rows at a time, so one oversized request cannot
+   fail the lot, and the result says what happened to each table. */
+var restoreData = null;
+
+document.getElementById("restoreFile").addEventListener("change", function(){
+  var f = this.files && this.files[0];
+  document.getElementById("restoreRows").textContent = "";
+  document.getElementById("restoreGo").hidden = true;
+  document.getElementById("restoreFixRow").hidden = true;
+  if(!f) return;
+
+  var fr = new FileReader();
+  fr.onload = function(){
+    try{
+      var d = JSON.parse(fr.result);
+      if(!d || typeof d !== "object") throw new Error("not a backup");
+      var tables = Object.keys(d).filter(function(k){ return Array.isArray(d[k]); });
+      if(!tables.length) throw new Error("no tables");
+
+      restoreData = d;
+      var rows = tables.reduce(function(n,k){ return n + d[k].length; }, 0);
+      document.getElementById("restoreGo").hidden = false;
+      document.getElementById("restoreFixRow").hidden = false;
+      say("restoreMsg","Read " + f.name + " — taken " +
+          (d.takenAt ? new Date(d.takenAt).toLocaleString() : "at an unknown time") +
+          ", " + tables.length + " tables, " + rows +
+          " rows. Nothing has been changed yet.","ok");
+    }catch(e){
+      restoreData = null;
+      say("restoreMsg","That file isn't a backup from this dashboard.","err");
+    }
+  };
+  fr.onerror = function(){ say("restoreMsg","Couldn't read that file.","err"); };
+  fr.readAsText(f);
+});
+
+document.getElementById("restoreGo").addEventListener("click", function(){
+  if(!restoreData) return;
+  var btn = this;
+  var mend = document.getElementById("restoreFix").checked;
+  var out = document.getElementById("restoreRows");
+
+  var tables = Object.keys(restoreData).filter(function(k){
+    /* accounts is a record of who existed, not something that can go
+       back: Supabase will not take sign-ins from a file. */
+    return Array.isArray(restoreData[k]) && restoreData[k].length && k !== "accounts";
+  });
+
+  btn.disabled = true;
+  out.textContent = "";
+  say("restoreMsg","Working through " + tables.length + " tables…");
+
+  var addedAll = 0, mendedAll = 0, failed = 0;
+
+  function line(name, text, bad){
+    var row = document.createElement("div");
+    row.className = "check" + (bad ? " bad" : "");
+    var dot = document.createElement("span"); dot.className = "check-dot";
+    var nm  = document.createElement("span"); nm.className = "check-name"; nm.textContent = name;
+    var de  = document.createElement("span"); de.className = "check-detail"; de.textContent = text;
+    row.appendChild(dot); row.appendChild(nm); row.appendChild(de);
+    out.appendChild(row);
+  }
+
+  function nextTable(i){
+    if(i >= tables.length){
+      var parts = [];
+      if(addedAll)  parts.push(addedAll + " rows put back");
+      if(mendedAll) parts.push(mendedAll + " mended");
+      say("restoreMsg",
+        (parts.length
+          ? parts.join(", ") + "."
+          : "Nothing was missing — the database already matched that file.") +
+        (failed ? " " + failed + " table(s) wouldn't take; see the red lines." : " Nothing was deleted."),
+        failed ? "err" : "ok");
+      btn.disabled = false;
+      return;
+    }
+
+    var t = tables[i], rows = restoreData[t];
+    var chunks = [];
+    for(var j=0;j<rows.length;j+=500) chunks.push(rows.slice(j,j+500));
+
+    var added = 0, mended = 0, refused = null, err = null;
+
+    function nextChunk(k){
+      if(k >= chunks.length){
+        if(err){ failed++; line(t, err, true); }
+        else {
+          addedAll += added; mendedAll += mended;
+          var what = added + " put back";
+          if(mended) what += ", " + mended + " mended";
+          if(refused) what += " — " + refused;
+          line(t, what);
+        }
+        nextTable(i+1);
+        return;
+      }
+      call({ action:"restore", table:t, rows:chunks[k], mode: mend ? "replace" : "add" })
+        .then(function(d){
+          added  += d.added  || 0;
+          mended += d.mended || 0;
+        })
+        .catch(function(e){
+          /* A table refusing to be overwritten is not a failure: do it
+             as add-only instead and say so on the line. */
+          if(mend && /only be added to/.test(e.message)){
+            refused = "add-only, so existing rows were left alone";
+            return call({ action:"restore", table:t, rows:chunks[k], mode:"add" })
+              .then(function(d){ added += d.added || 0; });
+          }
+          err = e.message;
+        })
+        .then(function(){ nextChunk(k+1); });
+    }
+    nextChunk(0);
+  }
+  nextTable(0);
 });
 
 /* ---------- is the filter still working? ---------- */
