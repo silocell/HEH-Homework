@@ -438,7 +438,7 @@ button,input,select,textarea{font:inherit;color:inherit}
         <div class="arow">
           <button type="button" class="abtn quiet" id="backupBtn">Download a backup</button>
         </div>
-        <p class="amsg" id="backupMsg">Everything in the database as one file. Keep it in OneDrive. A mistyped SQL command is the realistic way this loses data.</p>
+        <p class="amsg" id="backupMsg">Every table in the database as one file &mdash; the list comes from the database itself, so anything added later is included without this needing changing. Keep it in OneDrive. It holds real messages and email addresses, so treat it like a document with people&rsquo;s names in it. A mistyped SQL command is the realistic way this loses data.</p>
       </div>
 
       <div class="sec">
@@ -1454,12 +1454,23 @@ document.getElementById("backupBtn").addEventListener("click",function(){
     a.remove();
     setTimeout(function(){ URL.revokeObjectURL(url); }, 2000);
 
-    var rows = 0;
+    var rows = 0, tables = 0;
     Object.keys(d).forEach(function(k){
-      if(Array.isArray(d[k])) rows += d[k].length;
+      if(Array.isArray(d[k])){ rows += d[k].length; tables++; }
     });
-    say("backupMsg", "Saved. " + rows + " rows, " +
-        Math.round(text.length/1024) + " KB. Put it somewhere that isn't this laptop.", "ok");
+
+    /* Say what was covered, not just that something was saved. A backup
+       that quietly misses a table is worse than no backup, because you
+       stop worrying about it. */
+    var msg = "Saved " + tables + " tables, " + rows + " rows, " +
+              Math.round(text.length/1024) + " KB. Put it somewhere that isn't this laptop.";
+    var bad = false;
+    if(d.warning){ msg += " " + d.warning; bad = true; }
+    if(d.truncated && d.truncated.length){
+      msg += " Too big to save in full: " + d.truncated.join(", ") + ".";
+      bad = true;
+    }
+    say("backupMsg", msg, bad ? "err" : "ok");
   }).catch(function(e){ say("backupMsg", e.message, "err"); })
     .then(function(){ b.disabled = false; });
 });
