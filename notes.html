@@ -392,6 +392,9 @@ button,input,select,textarea{font:inherit;color:inherit}
             <button type="button" class="abtn quiet" id="cacheWipe">Delete all matching</button>
           </div>
         </form>
+        <div class="arow" style="margin-top:4px">
+          <button type="button" class="abtn quiet" id="cacheTest">Test the cache</button>
+        </div>
         <p class="amsg" id="cacheMsg">A word to look for, not a command. Leave it empty for the most-asked.</p>
         <div class="ascroll" style="margin-top:12px">
           <table class="atable" id="cacheTable">
@@ -399,6 +402,15 @@ button,input,select,textarea{font:inherit;color:inherit}
             <tbody id="cacheRows"></tbody>
           </table>
         </div>
+      </div>
+
+      <div class="sec">
+        <p class="sec-h">Moderation</p>
+        <div class="arow">
+          <button type="button" class="abtn quiet" id="modTest">Test the filter and checker</button>
+        </div>
+        <div id="modRows"></div>
+        <p class="amsg" id="modMsg">Runs the real filter and the real checker against known phrases. Nothing is posted and nothing is stored. The phrases live on the server, so the words this blocks are never published in this page.</p>
       </div>
 
       <div class="sec">
@@ -895,7 +907,61 @@ document.getElementById("sharedForm").addEventListener("submit", function(e){
   }).then(function(){ btn.disabled = false; });
 });
 
-/* ---------- board log ---------- */
+/* ---------- is the filter still working? ---------- */
+document.getElementById("modTest").addEventListener("click",function(){
+  var btn = this, out = document.getElementById("modRows");
+  btn.disabled = true;
+  out.textContent = "";
+  say("modMsg","Running the filter and the checker…");
+
+  call({ action:"modtest" }).then(function(d){
+    var rows = d.rows || [];
+    rows.forEach(function(c){
+      var row = document.createElement("div");
+      row.className = "check" + (c.ok ? "" : " bad");
+      var dot = document.createElement("span"); dot.className = "check-dot";
+      var nm  = document.createElement("span"); nm.className = "check-name"; nm.textContent = c.name;
+      var de  = document.createElement("span"); de.className = "check-detail"; de.textContent = c.detail;
+      row.appendChild(dot); row.appendChild(nm); row.appendChild(de);
+      if(typeof c.ms === "number" && c.ms > 0){
+        var ms = document.createElement("span");
+        ms.className = "check-ms" + (c.ms > 2000 ? " slow" : "");
+        ms.textContent = c.ms >= 1000 ? (c.ms/1000).toFixed(1) + "s" : c.ms + "ms";
+        row.appendChild(ms);
+      }
+      out.appendChild(row);
+    });
+    say("modMsg", d.passed
+      ? "Everything passed. Nothing was posted and nothing was stored."
+      : "Something failed — the lines in red are not behaving as they should.",
+      d.passed ? "ok" : "err");
+  }).catch(function(e){
+    say("modMsg", e.message, "err");
+  }).then(function(){ btn.disabled = false; });
+});
+
+/* ---------- does a stored answer really come back? ---------- */
+document.getElementById("cacheTest").addEventListener("click",function(){
+  var btn = this;
+  btn.disabled = true;
+  say("cacheMsg","Reading a stored answer back…");
+
+  call({ action:"cache", mode:"verify" }).then(function(d){
+    if(!d.ok){
+      say("cacheMsg", d.detail || "A stored answer came back empty.", "err");
+      return;
+    }
+    say("cacheMsg",
+        "Read \u201c" + d.topic + "\u201d back in full \u2014 " + d.chars +
+        " characters in " + d.ms + "ms, written by " + (d.provider || "the AI") +
+        ", served " + d.hits + " times. " + d.stored +
+        " explanations stored, all answered without touching the AI.", "ok");
+    cacheStats();
+  }).catch(function(e){ say("cacheMsg", e.message, "err"); })
+    .then(function(){ btn.disabled = false; });
+});
+
+/* ---------- board log ---------- *//* ---------- board log ---------- */
 function loadBoardLog(){
   var box = document.getElementById("boardBox");
   say("boardLogMsg","Loading…");
