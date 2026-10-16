@@ -520,7 +520,19 @@ function say(id, text, kind){
 
 function call(payload){
   if(!canSync()) return Promise.reject(new Error("offline"));
-  return sb.functions.invoke("admin",{ body: payload }).then(function(r){
+  return invokeOn("admin", payload);
+}
+
+/* The filter and the checker live in the chat function, so the moderation
+   test has to be asked there. Sending it to admin got "Don't know how to
+   do that", which is the right answer to the wrong question. */
+function callChat(payload){
+  if(!canSync()) return Promise.reject(new Error("offline"));
+  return invokeOn("chat", payload);
+}
+
+function invokeOn(fn, payload){
+  return sb.functions.invoke(fn,{ body: payload }).then(function(r){
     if(r.error && !(r.data && r.data.error)){
       return readInvokeError(r.error).then(function(msg){
         throw new Error(msg || "Couldn't reach the server.");
@@ -914,7 +926,7 @@ document.getElementById("modTest").addEventListener("click",function(){
   out.textContent = "";
   say("modMsg","Running the filter and the checker…");
 
-  call({ action:"modtest" }).then(function(d){
+  callChat({ action:"modtest" }).then(function(d){
     var rows = d.rows || [];
     rows.forEach(function(c){
       var row = document.createElement("div");
