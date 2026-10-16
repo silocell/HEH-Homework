@@ -617,7 +617,8 @@ a.gs-title:hover{text-decoration:underline!important}
 }
 .chat-head .panel-title{margin:0}
 /* ---------- PANELS THAT GROW ----------
-   An explanation, a long to-do list and a wordy definition all grow
+   An explanation, a long to-do list, a wordy definition and the list of
+   popular topics all grow
    without limit, and whichever column they land in drags its side of the
    page down past the other. Capping them keeps the two columns level
    however much is in them.
@@ -629,19 +630,22 @@ a.gs-title:hover{text-decoration:underline!important}
   .ex-out{ max-height:clamp(200px,36vh,360px); overflow-y:auto; padding-right:6px }
   .todo-list{ max-height:clamp(160px,30vh,300px); overflow-y:auto }
   .wotd-scroll{ max-height:clamp(120px,22vh,220px); overflow-y:auto; padding-right:6px }
+  .asked{ max-height:clamp(140px,26vh,260px); overflow-y:auto; padding-right:6px }
 }
 
 /* A faint rule at the top so a scrolled box reads as "there is more
    above" rather than as text that has been chopped. */
 .ex-out::-webkit-scrollbar,
 .todo-list::-webkit-scrollbar,
-.wotd-scroll::-webkit-scrollbar{ width:8px }
+.wotd-scroll::-webkit-scrollbar,
+.asked::-webkit-scrollbar{ width:8px }
 .ex-out::-webkit-scrollbar-thumb,
 .todo-list::-webkit-scrollbar-thumb,
-.wotd-scroll::-webkit-scrollbar-thumb{
+.wotd-scroll::-webkit-scrollbar-thumb,
+.asked::-webkit-scrollbar-thumb{
   background:var(--rule); border-radius:4px;
 }
-.ex-out, .todo-list, .wotd-scroll{ scrollbar-width:thin }
+.ex-out, .todo-list, .wotd-scroll, .asked{ scrollbar-width:thin }
 
 .chat-watch{
   font-size:.72rem;color:var(--ink-faint);line-height:1.4;
