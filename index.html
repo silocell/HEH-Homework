@@ -309,6 +309,7 @@ button,input,select,textarea{font:inherit;color:inherit}
   display:inline-block;width:6px;height:6px;border-radius:50%;
   background:var(--margin);margin-left:6px;vertical-align:middle
 }
+.cse-note{font-size:.85rem;color:var(--ink-faint);margin:6px 0 10px;line-height:1.5}
 .ms-note{
   font-size:.76rem;color:var(--ink-faint);line-height:1.55;
   margin:10px 2px 0
@@ -1103,6 +1104,7 @@ footer{
       <p class="panel-title">Results from revision sites</p>
       <button class="cse-close" id="cseClose" type="button">Close</button>
     </div>
+    <p class="cse-note" id="cseNote" hidden></p>
     <div class="gcse-searchresults-only" data-gname="rev" data-enableAutoComplete="false"></div>
   </div>
 
@@ -1249,7 +1251,6 @@ footer{
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.0/dist/umd/supabase.js"></script>
-<script async src="https://cse.google.com/cse.js?cx=074b14cfe7e434226"></script>
 <script>
 /* ==================================================================
    DISPLAY NAMES
@@ -2591,15 +2592,79 @@ function cseElement(){
   return null;
 }
 
-function runRevisionSearch(q){
-  var el = cseElement();
-  if(!el) return false;
-  try{
-    document.getElementById("csePanel").hidden = false;
-    el.execute(q);
-    return true;
-  }catch(e){ return false; }
+/* Google's script is not loaded with the page any more. It writes its
+   state into the address bar the moment it arrives - "#gsc.tab=0" - so
+   everybody's URL carried it whether they had ever searched or not. Now
+   it is fetched the first time someone picks "Revision sites" in the
+   engine box, and only they see it. Picking the option starts the
+   download, so by the time they have typed something it is usually
+   ready. */
+var CSE_SRC = "https://cse.google.com/cse.js?cx=074b14cfe7e434226";
+var cseLoading = null;
+
+function loadCse(){
+  if(cseElement()) return Promise.resolve(true);
+  if(cseLoading) return cseLoading;
+  cseLoading = new Promise(function(resolve){
+    var done = false;
+    function finish(ok){ if(done) return; done = true; resolve(ok); }
+    window.__gcse = {
+      parsetags: "explicit",
+      callback: function(){
+        try{ window.google.search.cse.element.go(); }catch(e){}
+        finish(!!cseElement());
+      }
+    };
+    var sc = document.createElement("script");
+    sc.async = true;
+    sc.src = CSE_SRC;
+    sc.onerror = function(){ cseLoading = null; finish(false); };
+    document.head.appendChild(sc);
+    /* A school filter can swallow the request without an error. */
+    setTimeout(function(){ finish(!!cseElement()); }, 8000);
+  });
+  return cseLoading;
 }
+
+function runRevisionSearch(q){
+  var panel = document.getElementById("csePanel");
+  var note  = document.getElementById("cseNote");
+  var el = cseElement();
+  if(el){
+    try{ if(note) note.hidden = true; panel.hidden = false; el.execute(q); return true; }
+    catch(e){ return false; }
+  }
+
+  /* Not here yet. Open the panel now and say so, then search when it
+     arrives. A new tab can't be opened from here once we have waited -
+     the browser only allows that straight after a click - so if it never
+     comes the fallback is a link in the panel, not a blocked pop-up. */
+  panel.hidden = false;
+  if(note){ note.hidden = false; note.textContent = "Loading the revision search\u2026"; }
+  loadCse().then(function(ok){
+    var g = cseElement();
+    if(ok && g){
+      if(note) note.hidden = true;
+      try{ g.execute(q); }catch(e){}
+      return;
+    }
+    if(note){
+      note.textContent = "";
+      note.appendChild(document.createTextNode("The revision search didn't load \u2014 it may be blocked on this network. "));
+      var a = document.createElement("a");
+      a.href = "https://www.google.com/search?q=" + encodeURIComponent(q);
+      a.target = "_blank"; a.rel = "noopener";
+      a.textContent = "Search Google instead";
+      note.appendChild(a);
+    }
+  });
+  return true;
+}
+
+var engineSel = document.getElementById("engineSelect");
+if(engineSel) engineSel.addEventListener("change", function(){
+  if(engineSel.value === "cse") loadCse();
+});
 
 document.getElementById("cseClose").addEventListener("click",function(){
   document.getElementById("csePanel").hidden = true;
