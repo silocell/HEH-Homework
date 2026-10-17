@@ -904,7 +904,6 @@ footer{
   <div class="gate-card">
     <h1>Homework Launchpad</h1>
     <p class="sub" id="gateSub">Sign in to pick up where you left off.</p>
-    <p class="gate-hint" id="gateHint" hidden>Use your school email address. You'll get a message to confirm it.</p>
     <form id="loginForm" autocomplete="off">
       <div class="field">
         <label for="email">Email</label>
@@ -918,10 +917,6 @@ footer{
       <p class="gate-error" id="gateError"></p>
       <p class="gate-ok" id="gateOk" hidden></p>
     </form>
-    <p class="gate-switch" id="gateSwitch">
-      <span id="switchLabel">No account yet?</span>
-      <button type="button" class="linkish" id="switchMode">Create one</button>
-    </p>
     <div class="gate-other">
       <button type="button" class="otherlink" id="otherWays" aria-expanded="false" aria-controls="otherPanel">Other ways in</button>
       <div class="other-panel" id="otherPanel" hidden>
@@ -1770,77 +1765,10 @@ document.getElementById("googleBtn").addEventListener("click",function(){
   });
 });
 
-var gateMode = "signin";
-
-function setGateMode(mode){
-  gateMode = mode;
-  var signup = mode === "signup";
-  document.getElementById("gateSub").textContent = signup
-    ? "Make an account to get your own list."
-    : "Sign in to pick up where you left off.";
-  document.getElementById("gateHint").hidden = !signup;
-  document.getElementById("loginBtn").textContent = signup ? "Create account" : "Sign in";
-  document.getElementById("switchLabel").textContent = signup ? "Already have one?" : "No account yet?";
-  document.getElementById("switchMode").textContent  = signup ? "Sign in" : "Create one";
-  document.getElementById("password").setAttribute("autocomplete", signup ? "new-password" : "current-password");
-  document.getElementById("gateError").textContent = "";
-  document.getElementById("gateOk").hidden = true;
-}
-
-document.getElementById("switchMode").addEventListener("click",function(){
-  setGateMode(gateMode === "signup" ? "signin" : "signup");
-  document.getElementById("email").focus();
-});
-
-function handleSignUp(typed, pwd, err, release){
-  var ok = document.getElementById("gateOk");
-
-  if(!emailAllowed(typed)){
-    release();
-    err.textContent = emailProblem(typed);
-    return;
-  }
-  if(pwd.length < 8){
-    release();
-    err.textContent = "Pick a password of at least 8 characters.";
-    return;
-  }
-
-  sb.auth.signUp({
-    email: typed,
-    password: pwd,
-    options:{ emailRedirectTo: location.origin + location.pathname }
-  }).then(function(r){
-    release();
-    if(r.error){
-      var m = String(r.error.message || "").toLowerCase();
-      if(m.indexOf("already") > -1 || m.indexOf("registered") > -1){
-        err.textContent = "There's already an account with that email. Try signing in.";
-      }else if(m.indexOf("database error") > -1 || m.indexOf("limited") > -1){
-        err.textContent = "Only Year 7 Hatch End addresses can join at the moment.";
-      }else if(isNetworkError(r.error)){
-        err.textContent = "Couldn't reach the server. Check your connection.";
-      }else{
-        err.textContent = r.error.message;
-      }
-      return;
-    }
-    if(r.data && r.data.session && r.data.user){
-      store(SESSION_HINT, r.data.user.email);
-      openDashboard({ name:displayName(r.data.user.email), email:r.data.user.email,
-                      uid:r.data.user.id, offline:false }, r.data.user);
-      return;
-    }
-    document.getElementById("password").value = "";
-    setGateMode("signin");
-    ok.textContent = "Account made. Check " + typed + " for a message confirming it, then sign in.";
-    ok.hidden = false;
-  }).catch(function(){
-    release();
-    err.textContent = "Couldn't reach the server. Check your connection.";
-  });
-}
-
+/* Accounts are not made here any more. Shiv creates them in the admin
+   panel, or they appear the first time somebody signs in with Microsoft
+   and the Year 7 check on auth.users lets them through. One fewer door,
+   and no stranger can start the process from this screen. */
 document.getElementById("loginForm").addEventListener("submit",function(e){
   e.preventDefault();
   var err  = document.getElementById("gateError");
@@ -1850,16 +1778,7 @@ document.getElementById("loginForm").addEventListener("submit",function(e){
   err.textContent = "";
   document.getElementById("gateOk").hidden = true;
 
-  var label = gateMode === "signup" ? "Create account" : "Sign in";
-  function release(){ btn.disabled = false; btn.textContent = label; }
-
-  if(gateMode === "signup"){
-    if(!sb){ err.textContent = "Can't reach the server to make an account."; return; }
-    btn.disabled = true;
-    btn.textContent = "Creating\u2026";
-    handleSignUp(typed, pwd, err, release);
-    return;
-  }
+  function release(){ btn.disabled = false; btn.textContent = "Sign in"; }
 
   if(!sb){
     err.textContent = "Can't reach the server. Check your connection.";
