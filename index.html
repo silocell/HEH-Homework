@@ -648,12 +648,12 @@ a.gs-title:hover{text-decoration:underline!important}
 .lookup input{
   flex:1;min-width:0;background:var(--paper);
   border:1px solid var(--rule);border-radius:9px;
-  padding:9px 12px;font-size:.87rem;
+  padding:10px 12px;font-size:.88rem;
 }
 .lookup input:focus{border-color:var(--accent);outline:none}
 .lookup button{
   flex:none;background:var(--accent-soft);color:var(--accent);
-  border:none;border-radius:9px;padding:9px 15px;
+  border:none;border-radius:9px;padding:10px 15px;
   font-size:.85rem;font-weight:600;cursor:pointer;
 }
 .lookup button:hover{filter:brightness(.96)}
@@ -1108,7 +1108,7 @@ footer{
 
   <div class="columns">
 
-    <!-- LEFT: links + explainer -->
+    <!-- LEFT: what you work with - tiles, lookup, explainer -->
     <div class="col">
       <div class="panel">
         <div class="tiles-head">
@@ -1147,22 +1147,9 @@ footer{
         <p class="ex-err" id="exErr" hidden></p>
         <p class="ex-note">Explains topics so you can understand them. It won't do set work for you.</p>
       </div>
-
-      <div class="panel">
-        <p class="panel-title">Make it yours</p>
-        <div class="swatches" id="swatches"></div>
-        <div class="modes" id="modes">
-          <button type="button" class="mode-btn" data-mode="dark">Dark</button>
-          <button type="button" class="mode-btn" data-mode="system">Match my device</button>
-        </div>
-        <div class="modes" id="fonts">
-          <button type="button" class="mode-btn" data-font="">Normal text</button>
-          <button type="button" class="mode-btn" data-font="plain">Easier to read</button>
-        </div>
-      </div>
     </div>
 
-    <!-- RIGHT: word of the day + to-do -->
+    <!-- RIGHT: what is yours - word of the day, to-do, what people ask, how it looks -->
     <div class="col">
       <div class="panel">
         <p class="panel-title">Word of the day</p>
@@ -1193,6 +1180,19 @@ footer{
         <p class="panel-title">What people are asking</p>
         <div class="asked" id="askedList"></div>
         <p class="ex-note">Already explained, so these come back straight away and don't use up your ten.</p>
+      </div>
+
+      <div class="panel">
+        <p class="panel-title">Make it yours</p>
+        <div class="swatches" id="swatches"></div>
+        <div class="modes" id="modes">
+          <button type="button" class="mode-btn" data-mode="dark">Dark</button>
+          <button type="button" class="mode-btn" data-mode="system">Match my device</button>
+        </div>
+        <div class="modes" id="fonts">
+          <button type="button" class="mode-btn" data-font="">Normal text</button>
+          <button type="button" class="mode-btn" data-font="plain">Easier to read</button>
+        </div>
       </div>
     </div>
 
