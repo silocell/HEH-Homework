@@ -265,6 +265,14 @@ button,input,select,textarea{font:inherit;color:inherit}
 .other-panel{margin-top:12px;text-align:left}
 .other-panel .btn.google{font-size:.85rem;padding:9px 12px}
 .other-why{font-size:.74rem;color:var(--ink-faint);margin:8px 0 0;line-height:1.5}
+.btn.ms{
+  background:var(--card);color:var(--ink);
+  border:1px solid var(--rule);
+  display:flex;align-items:center;justify-content:center;gap:10px;
+}
+.btn.ms:hover{filter:none;border-color:var(--accent)}
+.btn.ms svg{width:17px;height:17px;flex:none}
+.pw-switch{margin:14px 0 0;text-align:center}
 
 /* ---- the maintenance bar ----
    Only the people who can still get in ever see this, and it is loud on
@@ -921,7 +929,17 @@ footer{
   <div class="gate-card">
     <h1>Homework Launchpad</h1>
     <p class="sub" id="gateSub">Sign in to pick up where you left off.</p>
-    <form id="loginForm" autocomplete="off">
+    <button type="button" class="btn ms" id="msBtn">
+      <svg viewBox="0 0 23 23" aria-hidden="true"><path fill="#f25022" d="M1 1h10v10H1z"/><path fill="#7fba00" d="M12 1h10v10H12z"/><path fill="#00a4ef" d="M1 12h10v10H1z"/><path fill="#ffb900" d="M12 12h10v10H12z"/></svg>
+      Sign in with Microsoft
+    </button>
+    <p class="gate-error" id="gateError"></p>
+
+    <p class="pw-switch" id="pwSwitch">
+      <button type="button" class="otherlink" id="showPw">Use a password instead</button>
+    </p>
+
+    <form id="loginForm" autocomplete="off" hidden>
       <div class="field">
         <label for="email">Email</label>
         <input type="email" id="email" name="email" autocomplete="username" required>
@@ -931,17 +949,16 @@ footer{
         <input type="password" id="password" name="password" autocomplete="current-password" required>
       </div>
       <button type="submit" class="btn" id="loginBtn">Sign in</button>
-      <p class="gate-error" id="gateError"></p>
       <p class="gate-ok" id="gateOk" hidden></p>
     </form>
-    <div class="gate-other">
-      <button type="button" class="otherlink" id="otherWays" aria-expanded="false" aria-controls="otherPanel">Other ways in</button>
-      <div class="other-panel" id="otherPanel" hidden>
+
+    <div class="gate-other" id="spareWrap" hidden>
+      <div class="other-panel" id="otherPanel">
         <button type="button" class="btn google" id="googleBtn">
           <svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#4285F4" d="M45.1 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h11.8c-.5 2.7-2 5-4.4 6.6v5.5h7.1c4.1-3.8 6.6-9.4 6.6-16.1z"/><path fill="#34A853" d="M24 46c6 0 11-2 14.6-5.4l-7.1-5.5c-2 1.3-4.5 2.1-7.5 2.1-5.8 0-10.7-3.9-12.4-9.1H4.3v5.7C7.9 41.1 15.4 46 24 46z"/><path fill="#FBBC05" d="M11.6 28.1c-.4-1.3-.7-2.7-.7-4.1s.3-2.8.7-4.1v-5.7H4.3C2.8 17.1 2 20.4 2 24s.8 6.9 2.3 9.8l7.3-5.7z"/><path fill="#EA4335" d="M24 10.8c3.3 0 6.2 1.1 8.5 3.3l6.3-6.3C35 4.1 30 2 24 2 15.4 2 7.9 6.9 4.3 14.2l7.3 5.7c1.7-5.2 6.6-9.1 12.4-9.1z"/></svg>
           Continue with Google
         </button>
-        <p class="other-why">Only for when the usual way won't work. The same Year 7 rule applies.</p>
+        <p class="other-why">The spare key. Same Year 7 rule, same checks.</p>
       </div>
     </div>
   </div>
@@ -1740,14 +1757,58 @@ function isNetworkError(e){
    auth.users, which refuses any address that is not Year 7 Hatch End or
    on the allow list, whichever button was pressed.
    ------------------------------------------------------------------- */
-var otherWays = document.getElementById("otherWays");
-if(otherWays) otherWays.addEventListener("click", function(){
-  var panel = document.getElementById("otherPanel");
-  if(!panel) return;
-  var open = panel.hidden;
-  panel.hidden = !open;
-  otherWays.setAttribute("aria-expanded", open ? "true" : "false");
-  otherWays.textContent = open ? "Hide" : "Other ways in";
+/* Microsoft is the way in. Everyone has a school account, it is the one
+   they already know, and it means no password for this site to look after.
+
+   The password form is still there, one small link away, because the day
+   Microsoft has an outage is not the day to find out it was the only
+   door. Google is further back still - it only works for Shiv's own
+   address, since the school runs on Microsoft - so it lives at #spare
+   rather than on the screen.
+
+   Worth being plain about what that last part is and isn't. Putting it
+   behind an address keeps it out of the way of people who have no use for
+   it. It does not hide it: this page is open source, so anyone who reads
+   the repository can see the button and the admin address in a minute.
+   What stops them signing in is the account check on the server, not any
+   of this.
+   ------------------------------------------------------------------- */
+var showPw = document.getElementById("showPw");
+if(showPw) showPw.addEventListener("click", function(){
+  var form = document.getElementById("loginForm");
+  var wrap = document.getElementById("pwSwitch");
+  if(!form) return;
+  form.hidden = false;
+  if(wrap) wrap.hidden = true;
+  document.getElementById("email").focus();
+});
+
+if(location.hash === "#spare"){
+  var spare = document.getElementById("spareWrap");
+  if(spare) spare.hidden = false;
+}
+
+var msBtn = document.getElementById("msBtn");
+if(msBtn) msBtn.addEventListener("click", function(){
+  var err = document.getElementById("gateError");
+  if(!sb){ err.textContent = "Can't reach the server. Check your connection."; return; }
+  err.textContent = "";
+  msBtn.disabled = true;
+  sb.auth.signInWithOAuth({
+    provider: "azure",
+    options:{ scopes:"email", redirectTo: location.origin + location.pathname }
+  }).then(function(r){
+    if(r && r.error){
+      msBtn.disabled = false;
+      var m = String(r.error.message || "").toLowerCase();
+      err.textContent = (m.indexOf("not enabled") > -1 || m.indexOf("unsupported provider") > -1)
+        ? "Microsoft sign-in isn't switched on yet. Use a password for now."
+        : r.error.message;
+    }
+  }).catch(function(){
+    msBtn.disabled = false;
+    err.textContent = "Couldn't start Microsoft sign-in.";
+  });
 });
 
 /* A sign-in that the database refuses comes back here as a redirect with
