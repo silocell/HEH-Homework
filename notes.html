@@ -299,7 +299,7 @@ body.demo #wordSec button{
       <div class="sec" id="askSec" hidden>
         <p class="sec-h">Asked for a room</p>
         <div id="askList"></div>
-        <p class="amsg" id="askMsg">Nothing exists until you say yes. Turning one down leaves no room and no members behind &mdash; only a note to whoever asked.</p>
+        <p class="amsg" id="queueMsg">Nothing exists until you say yes. Turning one down leaves no room and no members behind &mdash; only a note to whoever asked.</p>
       </div>
 
       <div class="sec" id="roomSec">
@@ -422,7 +422,7 @@ body.demo #wordSec button{
         </div>
       </div>
 
-      <div class="sec">
+      <div class="sec" id="techSec">
         <p class="sec-h">Ask a technical question</p>
         <form id="askForm">
           <div class="arow">
@@ -436,7 +436,7 @@ body.demo #wordSec button{
         </form>
         <div class="ask-out" id="askOut"></div>
         <p class="ex-left" id="askLeft" style="margin-top:10px"></p>
-        <p class="amsg" id="askMsg">Knows how this dashboard is put together.</p>
+        <p class="amsg" id="askMsg"></p>
       </div>
 
       <div class="sec">
@@ -612,7 +612,7 @@ var unlocked = false;
    with fewer sections looks finished. */
 function hideForDemo(){
   ["addSec","chatlogSec","boardlogSec","modSec",
-   "backupSec","allowSec","roomSec","askSec","siteSec","showSec"].forEach(function(id){
+   "backupSec","allowSec","roomSec","askSec","siteSec","showSec","techSec"].forEach(function(id){
     var el = document.getElementById(id);
     if(el) el.hidden = true;
   });
@@ -1665,15 +1665,15 @@ function decide(q, how, yes, no){
     .then(function(d){
       if(how === "approve"){
         var miss = (d && d.missing) || [];
-        say("askMsg", "Made " + q.room_name + "." +
+        say("queueMsg", "Made " + q.room_name + "." +
             (miss.length ? " Couldn't find " + miss.join(", ") + " \u2014 add them by hand below." : ""), "ok");
       }else{
-        say("askMsg", "Turned down. Nothing was made.", "ok");
+        say("queueMsg", "Turned down. Nothing was made.", "ok");
       }
       loadAsks(); loadRooms();
     })
     .catch(function(e){
-      say("askMsg", e.message, "err");
+      say("queueMsg", e.message, "err");
       yes.disabled = false; no.disabled = false;
     });
 }
@@ -2231,8 +2231,8 @@ applyTheme(recall(THEME_KEY,null));
       loadWords();
       cacheStats();
       loadSwitches();
-      refreshAskAllowance();
       if(!showOnly){
+        refreshAskAllowance();
         loadAllows();
         loadSite();
         loadRooms();
