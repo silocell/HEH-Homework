@@ -1742,11 +1742,18 @@ function paintRooms(rooms, members){
     row.appendChild(add);
     card.appendChild(row);
 
+    /* In a row with spacing, like every other set of buttons on this
+       page. Appended straight onto the card they sat flush against each
+       other - "Take Aarav outTake Shlok out" - which is what Shiv meant
+       by joined buttons. Quieter too: taking someone out is the rarer
+       action, and it should not be dressed the same as Add. */
+    var outs = document.createElement("div");
+    outs.className = "acct-acts";
     (members[r.id] || []).forEach(function(m){
       if(m.email === OWNER_EMAIL) return;        /* you cannot remove yourself */
       var out = document.createElement("button");
       out.type = "button";
-      out.className = "abtn";
+      out.className = "abtn quiet";
       out.textContent = "Take " + m.name + " out";
       out.addEventListener("click", function(){
         out.disabled = true;
@@ -1754,8 +1761,9 @@ function paintRooms(rooms, members){
           .then(function(){ say("roomMsg", m.name + " is out of " + r.name + ".", "ok"); loadRooms(); })
           .catch(function(e){ say("roomMsg", e.message, "err"); out.disabled = false; });
       });
-      card.appendChild(out);
+      outs.appendChild(out);
     });
+    if(outs.childNodes.length) card.appendChild(outs);
 
     host.appendChild(card);
   });
