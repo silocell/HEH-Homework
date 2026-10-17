@@ -310,6 +310,42 @@ button,input,select,textarea{font:inherit;color:inherit}
   background:var(--margin);margin-left:6px;vertical-align:middle
 }
 .cse-note{font-size:.85rem;color:var(--ink-faint);margin:6px 0 10px;line-height:1.5}
+/* ---- the first-time guide ---- */
+.guide-back{
+  position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;
+  padding:16px;background:rgba(10,14,22,.55)
+}
+.guide-back[hidden]{display:none}
+.guide-card{
+  width:100%;max-width:420px;background:var(--card);color:var(--ink);
+  border:1px solid var(--rule);border-left:4px solid var(--margin);
+  border-radius:14px;padding:22px 22px 18px;box-shadow:0 18px 50px rgba(0,0,0,.35)
+}
+.guide-kicker{
+  font-family:var(--font-mono);font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--ink-faint);margin:0 0 6px
+}
+.guide-title{font-size:1.25rem;font-weight:700;margin:0 0 10px;line-height:1.25}
+.guide-text{font-size:.92rem;line-height:1.6;margin:0 0 18px;color:var(--ink)}
+.guide-foot{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.guide-dots{display:flex;gap:6px}
+.guide-dots span{width:7px;height:7px;border-radius:50%;background:var(--rule)}
+.guide-dots span.on{background:var(--accent)}
+.guide-btns{display:flex;gap:8px}
+.guide-skip{
+  font:inherit;font-size:.84rem;cursor:pointer;background:none;border:0;
+  color:var(--ink-faint);padding:8px 10px
+}
+.guide-skip:hover,.guide-skip:focus-visible{color:var(--ink)}
+.guide-next{
+  font:inherit;font-size:.86rem;font-weight:600;cursor:pointer;border:0;border-radius:9px;
+  background:var(--accent);color:#fff;padding:9px 18px
+}
+.guide-again{
+  font:inherit;font-size:.8rem;cursor:pointer;background:none;border:0;
+  color:var(--ink-faint);padding:10px 0 0;display:block
+}
+.guide-again:hover,.guide-again:focus-visible{color:var(--accent)}
 .ms-note{
   font-size:.76rem;color:var(--ink-faint);line-height:1.55;
   margin:10px 2px 0
@@ -1023,6 +1059,21 @@ footer{
 <!-- ============================================================
      DASHBOARD
      ============================================================ -->
+<div class="guide-back" id="guideBack" hidden>
+  <div class="guide-card" id="guideCard" role="dialog" aria-modal="true" aria-labelledby="guideTitle">
+    <p class="guide-kicker" id="guideKicker"></p>
+    <h2 class="guide-title" id="guideTitle"></h2>
+    <p class="guide-text" id="guideText"></p>
+    <div class="guide-foot">
+      <div class="guide-dots" id="guideDots" aria-hidden="true"></div>
+      <div class="guide-btns">
+        <button type="button" class="guide-skip" id="guideSkip">Skip</button>
+        <button type="button" class="guide-next" id="guideNext">Next</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="gate" id="signingIn" hidden>
   <div class="gate-card" style="text-align:center">
     <h1>Signing you in…</h1>
@@ -1195,6 +1246,7 @@ footer{
           <button type="button" class="mode-btn" data-font="">Normal text</button>
           <button type="button" class="mode-btn" data-font="plain">Easier to read</button>
         </div>
+        <button type="button" class="guide-again" id="guideAgain">Show me around again</button>
       </div>
     </div>
 
@@ -1997,6 +2049,8 @@ document.getElementById("loginForm").addEventListener("submit",function(e){
 });
 
 document.getElementById("switchBtn").addEventListener("click",function(){
+  guideReset();
+  try{ localStorage.removeItem(GUIDE_KEY); }catch(e){}
   hideAsked();
   showExplainPanel(false);
   stopSyncTimer();
@@ -2255,6 +2309,139 @@ document.getElementById("waitingOut").addEventListener("click",function(){
 
 /* The database already refuses an unapproved account; this only saves
    them from staring at a dashboard where nothing works. */
+/* ==================================================================
+   THE FIRST-TIME GUIDE
+
+   A few cards the first time someone signs in, and one card the first
+   time each feature is switched on for them - because the explainer and
+   the chat arrive later, when Shiv lets them in, not on day one.
+
+   "Seen" lives in the account (user_metadata.guide), so it follows a
+   person between the school laptop and home and they are not shown the
+   same thing twice. A copy in this browser covers the moment before the
+   account answers. Skipping counts as seen - it is a guide, not a gate.
+   "Show me around again" under Make it yours brings the welcome back.
+   ================================================================== */
+var GUIDE = {
+  welcome: [
+    { kicker:"Welcome", title:"Everything for homework, in one place",
+      text:"The tiles at the top open your school sites - Sparx, Seneca, Teams and the rest - so you don't need six tabs. Press Edit to add your own." },
+    { kicker:"Yours only", title:"Your to-do list",
+      text:"Add what's due and tick it off as you go. Nobody else can see it - the admin panel only shows Shiv how many things are on it, never what. It follows you to any computer you sign in on." },
+    { kicker:"Free", title:"Look it up",
+      text:"Type a topic and get the Wikipedia version - the Simple English one first, because it's easier to read. It doesn't cost anything." },
+    { kicker:"Make it yours", title:"Change how it looks",
+      text:"Pick a colour, switch to dark mode, or choose the easier-to-read font. More things switch on as Shiv lets you in to them." }
+  ],
+  explainer: [
+    { kicker:"Now switched on", title:"The explainer",
+      text:"Type a topic you didn't understand and get it explained, with an example and a question to check yourself. You get ten a day. It won't do your homework - give it a homework question and it explains the topic behind it instead." },
+    { kicker:"Saves your ten", title:"What people are asking",
+      text:"Topics someone has already asked come back instantly and don't use any of your ten. Tap one in the list to read it." }
+  ],
+  chat: [
+    { kicker:"Now switched on", title:"The year chat",
+      text:"Talk to the rest of the year. Rude words are hashed out, and anything nastier is stopped - and pauses you for a minute and a half. Shiv can see everything, including what's deleted. Messages clear after two days." },
+    { kicker:"Next to it", title:"The noticeboard",
+      text:"Notices for everyone, and homework questions people can answer. Ask one when you're stuck - unanswered questions stay at the top." }
+  ],
+  rooms: [
+    { kicker:"New", title:"You're in a private room",
+      text:"Tabs above the chat switch between the year chat and your rooms. A dot means something new. Private means private from other pupils - not from Shiv, and the same rules apply." }
+  ]
+};
+
+var GUIDE_KEY = "hl-guide";
+var guideSeen = {};
+var guideQueue = [];
+var guideCards = null, guideAt = 0, guideName = "";
+
+function guideLoad(supaUser){
+  var local = {};
+  try{ local = JSON.parse(localStorage.getItem(GUIDE_KEY) || "{}") || {}; }catch(e){}
+  var meta = (supaUser && supaUser.user_metadata && supaUser.user_metadata.guide) || {};
+  guideSeen = {};
+  Object.keys(local).forEach(function(k){ if(local[k]) guideSeen[k] = true; });
+  Object.keys(meta).forEach(function(k){ if(meta[k]) guideSeen[k] = true; });
+}
+
+function guideMarkSeen(name){
+  guideSeen[name] = true;
+  try{ localStorage.setItem(GUIDE_KEY, JSON.stringify(guideSeen)); }catch(e){}
+  if(sb && currentUser && !currentUser.offline){
+    try{ sb.auth.updateUser({ data: { guide: guideSeen } }); }catch(e){}
+  }
+}
+
+function maybeGuide(name){
+  if(!GUIDE[name] || guideSeen[name]) return;
+  if(guideName === name || guideQueue.indexOf(name) > -1) return;
+  guideQueue.push(name);
+  if(!guideCards) guideNextInQueue();
+}
+
+function guideNextInQueue(){
+  var name = guideQueue.shift();
+  if(!name){ return; }
+  guideName = name;
+  guideCards = GUIDE[name];
+  guideAt = 0;
+  guidePaint();
+  document.getElementById("guideBack").hidden = false;
+  document.getElementById("guideNext").focus();
+}
+
+function guidePaint(){
+  var c = guideCards[guideAt];
+  document.getElementById("guideKicker").textContent = c.kicker;
+  document.getElementById("guideTitle").textContent = c.title;
+  document.getElementById("guideText").textContent = c.text;
+  var last = guideAt === guideCards.length - 1;
+  document.getElementById("guideNext").textContent = last ? "Got it" : "Next";
+  document.getElementById("guideSkip").hidden = last || guideCards.length === 1;
+  var dots = document.getElementById("guideDots");
+  dots.textContent = "";
+  if(guideCards.length > 1){
+    guideCards.forEach(function(_, i){
+      var d = document.createElement("span");
+      if(i === guideAt) d.className = "on";
+      dots.appendChild(d);
+    });
+  }
+}
+
+function guideClose(){
+  if(guideName) guideMarkSeen(guideName);
+  document.getElementById("guideBack").hidden = true;
+  guideCards = null; guideName = "";
+  /* Anything that switched on while this was open gets its turn next. */
+  if(guideQueue.length) setTimeout(guideNextInQueue, 250);
+}
+
+function guideReset(){
+  guideQueue = [];
+  guideCards = null; guideName = "";
+  var b = document.getElementById("guideBack");
+  if(b) b.hidden = true;
+}
+
+document.getElementById("guideNext").addEventListener("click", function(){
+  if(!guideCards) return;
+  if(guideAt < guideCards.length - 1){ guideAt++; guidePaint(); }
+  else guideClose();
+});
+document.getElementById("guideSkip").addEventListener("click", guideClose);
+document.getElementById("guideBack").addEventListener("click", function(e){
+  if(e.target === this) guideClose();
+});
+document.addEventListener("keydown", function(e){
+  if(e.key === "Escape" && guideCards) guideClose();
+});
+document.getElementById("guideAgain").addEventListener("click", function(){
+  delete guideSeen.welcome;
+  maybeGuide("welcome");
+});
+
 function openDashboard(who, supaUser){
   doneSigningIn();
   /* Closed, and not one of the two who may still come in.
@@ -2274,6 +2461,8 @@ function openDashboard(who, supaUser){
 
   currentUser = who;
   pullLook(supaUser);
+  guideReset();
+  guideLoad(supaUser);
 
   if(sb){
     sb.from("profiles").select("approved,name").eq("id", who.uid).maybeSingle()
@@ -2290,6 +2479,7 @@ function openDashboard(who, supaUser){
           currentUser.name = r.data.name;
           paintGreeting();
         }
+        if(currentUser) maybeGuide("welcome");
       }, function(){});
   }
 
@@ -3266,6 +3456,7 @@ function refreshAllowance(){
       return;
     }
     showExplainPanel(true);
+    maybeGuide("explainer");
     setLeft(r.data.remaining, r.data.limit);
     loadAsked();
   }).catch(function(){ showExplainPanel(false); });
@@ -3794,6 +3985,7 @@ function roomLabel(){
 function paintRoomTabs(){
   var host = document.getElementById("roomTabs");
   if(!host) return;
+  if(myRooms.length) maybeGuide("rooms");
   host.textContent = "";
   host.hidden = !myRooms.length;        /* nobody in a room sees tabs at all */
 
@@ -3989,6 +4181,7 @@ function startChat(){
 
 function openChat(){
   document.getElementById("chatPanel").hidden = false;
+  maybeGuide("chat");
   loadRooms();
   showMyAsks();
   loadChat(true);
