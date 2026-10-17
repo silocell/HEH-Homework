@@ -3281,12 +3281,51 @@ function renderWikiGuesses(term, titles){
 
   var p = document.createElement("p");
   p.className = "wiki-fell";
-  p.textContent = titles.length
-    ? "Wikipedia hasn't got an article called that. Did you mean:"
-    : "Wikipedia hasn't got an article on that. Try different wording.";
+  p.textContent = "Wikipedia hasn't got an article called that.";
   out.appendChild(p);
 
+  /* The useful thing to do when Wikipedia has nothing.
+
+     Wikipedia is indexed by article title, so it answers "igneous rock"
+     and not "oxidised copper" - the article somebody wants there is
+     called Copper(II) oxide or Patina, and no amount of searching for
+     the words they typed will land on it. What it ranks instead is
+     articles that happen to contain both words, which is how a materials
+     scientist ends up being offered as a rock.
+
+     The explainer has no such problem: it was asked a question in plain
+     English, which is exactly what it is for. So the dead end offers it,
+     still as a press, still with the price on the button. */
+  var exPanel = document.getElementById("explainPanel");
+  if(exPanel && !exPanel.hidden){
+    var row = document.createElement("div");
+    row.className = "wiki-actions";
+    row.style.marginTop = "10px";
+
+    var up = document.createElement("button");
+    up.type = "button";
+    up.className = "wiki-up";
+    up.textContent = "Ask the explainer instead \u2014 uses 1 of your 10";
+    up.addEventListener("click", function(){
+      var input = document.getElementById("exInput");
+      var form  = document.getElementById("exForm");
+      if(!input || !form) return;
+      input.value = term;
+      exPanel.scrollIntoView({ behavior:"smooth", block:"nearest" });
+      if(typeof form.requestSubmit === "function") form.requestSubmit();
+      else form.dispatchEvent(new Event("submit",{ cancelable:true, bubbles:true }));
+    });
+    row.appendChild(up);
+    out.appendChild(row);
+  }
+
   if(!titles.length) return;
+
+  var near = document.createElement("p");
+  near.className = "wiki-fell";
+  near.style.marginTop = "12px";
+  near.textContent = "Articles that mention it:";
+  out.appendChild(near);
 
   var wrap = document.createElement("div");
   wrap.className = "wiki-guesses";
