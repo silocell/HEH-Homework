@@ -277,6 +277,16 @@ button,input,select,textarea{font:inherit;color:inherit}
    expect the word "unverified" reads it as a formality; somebody meeting
    it cold reads it as a warning about Shiv. */
 .room-tabs{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}
+.ask-room{margin:0 0 14px}
+.ask-form{display:flex;flex-direction:column;gap:8px;margin-top:10px;max-width:420px}
+.ask-form input{
+  font:inherit;font-size:.88rem;padding:9px 11px;border-radius:9px;
+  border:1px solid var(--rule);background:var(--card);color:var(--ink)
+}
+.ask-form input:focus{border-color:var(--accent);outline:none}
+.ask-form .btn{width:auto;align-self:flex-start;padding:8px 16px;font-size:.85rem}
+.ask-msg{font-size:.8rem;color:var(--ink-faint);margin:8px 0 0;line-height:1.5}
+.ask-msg.bad{color:var(--margin)}
 .room-tab{
   font:inherit;font-size:.82rem;cursor:pointer;background:none;
   color:var(--ink-faint);border:1px solid var(--rule);
@@ -1166,6 +1176,16 @@ footer{
       <p class="chat-watch"><span class="live-dot" id="liveDot"></span><span id="liveText">Live</span> &middot; <span id="chatWatch">Shiv can see everything posted here, including anything deleted.</span></p>
     </div>
     <div class="room-tabs" id="roomTabs" hidden></div>
+    <div class="ask-room">
+      <button type="button" class="otherlink" id="askOpen">Ask for a private room</button>
+      <form class="ask-form" id="askForm" hidden>
+        <input type="text" id="askName" placeholder="What's it called?" maxlength="40" autocomplete="off" aria-label="Room name">
+        <input type="text" id="askWho" placeholder="Who's in it? e.g. 26paaa, 26pash" autocomplete="off" aria-label="Who should be in it">
+        <input type="text" id="askWhy" placeholder="What's it for? (optional)" maxlength="200" autocomplete="off" aria-label="What it is for">
+        <button type="submit" class="btn" id="askSend">Ask Shiv</button>
+      </form>
+      <p class="ask-msg" id="askMsg"></p>
+    </div>
     <div class="chat-log" id="chatLog"></div>
     <form class="chat-form" id="chatForm">
       <input type="text" id="chatInput" maxlength="500" autocomplete="off" placeholder="Say something…" aria-label="Message">
@@ -3567,6 +3587,72 @@ function switchRoom(id){
   loadChat(true);
 }
 
+/* ---------- asking for one ----------
+   Anyone may ask. Nobody may make one. The room does not exist until
+   Shiv says yes, so a refusal leaves nothing behind - and nobody ends up
+   in a conversation that was never agreed to.
+
+   The name is checked like a message on the way in, because everyone in
+   the room would see it on a tab. */
+function askSay(msg, bad){
+  var el = document.getElementById("askMsg");
+  if(!el) return;
+  el.textContent = msg || "";
+  el.className = "ask-msg" + (bad ? " bad" : "");
+}
+
+function showMyAsks(){
+  boardCall({ action:"room_mine" }).then(function(d){
+    var rs = (d && d.requests) || [];
+    var open = rs.filter(function(r){ return r.status === "pending"; });
+    var no   = rs.filter(function(r){ return r.status === "refused"; });
+    if(open.length){
+      askSay(open.length === 1
+        ? "Asked for \u201c" + open[0].room_name + "\u201d. Shiv hasn't answered yet."
+        : "You've asked for " + open.length + " rooms. Waiting on Shiv.");
+    }else if(no.length){
+      askSay("\u201c" + no[0].room_name + "\u201d was turned down" +
+             (no[0].note ? ": " + no[0].note : "."));
+    }
+  }).catch(function(){});
+}
+
+var askOpen = document.getElementById("askOpen");
+if(askOpen) askOpen.addEventListener("click", function(){
+  var f = document.getElementById("askForm");
+  if(!f) return;
+  f.hidden = !f.hidden;
+  askOpen.textContent = f.hidden ? "Ask for a private room" : "Never mind";
+  if(!f.hidden) document.getElementById("askName").focus();
+});
+
+var askForm = document.getElementById("askForm");
+if(askForm) askForm.addEventListener("submit", function(e){
+  e.preventDefault();
+  var nm  = document.getElementById("askName").value.trim();
+  var who = document.getElementById("askWho").value.trim();
+  var why = document.getElementById("askWhy").value.trim();
+  var btn = document.getElementById("askSend");
+  if(!nm){ askSay("Give it a name.", true); return; }
+
+  var wanted = who.split(/[,\s]+/).filter(Boolean);
+  if(!wanted.length){ askSay("Say who you want in it.", true); return; }
+
+  btn.disabled = true;
+  askSay("Asking\u2026");
+  boardCall({ action:"room_ask", name:nm, wanted:wanted, reason:why })
+    .then(function(){
+      document.getElementById("askForm").hidden = true;
+      askOpen.textContent = "Ask for a private room";
+      document.getElementById("askName").value = "";
+      document.getElementById("askWho").value = "";
+      document.getElementById("askWhy").value = "";
+      askSay("Asked. Shiv will see it \u2014 you'll get the room if he says yes.");
+    })
+    .catch(function(err){ askSay(err.message || "Couldn't ask just now.", true); })
+    .then(function(){ btn.disabled = false; });
+});
+
 function loadRooms(){
   if(!canSync()) return Promise.resolve();
   return sb.from("rooms").select("id,name").order("created_at",{ ascending:true })
@@ -3618,6 +3704,7 @@ function startChat(){
 function openChat(){
   document.getElementById("chatPanel").hidden = false;
   loadRooms();
+  showMyAsks();
   loadChat(true);
 
   try{
@@ -3906,6 +3993,8 @@ function postEl(p, replies, meId){
   return card;
 }
 
+/* The way into the chat function. Named for the board because that came
+   first; the room asks use it too. */
 function boardCall(payload){
   if(currentUser.offline || !sb){
     return Promise.reject(new Error("You're offline just now."));

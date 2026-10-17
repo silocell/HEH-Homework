@@ -261,6 +261,12 @@ button,input,select,textarea{font:inherit;color:inherit}
   <div class="panel" id="mainPanel" hidden>
 
 
+      <div class="sec" id="askSec" hidden>
+        <p class="sec-h">Asked for a room</p>
+        <div id="askList"></div>
+        <p class="amsg" id="askMsg">Nothing exists until you say yes. Turning one down leaves no room and no members behind &mdash; only a note to whoever asked.</p>
+      </div>
+
       <div class="sec" id="roomSec">
         <p class="sec-h">Private rooms</p>
         <div class="arow">
@@ -1411,6 +1417,77 @@ document.getElementById("askForm").addEventListener("submit",function(e){
 });
 
 
+/* ---------- people asking for a room ----------
+   Anyone may ask; nobody may make one. The room is created at the moment
+   you approve it, not when it was asked for, so a refusal leaves nothing
+   behind - no room, no members, nothing to tidy up. */
+function paintAsks(reqs){
+  var host = document.getElementById("askList");
+  var sec  = document.getElementById("askSec");
+  if(!host || !sec) return;
+  host.textContent = "";
+  sec.hidden = !reqs.length;        /* no queue, no section */
+  if(!reqs.length) return;
+
+  reqs.forEach(function(q){
+    var card = document.createElement("div");
+    card.className = "acct";
+
+    var h = document.createElement("div");
+    h.className = "acct-head";
+    h.textContent = q.room_name;
+    card.appendChild(h);
+
+    var meta = document.createElement("div");
+    meta.className = "acct-meta";
+    meta.textContent = q.name + " wants " + (q.wanted || []).join(", ") +
+                       (q.reason ? " \u2014 \u201c" + q.reason + "\u201d" : "");
+    card.appendChild(meta);
+
+    var acts = document.createElement("div");
+    acts.className = "acct-acts";
+
+    var yes = document.createElement("button");
+    yes.type = "button"; yes.className = "abtn";
+    yes.textContent = "Make it";
+    yes.addEventListener("click", function(){ decide(q, "approve", yes, no); });
+
+    var no = document.createElement("button");
+    no.type = "button"; no.className = "abtn quiet";
+    no.textContent = "No";
+    no.addEventListener("click", function(){ decide(q, "refuse", yes, no); });
+
+    acts.appendChild(yes); acts.appendChild(no);
+    card.appendChild(acts);
+    host.appendChild(card);
+  });
+}
+
+function decide(q, how, yes, no){
+  yes.disabled = true; no.disabled = true;
+  callChat({ action:"room_decide", requestId:q.id, decision:how })
+    .then(function(d){
+      if(how === "approve"){
+        var miss = (d && d.missing) || [];
+        say("askMsg", "Made " + q.room_name + "." +
+            (miss.length ? " Couldn't find " + miss.join(", ") + " \u2014 add them by hand below." : ""), "ok");
+      }else{
+        say("askMsg", "Turned down. Nothing was made.", "ok");
+      }
+      loadAsks(); loadRooms();
+    })
+    .catch(function(e){
+      say("askMsg", e.message, "err");
+      yes.disabled = false; no.disabled = false;
+    });
+}
+
+function loadAsks(){
+  callChat({ action:"room_queue" })
+    .then(function(d){ paintAsks(d.requests || []); })
+    .catch(function(){});
+}
+
 /* ---------- private rooms ----------
    Reading is done straight from the tables, which only return rooms you
    are in. Making one, and adding or removing a person, goes through the
@@ -1745,7 +1822,17 @@ function loadLog(){
       who.title = r.email || "";
       var what = document.createElement("span"); what.className = "what"; what.textContent = r.body || "";
 
-      row.appendChild(w); row.appendChild(who); row.appendChild(what);
+      row.appendChild(w); row.appendChild(who);
+      /* "On it" means something different in a private room than it does
+         in front of the whole year, so the log says which. */
+      if(r.where){
+        var rm = document.createElement("span");
+        rm.className = "who";
+        rm.style.opacity = ".7";
+        rm.textContent = "[" + r.where + "]";
+        row.appendChild(rm);
+      }
+      row.appendChild(what);
 
       if(r.kind === "live" || r.kind === "masked"){
         var del = document.createElement("button");
@@ -1933,6 +2020,7 @@ applyTheme(recall(THEME_KEY,null));
     loadSwitches();
     loadSite();
     loadRooms();
+    loadAsks();
     checkBackup();
     refreshAskAllowance();
   }).catch(function(){ show("deadEnd"); });
