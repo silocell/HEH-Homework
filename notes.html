@@ -556,6 +556,17 @@ var showOnly = false;
 var SALT = "hl$2026$";
 var THEME_KEY = "hl.theme";
 
+/* The address bar shows whatever was typed or bookmarked. GitHub Pages
+   serves this page for /notes as well as /notes.html, so the page tidies
+   its own address on arrival - same page, no reload, just the shorter
+   name on the bar from now on. Only the path changes; a #fragment or a
+   ?query is left alone. */
+try{
+  if(/\/notes\.html$/.test(location.pathname)){
+    history.replaceState(null, "", location.pathname.replace(/\.html$/, "") + location.search + location.hash);
+  }
+}catch(e){}
+
 var sb = null;
 try{
   if(window.supabase && window.supabase.createClient){
