@@ -3825,6 +3825,13 @@ if(askOpen) askOpen.addEventListener("click", function(){
   if(!f) return;
   f.hidden = !f.hidden;
   askOpen.textContent = f.hidden ? "Make a private room" : "Never mind";
+  /* Shiv doesn't ask himself for permission. For him the form makes the
+     room on the spot, so there's no "what's it for" and the button says
+     what it does. The server decides who may make a room either way -
+     this only changes the wording. */
+  var mine = isOwner();
+  document.getElementById("askWhy").hidden = mine;
+  document.getElementById("askSend").textContent = mine ? "Make it" : "Ask Shiv";
   if(!f.hidden) document.getElementById("askName").focus();
 });
 
@@ -3841,6 +3848,41 @@ if(askForm) askForm.addEventListener("submit", function(e){
   if(!wanted.length){ askSay("Say who you want in it.", true); return; }
 
   btn.disabled = true;
+
+  if(isOwner()){
+    askSay("Making it\u2026");
+    var made;
+    boardCall({ action:"room_new", name:nm })
+      .then(function(d){
+        made = d && d.room;
+        if(!made || !made.id) throw new Error("Couldn't make the room.");
+        /* One at a time, so a name that doesn't match anyone is reported
+           by name instead of sinking the whole room. */
+        var missing = [];
+        return wanted.reduce(function(chain, w){
+          return chain.then(function(){
+            var em = w.toLowerCase();
+            if(em.indexOf("@") === -1) em += "@hatchend.harrow.sch.uk";
+            return boardCall({ action:"room_add", room:made.id, email:em })
+              .catch(function(){ missing.push(w); });
+          });
+        }, Promise.resolve()).then(function(){ return missing; });
+      })
+      .then(function(missing){
+        document.getElementById("askForm").hidden = true;
+        askOpen.textContent = "Make a private room";
+        document.getElementById("askName").value = "";
+        document.getElementById("askWho").value = "";
+        askSay("Made \u201c" + made.name + "\u201d." +
+          (missing.length ? " Couldn't find " + missing.join(", ") + " \u2014 add them from the admin panel." : ""),
+          missing.length > 0);
+        loadRooms();
+      })
+      .catch(function(err){ askSay(err.message || "Couldn't make it just now.", true); })
+      .then(function(){ btn.disabled = false; });
+    return;
+  }
+
   askSay("Asking\u2026");
   boardCall({ action:"room_ask", name:nm, wanted:wanted, reason:why })
     .then(function(){
