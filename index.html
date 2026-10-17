@@ -276,6 +276,20 @@ button,input,select,textarea{font:inherit;color:inherit}
 /* Said before they see it, not after. Somebody who has been told to
    expect the word "unverified" reads it as a formality; somebody meeting
    it cold reads it as a warning about Shiv. */
+.room-tabs{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}
+.room-tab{
+  font:inherit;font-size:.82rem;cursor:pointer;background:none;
+  color:var(--ink-faint);border:1px solid var(--rule);
+  border-radius:999px;padding:5px 12px;position:relative
+}
+.room-tab:hover{color:var(--ink);border-color:var(--ink-faint)}
+.room-tab[aria-current="true"]{
+  color:#fff;background:var(--accent);border-color:var(--accent)
+}
+.room-tab .dot{
+  display:inline-block;width:6px;height:6px;border-radius:50%;
+  background:var(--margin);margin-left:6px;vertical-align:middle
+}
 .ms-note{
   font-size:.76rem;color:var(--ink-faint);line-height:1.55;
   margin:10px 2px 0
@@ -1148,9 +1162,10 @@ footer{
 
   <div class="panel chat" id="chatPanel" hidden>
     <div class="chat-head">
-      <p class="panel-title">Year chat</p>
-      <p class="chat-watch"><span class="live-dot" id="liveDot"></span><span id="liveText">Live</span> &middot; Shiv can see everything posted here, including anything deleted.</p>
+      <p class="panel-title" id="chatTitle">Year chat</p>
+      <p class="chat-watch"><span class="live-dot" id="liveDot"></span><span id="liveText">Live</span> &middot; <span id="chatWatch">Shiv can see everything posted here, including anything deleted.</span></p>
     </div>
+    <div class="room-tabs" id="roomTabs" hidden></div>
     <div class="chat-log" id="chatLog"></div>
     <form class="chat-form" id="chatForm">
       <input type="text" id="chatInput" maxlength="500" autocomplete="off" placeholder="Say something…" aria-label="Message">
@@ -3488,12 +3503,88 @@ function scrollChatDown(){
   if(log) log.scrollTop = log.scrollHeight;
 }
 
+/* ---------- rooms ----------
+   The year chat is the room with no id, which is what every message in
+   the table was before rooms existed. Everything else is a room Shiv has
+   put you in; the database will not return a room you are not in, so
+   there is nothing here to find by poking at the page.
+
+   What a room is NOT is private from Shiv. It says so on the header, in
+   the same words the year chat uses, because a room that called itself
+   private without saying that would be lying to the people in it. The
+   filter, the checker and the pause all work exactly as they do in the
+   year chat - it is the same send, so anything turned away there is
+   turned away here, and lands in the same log. */
+var currentRoom = null;      /* null = the year chat */
+var myRooms = [];
+var roomUnread = {};
+
+function roomLabel(){
+  if(!currentRoom) return "Year chat";
+  for(var i=0;i<myRooms.length;i++){
+    if(myRooms[i].id === currentRoom) return myRooms[i].name;
+  }
+  return "Room";
+}
+
+function paintRoomTabs(){
+  var host = document.getElementById("roomTabs");
+  if(!host) return;
+  host.textContent = "";
+  host.hidden = !myRooms.length;        /* nobody in a room sees tabs at all */
+
+  var all = [{ id:null, name:"Year chat" }].concat(myRooms);
+  all.forEach(function(r){
+    var b = document.createElement("button");
+    b.type = "button";
+    b.className = "room-tab";
+    b.textContent = r.name;
+    b.setAttribute("aria-current", (r.id === currentRoom) ? "true" : "false");
+    if(r.id !== currentRoom && roomUnread[String(r.id)]){
+      var d = document.createElement("span");
+      d.className = "dot";
+      b.appendChild(d);
+    }
+    b.addEventListener("click", function(){ switchRoom(r.id); });
+    host.appendChild(b);
+  });
+
+  var title = document.getElementById("chatTitle");
+  if(title) title.textContent = roomLabel();
+  var watch = document.getElementById("chatWatch");
+  if(watch){
+    watch.textContent = currentRoom
+      ? "Private from everyone else \u2014 but Shiv can see everything in here, including anything deleted."
+      : "Shiv can see everything posted here, including anything deleted.";
+  }
+}
+
+function switchRoom(id){
+  if(id === currentRoom) return;
+  currentRoom = id;
+  roomUnread[String(id)] = false;
+  paintRoomTabs();
+  loadChat(true);
+}
+
+function loadRooms(){
+  if(!canSync()) return Promise.resolve();
+  return sb.from("rooms").select("id,name").order("created_at",{ ascending:true })
+    .then(function(r){
+      myRooms = (r && !r.error && r.data) ? r.data : [];
+      paintRoomTabs();
+    }, function(){ myRooms = []; paintRoomTabs(); });
+}
+
 function loadChat(initial){
   if(!canSync()) return Promise.resolve();
   var log = document.getElementById("chatLog");
   var stick = initial || atBottom(log);
 
-  return sb.from("messages").select("*")
+  var q = sb.from("messages").select("*");
+  q = currentRoom ? q.eq("room_id", currentRoom) : q.is("room_id", null);
+
+  return q
     .order("created_at",{ ascending:false }).limit(CHAT_LIMIT)
     .then(function(r){
       if(r.error) return;
@@ -3526,6 +3617,7 @@ function startChat(){
 
 function openChat(){
   document.getElementById("chatPanel").hidden = false;
+  loadRooms();
   loadChat(true);
 
   try{
@@ -3534,9 +3626,18 @@ function openChat(){
       .on("postgres_changes",
           { event:"INSERT", schema:"public", table:"messages" },
           function(p){
+            var m = p.new || {};
+            var where = m.room_id || null;
+            if(where !== currentRoom){
+              /* Somewhere else you belong. A dot on the tab, not a message
+                 dropped into the conversation you are reading. */
+              roomUnread[String(where)] = true;
+              paintRoomTabs();
+              return;
+            }
             var log = document.getElementById("chatLog");
             var stick = atBottom(log);
-            addMessage(p.new);
+            addMessage(m);
             if(stick) log.scrollTop = log.scrollHeight;
           })
       .subscribe(function(status){
@@ -3550,6 +3651,10 @@ function openChat(){
 }
 
 function stopChat(){
+  currentRoom = null;
+  myRooms = [];
+  roomUnread = {};
+  paintRoomTabs();
   if(chatPoll){ clearInterval(chatPoll); chatPoll = null; }
   try{ if(chatChannel) sb.removeChannel(chatChannel); }catch(e){}
   chatChannel = null;
@@ -3591,7 +3696,7 @@ document.getElementById("chatForm").addEventListener("submit",function(e){
      a send is slower than a normal request. Twenty seconds is generous for
      that and still short enough not to feel stuck. */
   withTimeout(
-    sb.functions.invoke("chat",{ body:{ action:"send", body:text } }),
+    sb.functions.invoke("chat",{ body:{ action:"send", body:text, room: currentRoom || undefined } }),
     20000
   ).then(function(r){
     var d = (r && r.data) || {};
