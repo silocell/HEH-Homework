@@ -273,6 +273,13 @@ button,input,select,textarea{font:inherit;color:inherit}
 .btn.ms:hover{filter:none;border-color:var(--accent)}
 .btn.ms svg{width:17px;height:17px;flex:none}
 .pw-switch{margin:14px 0 0;text-align:center}
+/* Said before they see it, not after. Somebody who has been told to
+   expect the word "unverified" reads it as a formality; somebody meeting
+   it cold reads it as a warning about Shiv. */
+.ms-note{
+  font-size:.76rem;color:var(--ink-faint);line-height:1.55;
+  margin:10px 2px 0
+}
 
 /* ---- the maintenance bar ----
    Only the people who can still get in ever see this, and it is loud on
@@ -933,6 +940,7 @@ footer{
       <svg viewBox="0 0 23 23" aria-hidden="true"><path fill="#f25022" d="M1 1h10v10H1z"/><path fill="#7fba00" d="M12 1h10v10H12z"/><path fill="#00a4ef" d="M1 12h10v10H1z"/><path fill="#ffb900" d="M12 12h10v10H12z"/></svg>
       Sign in with Microsoft
     </button>
+    <p class="ms-note">Microsoft will say this app is &ldquo;unverified&rdquo;. That&rsquo;s normal &mdash; it means I&rsquo;m not a registered company. It can see your name and school email, nothing else.</p>
     <p class="gate-error" id="gateError"></p>
 
     <p class="pw-switch" id="pwSwitch">
