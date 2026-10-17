@@ -278,6 +278,15 @@ button,input,select,textarea{font:inherit;color:inherit}
    it cold reads it as a warning about Shiv. */
 .room-tabs{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}
 .ask-room{margin:0 0 14px}
+/* This was using the same faint grey as the spare-key link, which is
+   meant to be missed. This one is meant to be found. */
+.ask-link{
+  font:inherit;font-size:.84rem;font-weight:500;cursor:pointer;
+  background:none;color:var(--accent);
+  border:1px solid var(--accent);border-radius:999px;
+  padding:6px 14px
+}
+.ask-link:hover,.ask-link:focus-visible{background:var(--accent);color:#fff}
 .ask-form{display:flex;flex-direction:column;gap:8px;margin-top:10px;max-width:420px}
 .ask-form input{
   font:inherit;font-size:.88rem;padding:9px 11px;border-radius:9px;
@@ -1177,7 +1186,7 @@ footer{
     </div>
     <div class="room-tabs" id="roomTabs" hidden></div>
     <div class="ask-room">
-      <button type="button" class="otherlink" id="askOpen">Ask for a private room</button>
+      <button type="button" class="ask-link" id="askOpen">Make a private room</button>
       <form class="ask-form" id="askForm" hidden>
         <input type="text" id="askName" placeholder="What's it called?" maxlength="40" autocomplete="off" aria-label="Room name">
         <input type="text" id="askWho" placeholder="Who's in it? e.g. 26paaa, 26pash" autocomplete="off" aria-label="Who should be in it">
@@ -3622,7 +3631,7 @@ if(askOpen) askOpen.addEventListener("click", function(){
   var f = document.getElementById("askForm");
   if(!f) return;
   f.hidden = !f.hidden;
-  askOpen.textContent = f.hidden ? "Ask for a private room" : "Never mind";
+  askOpen.textContent = f.hidden ? "Make a private room" : "Never mind";
   if(!f.hidden) document.getElementById("askName").focus();
 });
 
@@ -3643,7 +3652,7 @@ if(askForm) askForm.addEventListener("submit", function(e){
   boardCall({ action:"room_ask", name:nm, wanted:wanted, reason:why })
     .then(function(){
       document.getElementById("askForm").hidden = true;
-      askOpen.textContent = "Ask for a private room";
+      askOpen.textContent = "Make a private room";
       document.getElementById("askName").value = "";
       document.getElementById("askWho").value = "";
       document.getElementById("askWhy").value = "";
