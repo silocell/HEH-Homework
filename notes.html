@@ -1448,15 +1448,21 @@ function paintRooms(rooms, members){
     row.className = "arow";
     var box = document.createElement("input");
     box.type = "text";
-    box.placeholder = "Their email";
+    box.placeholder = "26kush";
     box.setAttribute("aria-label", "Email to add to " + r.name);
     var add = document.createElement("button");
     add.type = "button";
     add.className = "abtn";
     add.textContent = "Add";
     add.addEventListener("click", function(){
-      var em = box.value.trim();
+      /* "26kush" is what you would say out loud, so take it. No @ means a
+         school username and gets the school's domain; anything with one is
+         used as typed, which keeps your own Gmail working. The server still
+         checks the address belongs to a real account - this only saves the
+         typing. */
+      var em = box.value.trim().toLowerCase();
       if(!em) return;
+      if(em.indexOf("@") === -1) em += "@hatchend.harrow.sch.uk";
       add.disabled = true;
       callChat({ action:"room_add", room:r.id, email:em })
         .then(function(){ box.value = ""; say("roomMsg", em + " is in " + r.name + " now.", "ok"); loadRooms(); })
