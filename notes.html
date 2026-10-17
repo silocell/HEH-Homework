@@ -249,10 +249,7 @@ body.demo #switchRow button,
 body.demo #wordSec button{
   pointer-events:none; opacity:.45;
 }
-body.demo #mainNote{
-  color:var(--ink); border:1px solid var(--rule);
-  border-radius:9px; padding:10px 12px; margin-bottom:18px;
-}
+
 
 .pw-out{
   display:flex;align-items:center;gap:10px;flex-wrap:wrap;
@@ -284,8 +281,6 @@ body.demo #mainNote{
   </div>
 
   <div class="panel" id="mainPanel" hidden>
-
-      <p class="amsg" id="mainNote" hidden>You're on the demo account. You can look around and run the checks; changing things, and the chat and board logs, are on Shiv's account only.</p>
 
 
 
@@ -628,8 +623,6 @@ function hideForDemo(){
      arrive later, and a button added after this ran would still work. */
   document.body.classList.add("demo");
 
-  var note = document.getElementById("mainNote");
-  if(note) note.hidden = false;
 }
 
 function say(id, text, kind){
