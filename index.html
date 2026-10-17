@@ -318,6 +318,17 @@ button,input,select,textarea{font:inherit;color:inherit}
    Only the people who can still get in ever see this, and it is loud on
    purpose: the worst outcome of this feature is leaving it switched on by
    accident and showing a tutor a closed sign. */
+.update-bar{
+  display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+  background:var(--accent);color:#fff;
+  padding:10px 16px;border-radius:10px;margin-bottom:18px;
+  font-size:.86rem;line-height:1.5
+}
+.update-bar strong{font-weight:600}
+.update-bar button{
+  font:inherit;font-size:.8rem;cursor:pointer;margin-left:auto;
+  background:#fff;color:var(--accent);border:0;border-radius:7px;padding:6px 12px
+}
 .maint-bar{
   display:flex;align-items:center;gap:12px;flex-wrap:wrap;
   background:var(--margin);color:#fff;
@@ -1037,6 +1048,11 @@ footer{
 </div>
 
 <div class="shell" id="dash" hidden>
+
+  <div class="update-bar" id="updateBar" hidden>
+    <span><strong>There's a newer version of this page.</strong> Finish what you're typing, then load it.</span>
+    <button type="button" id="updateNow">Load it</button>
+  </div>
 
   <div class="maint-bar" id="maintBar" hidden>
     <span><strong>The site is closed to everyone else.</strong> Only you and your admin account can get in.</span>
@@ -1978,6 +1994,69 @@ document.getElementById("switchBtn").addEventListener("click",function(){
 });
 
 /* ==================================================================
+   A NEW VERSION IS LIVE
+
+   version.json changes with every push. A tab reads it when it loads and
+   remembers what it saw, then reads it again now and then; a different
+   value means a newer page is being served than the one in this tab.
+
+   Asking GitHub Pages for the file IS the test for whether the update
+   has finished publishing. Until the green tick, Pages still serves the
+   old file, so the tab sees the old value and does nothing. There is
+   nothing to poll and no API to ask.
+
+   It reloads through an address the cache has not seen, for the same
+   reason the maintenance switch does: a plain reload can be answered
+   from cache, and location.reload(true) has not forced anything in
+   Chrome for years.
+
+   What it will not do is reload somebody mid-sentence. If there is
+   typing anywhere on the page it shows a bar and waits to be pressed.
+   Losing a half-written message to an update nobody asked for is worse
+   than running a version that is ten minutes old.
+   ================================================================== */
+var myBuild = null;
+var updateSeen = false;
+
+function typingSomewhere(){
+  var ids = ["chatInput","exInput","todoInput","wikiInput","lookupInput",
+             "askName","askWho","askWhy","boardInput","linkLabel","linkUrl"];
+  for(var i=0;i<ids.length;i++){
+    var el = document.getElementById(ids[i]);
+    if(el && el.value && el.value.trim()) return true;
+  }
+  var a = document.activeElement;
+  if(a && (a.tagName === "TEXTAREA") && a.value && a.value.trim()) return true;
+  return false;
+}
+
+function reloadForUpdate(){
+  location.replace(location.pathname + "?v=" + Date.now());
+}
+
+function offerUpdate(){
+  if(updateSeen) return;
+  updateSeen = true;
+
+  if(!typingSomewhere()){ reloadForUpdate(); return; }
+
+  var bar = document.getElementById("updateBar");
+  if(bar) bar.hidden = false;
+}
+
+function checkForUpdate(){
+  if(!navigator.onLine) return;
+  fetch("version.json?t=" + Date.now(), { cache: "no-store" })
+    .then(function(r){ return r.ok ? r.json() : null; })
+    .then(function(v){
+      if(!v || !v.build) return;
+      if(myBuild === null){ myBuild = v.build; return; }
+      if(v.build !== myBuild) offerUpdate();
+    })
+    .catch(function(){});
+}
+
+/* ==================================================================
    MAINTENANCE
    The switch lives in site_status, one row everybody may read and only
    these two addresses may change - the database enforces that, not this
@@ -2110,6 +2189,9 @@ document.getElementById("closedIn").addEventListener("click", function(){
 
 /* Turning it back on is one click from inside, so nobody has to go
    hunting through the admin panel to undo it. */
+var updateNow = document.getElementById("updateNow");
+if(updateNow) updateNow.addEventListener("click", reloadForUpdate);
+
 var maintOff = document.getElementById("maintOff");
 if(maintOff) maintOff.addEventListener("click", function(){
   if(!sb) return;
@@ -4369,6 +4451,15 @@ paintModes();
   /* Both at once. Asking the switch first and the session afterwards put
      two round trips end to end, which is what made coming back from
      Microsoft feel slow. */
+  /* Learn which version this tab is before anything else, so a push
+     that lands a second later is noticed rather than mistaken for the
+     version we started on. */
+  checkForUpdate();
+  setInterval(checkForUpdate, 5 * 60 * 1000);
+  document.addEventListener("visibilitychange", function(){
+    if(!document.hidden) checkForUpdate();
+  });
+
   Promise.all([ readSiteStatus(), sb.auth.getSession() ]).then(function(both){
     var open = both[0];
     var r = both[1];
