@@ -265,6 +265,23 @@ button,input,select,textarea{font:inherit;color:inherit}
 .other-panel{margin-top:12px;text-align:left}
 .other-panel .btn.google{font-size:.85rem;padding:9px 12px}
 .other-why{font-size:.74rem;color:var(--ink-faint);margin:8px 0 0;line-height:1.5}
+
+/* ---- the maintenance bar ----
+   Only the people who can still get in ever see this, and it is loud on
+   purpose: the worst outcome of this feature is leaving it switched on by
+   accident and showing a tutor a closed sign. */
+.maint-bar{
+  display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+  background:var(--margin);color:#fff;
+  padding:10px 16px;border-radius:10px;margin-bottom:18px;
+  font-size:.86rem;line-height:1.5
+}
+.maint-bar strong{font-weight:600}
+.maint-bar button{
+  font:inherit;font-size:.8rem;cursor:pointer;margin-left:auto;
+  background:#fff;color:var(--margin);border:0;border-radius:7px;padding:6px 12px
+}
+.maint-bar button[disabled]{opacity:.6;cursor:default}
 .gate-error{
   color:var(--margin);
   font-size:.85rem;
@@ -933,6 +950,16 @@ footer{
 <!-- ============================================================
      DASHBOARD
      ============================================================ -->
+<div class="gate" id="closed" hidden>
+  <div class="gate-card">
+    <h1>Under maintenance</h1>
+    <p class="sub" id="closedMsg">The site is being worked on at the moment. It'll be back shortly.</p>
+    <div class="gate-other">
+      <button type="button" class="otherlink" id="closedIn">Sign in</button>
+    </div>
+  </div>
+</div>
+
 <div class="gate" id="waiting" hidden>
   <div class="gate-card">
     <h1>Nearly there</h1>
@@ -945,6 +972,11 @@ footer{
 </div>
 
 <div class="shell" id="dash" hidden>
+
+  <div class="maint-bar" id="maintBar" hidden>
+    <span><strong>The site is closed to everyone else.</strong> Only you and your admin account can get in.</span>
+    <button type="button" id="maintOff">Open it back up</button>
+  </div>
 
   <div class="topbar">
     <div class="brand"><span class="dot"></span> Homework Launchpad</div>
@@ -1826,6 +1858,84 @@ document.getElementById("switchBtn").addEventListener("click",function(){
 });
 
 /* ==================================================================
+   MAINTENANCE
+   The switch lives in site_status, one row everybody may read and only
+   these two addresses may change - the database enforces that, not this
+   page, so editing the button in a browser achieves nothing.
+
+   Both addresses on purpose: the admin account and the school one. Closing
+   the site from a school laptop must not lock Shiv out of the panel he
+   would need to open it again.
+   ================================================================== */
+var LET_IN_WHEN_CLOSED = ["shivkforindia@gmail.com", "26kush@hatchend.harrow.sch.uk"];
+var siteOpen = true;
+
+function letInWhenClosed(email){
+  var e = String(email || "").toLowerCase();
+  for(var i = 0; i < LET_IN_WHEN_CLOSED.length; i++){
+    if(e === LET_IN_WHEN_CLOSED[i]) return true;
+  }
+  return false;
+}
+
+/* If this can't be read - connection dropped, Supabase having a moment -
+   the site stays OPEN. A closed sign shown by accident is worse than a
+   late one, and this is a courtesy notice rather than the lock. */
+function readSiteStatus(){
+  if(!sb) return Promise.resolve(true);
+  return withTimeout(
+    sb.from("site_status").select("open_now,message").eq("id", 1).maybeSingle(),
+    6000
+  ).then(function(r){
+    if(r && r.error) return true;
+    var row = r && r.data;
+    if(!row) return true;
+    if(row.message){
+      var el = document.getElementById("closedMsg");
+      if(el) el.textContent = row.message;
+    }
+    siteOpen = row.open_now !== false;
+    return siteOpen;
+  }).catch(function(){ return true; });
+}
+
+function showClosed(){
+  document.getElementById("gate").hidden = true;
+  document.getElementById("dash").hidden = true;
+  document.getElementById("waiting").hidden = true;
+  document.getElementById("closed").hidden = false;
+}
+
+document.getElementById("closedIn").addEventListener("click", function(){
+  document.getElementById("closed").hidden = true;
+  document.getElementById("gate").hidden = false;
+  document.getElementById("email").focus();
+});
+
+/* Turning it back on is one click from inside, so nobody has to go
+   hunting through the admin panel to undo it. */
+var maintOff = document.getElementById("maintOff");
+if(maintOff) maintOff.addEventListener("click", function(){
+  if(!sb) return;
+  maintOff.disabled = true;
+  maintOff.textContent = "Opening\u2026";
+  sb.from("site_status")
+    .update({ open_now: true, changed_at: new Date().toISOString(),
+              changed_by: (currentUser && currentUser.email) || null })
+    .eq("id", 1)
+    .then(function(r){
+      maintOff.disabled = false;
+      maintOff.textContent = "Open it back up";
+      if(r && r.error){ maintOff.textContent = "Couldn't - try the admin panel"; return; }
+      siteOpen = true;
+      document.getElementById("maintBar").hidden = true;
+    }, function(){
+      maintOff.disabled = false;
+      maintOff.textContent = "Couldn't - try the admin panel";
+    });
+});
+
+/* ==================================================================
    DASHBOARD
    ================================================================== */
 function showWaiting(){
@@ -1847,6 +1957,16 @@ document.getElementById("waitingOut").addEventListener("click",function(){
 /* The database already refuses an unapproved account; this only saves
    them from staring at a dashboard where nothing works. */
 function openDashboard(who, supaUser){
+  /* Closed, and not one of the two who may still come in. */
+  if(!siteOpen && !letInWhenClosed(who && who.email)){
+    if(sb){ try{ sb.auth.signOut(); }catch(e){} }
+    currentUser = null;
+    showClosed();
+    return;
+  }
+  var bar = document.getElementById("maintBar");
+  if(bar) bar.hidden = siteOpen;
+
   currentUser = who;
   pullLook(supaUser);
 
@@ -3841,14 +3961,18 @@ paintModes();
 
   if(!sb){ emailBox.focus(); return; }
 
-  sb.auth.getSession().then(function(r){
-    var s = r && r.data && r.data.session;
-    if(s && s.user){
-      openDashboard({ name:displayName(s.user.email), email:s.user.email,
-                      uid:s.user.id, offline:false }, s.user);
-    }else{
-      emailBox.focus();
-    }
+  readSiteStatus().then(function(open){
+    return sb.auth.getSession().then(function(r){
+      var ses = r && r.data && r.data.session;
+      if(ses && ses.user){
+        openDashboard({ name:displayName(ses.user.email), email:ses.user.email,
+                        uid:ses.user.id, offline:false }, ses.user);
+      }else if(!open){
+        showClosed();            /* signed out and shut: say so before asking for a password */
+      }else{
+        emailBox.focus();
+      }
+    });
   }).catch(function(){ emailBox.focus(); });
 })();
 

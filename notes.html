@@ -261,6 +261,15 @@ button,input,select,textarea{font:inherit;color:inherit}
   <div class="panel" id="mainPanel" hidden>
 
 
+      <div class="sec" id="siteSec">
+        <p class="sec-h">The site itself</p>
+        <div class="arow">
+          <span id="siteState">Checking…</span>
+          <button type="button" class="abtn" id="siteToggle" disabled>—</button>
+        </div>
+        <p class="amsg" id="siteMsg">Closing it shows everyone a maintenance notice. You and your school account can still sign in. Remember to open it again &mdash; a closed site on Wednesday morning would be a bad surprise.</p>
+      </div>
+
       <div class="sec" id="switchSec" hidden>
         <p class="sec-h">Switches</p>
         <div class="arow" id="switchRow"></div>
@@ -1351,6 +1360,55 @@ document.getElementById("askForm").addEventListener("submit",function(e){
 });
 
 
+/* ---------- open or closed ----------
+   Written straight to the table rather than through the admin function,
+   because the database already decides who may change it: the policy on
+   site_status allows exactly two addresses. Nothing here is the guard. */
+function paintSite(open){
+  var state  = document.getElementById("siteState");
+  var toggle = document.getElementById("siteToggle");
+  if(!state || !toggle) return;
+  state.textContent  = open ? "Open to everyone" : "Closed \u2014 maintenance notice showing";
+  toggle.textContent = open ? "Close it" : "Open it";
+  toggle.disabled = false;
+  toggle.dataset.open = open ? "1" : "0";
+}
+
+function loadSite(){
+  if(!sb) return;
+  sb.from("site_status").select("open_now").eq("id",1).maybeSingle()
+    .then(function(r){
+      if(r && r.error){ say("siteMsg", "Couldn't read the switch: " + r.error.message, "err"); return; }
+      paintSite(!(r && r.data && r.data.open_now === false));
+    }, function(){ say("siteMsg","Couldn't reach the server.","err"); });
+}
+
+var siteToggle = document.getElementById("siteToggle");
+if(siteToggle) siteToggle.addEventListener("click", function(){
+  if(!sb) return;
+  var closing = siteToggle.dataset.open === "1";
+  siteToggle.disabled = true;
+  siteToggle.textContent = closing ? "Closing\u2026" : "Opening\u2026";
+  sb.from("site_status")
+    .update({ open_now: !closing, changed_at: new Date().toISOString(),
+              changed_by: (currentUser && currentUser.email) || null })
+    .eq("id",1)
+    .then(function(r){
+      if(r && r.error){
+        say("siteMsg", "Didn't change it: " + r.error.message, "err");
+        loadSite();
+        return;
+      }
+      paintSite(!closing);
+      say("siteMsg", closing
+        ? "Closed. Everyone else sees the maintenance notice now \u2014 don't forget to open it again."
+        : "Open. Everyone can get back in.", "ok");
+    }, function(){
+      say("siteMsg","Couldn't reach the server.","err");
+      loadSite();
+    });
+});
+
 /* ---------- the switches that apply to everyone ---------- */
 function loadSwitches(){
   call({ action:"switches" }).then(function(d){
@@ -1714,6 +1772,7 @@ applyTheme(recall(THEME_KEY,null));
     loadWords();
     cacheStats();
     loadSwitches();
+    loadSite();
     checkBackup();
     refreshAskAllowance();
   }).catch(function(){ show("deadEnd"); });
