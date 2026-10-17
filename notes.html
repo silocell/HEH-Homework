@@ -515,7 +515,7 @@ body.demo #wordSec button{
         <p class="amsg" id="backupMsg">Every table in the database as one file &mdash; the list comes from the database itself, so anything added later is included without this needing changing. Keep it in OneDrive. It holds real messages and email addresses, so treat it like a document with people&rsquo;s names in it. A mistyped SQL command is the realistic way this loses data.</p>
       </div>
 
-      <div class="sec">
+      <div class="sec" id="diagSec">
         <p class="sec-h">Diagnostics</p>
         <div class="arow">
           <button type="button" class="abtn quiet" id="runDiag">Run checks</button>
@@ -611,18 +611,13 @@ var unlocked = false;
    A panel full of buttons that answer "not allowed" looks broken; one
    with fewer sections looks finished. */
 function hideForDemo(){
-  ["addSec","chatlogSec","boardlogSec","modSec",
-   "backupSec","allowSec","roomSec","askSec","siteSec","showSec","techSec"].forEach(function(id){
-    var el = document.getElementById(id);
-    if(el) el.hidden = true;
+  /* A look-only account gets Run checks and Test the explainer and nothing
+     else - no accounts, no names, no switches. Every other section is
+     hidden here, and the server refuses every other action anyway. */
+  document.querySelectorAll("#mainPanel .sec").forEach(function(sec){
+    if(sec.id !== "diagSec") sec.hidden = true;
   });
-
-  /* Accounts and shortcuts stay, because seeing them is the point of
-     showing the panel - but their buttons would be refused. Done with a
-     class rather than by disabling what is on screen now: those rows
-     arrive later, and a button added after this ran would still work. */
   document.body.classList.add("demo");
-
 }
 
 function say(id, text, kind){
@@ -2226,12 +2221,12 @@ applyTheme(recall(THEME_KEY,null));
     /* The demo account is refused most of these, so don't ask. A panel
        quietly firing calls it knows will come back 403 is how a log fills
        with noise that hides the real faults. */
-      loadUsers();
-      loadShared();
-      loadWords();
-      cacheStats();
-      loadSwitches();
       if(!showOnly){
+        loadUsers();
+        loadShared();
+        loadWords();
+        cacheStats();
+        loadSwitches();
         refreshAskAllowance();
         loadAllows();
         loadSite();
