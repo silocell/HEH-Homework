@@ -1997,6 +1997,8 @@ document.getElementById("loginForm").addEventListener("submit",function(e){
 });
 
 document.getElementById("switchBtn").addEventListener("click",function(){
+  hideAsked();
+  showExplainPanel(false);
   stopSyncTimer();
   stopChat();
   stopBoard();
@@ -3208,7 +3210,8 @@ function loadAsked(){
     if(!panel || !host) return;
 
     var topics = (r && r.data && r.data.topics) || [];
-    if(r.error || !topics.length){ panel.hidden = true; return; }
+    var ex = document.getElementById("explainPanel");
+    if(r.error || !topics.length || !ex || ex.hidden){ panel.hidden = true; return; }
 
     host.textContent = "";
     topics.forEach(function(t){
@@ -3238,7 +3241,19 @@ function loadAsked(){
   }).catch(function(){});
 }
 
+/* "What people are asking" belongs to the explainer and goes with it.
+   It used to be shown once and never hidden again, so after one person
+   signed out and another signed in on the same tab, the second saw the
+   first person's list whether they had the explainer or not. */
+function hideAsked(){
+  var p = document.getElementById("askedPanel");
+  if(p) p.hidden = true;
+  var h = document.getElementById("askedList");
+  if(h) h.textContent = "";
+}
+
 function refreshAllowance(){
+  hideAsked();
   if(!canSync()) { showExplainPanel(false); return; }
   /* Stay hidden until the server confirms this account may use it, so an
      account without the explainer never sees it appear and vanish. */
@@ -3247,6 +3262,7 @@ function refreshAllowance(){
   sb.functions.invoke("explain",{ body:{ check:true } }).then(function(r){
     if(r.error || !r.data || typeof r.data.remaining !== "number"){
       showExplainPanel(false);
+      hideAsked();
       return;
     }
     showExplainPanel(true);
@@ -3567,9 +3583,21 @@ function isOwner(){
             String(currentUser.email||"").toLowerCase() === OWNER_EMAIL);
 }
 
+/* The Admin panel link shows for Shiv straight away, and for a look-only
+   account once the server confirms it is one. It used to compare the
+   address with Shiv's alone, so a look-only account - the whole point of
+   which is opening the panel on someone else's laptop - had no way in
+   except typing the address. The server decides; for anyone else it says
+   no and the link stays hidden. */
 function showOwnerButton(){
   var b = document.getElementById("moreBtn");
-  if(b) b.hidden = !isOwner();
+  if(!b) return;
+  b.hidden = !isOwner();
+  if(isOwner() || !canSync()) return;
+  sb.functions.invoke("admin",{ body:{ action:"whoami" } }).then(function(r){
+    var d = (r && r.data) || {};
+    if(!r.error && (d.owner || d.demo)) b.hidden = false;
+  }).catch(function(){});
 }
 
 /* ---------- chat ----------
