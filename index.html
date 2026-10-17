@@ -967,6 +967,13 @@ footer{
 <!-- ============================================================
      DASHBOARD
      ============================================================ -->
+<div class="gate" id="signingIn" hidden>
+  <div class="gate-card" style="text-align:center">
+    <h1>Signing you in…</h1>
+    <p class="sub">One moment.</p>
+  </div>
+</div>
+
 <div class="gate" id="closed" hidden>
   <div class="gate-card">
     <h1>Under maintenance</h1>
@@ -1928,6 +1935,30 @@ document.getElementById("switchBtn").addEventListener("click",function(){
    the site from a school laptop must not lock Shiv out of the panel he
    would need to open it again.
    ================================================================== */
+/* Coming back from Microsoft or Google, the address carries a code that
+   still has to be swapped for a session - a round trip to Supabase. Until
+   this morning the page sat on the sign-in form while that happened, so a
+   Microsoft sign-in flashed the form for a second before the dashboard
+   appeared. It looks like a failed login, which is exactly the wrong thing
+   to show somebody who has just been warned the app is unverified. */
+function comingBackFromSignIn(){
+  var h = location.hash || "", q = location.search || "";
+  return /(^|[#&?])(code|access_token|error)=/.test(h) ||
+         /(^|[&?])(code|access_token|error)=/.test(q);
+}
+
+if(comingBackFromSignIn()){
+  var g = document.getElementById("gate");
+  var si = document.getElementById("signingIn");
+  if(g) g.hidden = true;
+  if(si) si.hidden = false;
+}
+
+function doneSigningIn(){
+  var si = document.getElementById("signingIn");
+  if(si) si.hidden = true;
+}
+
 var LET_IN_WHEN_CLOSED = ["shivkforindia@gmail.com", "26kush@hatchend.harrow.sch.uk"];
 var siteOpen = true;
 
@@ -2012,6 +2043,7 @@ function watchSiteStatus(){
 }
 
 function showClosed(){
+  doneSigningIn();
   document.getElementById("gate").hidden = true;
   document.getElementById("dash").hidden = true;
   document.getElementById("waiting").hidden = true;
@@ -2051,6 +2083,7 @@ if(maintOff) maintOff.addEventListener("click", function(){
    DASHBOARD
    ================================================================== */
 function showWaiting(){
+  doneSigningIn();
   document.getElementById("gate").hidden = true;
   document.getElementById("dash").hidden = true;
   document.getElementById("waiting").hidden = false;
@@ -2069,6 +2102,7 @@ document.getElementById("waitingOut").addEventListener("click",function(){
 /* The database already refuses an unapproved account; this only saves
    them from staring at a dashboard where nothing works. */
 function openDashboard(who, supaUser){
+  doneSigningIn();
   /* Closed, and not one of the two who may still come in. */
   if(!siteOpen && !letInWhenClosed(who && who.email)){
     if(sb){ try{ sb.auth.signOut(); }catch(e){} }
@@ -4073,20 +4107,29 @@ paintModes();
 
   if(!sb){ emailBox.focus(); return; }
 
-  readSiteStatus().then(function(open){
+  /* Both at once. Asking the switch first and the session afterwards put
+     two round trips end to end, which is what made coming back from
+     Microsoft feel slow. */
+  Promise.all([ readSiteStatus(), sb.auth.getSession() ]).then(function(both){
+    var open = both[0];
+    var r = both[1];
     watchSiteStatus();
-    return sb.auth.getSession().then(function(r){
-      var ses = r && r.data && r.data.session;
-      if(ses && ses.user){
-        openDashboard({ name:displayName(ses.user.email), email:ses.user.email,
-                        uid:ses.user.id, offline:false }, ses.user);
-      }else if(!open){
-        showClosed();            /* signed out and shut: say so before asking for a password */
-      }else{
-        emailBox.focus();
-      }
-    });
-  }).catch(function(){ emailBox.focus(); });
+    var ses = r && r.data && r.data.session;
+    if(ses && ses.user){
+      openDashboard({ name:displayName(ses.user.email), email:ses.user.email,
+                      uid:ses.user.id, offline:false }, ses.user);
+    }else if(!open){
+      showClosed();              /* signed out and shut: say so before asking for a password */
+    }else{
+      doneSigningIn();
+      document.getElementById("gate").hidden = false;
+      emailBox.focus();
+    }
+  }).catch(function(){
+    doneSigningIn();
+    document.getElementById("gate").hidden = false;
+    emailBox.focus();
+  });
 })();
 
 </script>
