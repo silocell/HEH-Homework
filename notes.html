@@ -240,6 +240,19 @@ button,input,select,textarea{font:inherit;color:inherit}
 
 .sec:first-of-type{padding-top:0;margin-top:0;border-top:none}
 @media (prefers-reduced-motion:reduce){ *{transition:none!important} }
+
+/* The demo account: look, don't touch. A class on the body rather than a
+   pass over the buttons, because the rows arrive after the page does. */
+body.demo #userRows button,
+body.demo #sharedSec button,
+body.demo #switchRow button,
+body.demo #wordSec button{
+  pointer-events:none; opacity:.45;
+}
+body.demo #mainNote{
+  color:var(--ink); border:1px solid var(--rule);
+  border-radius:9px; padding:10px 12px; margin-bottom:18px;
+}
 </style>
 
 <div class="shell">
@@ -259,6 +272,9 @@ button,input,select,textarea{font:inherit;color:inherit}
   </div>
 
   <div class="panel" id="mainPanel" hidden>
+
+      <p class="amsg" id="mainNote" hidden>You're on the demo account. You can look around and run the checks; changing things, and the chat and board logs, are on Shiv's account only.</p>
+
 
 
       <div class="sec" id="askSec" hidden>
@@ -302,7 +318,7 @@ button,input,select,textarea{font:inherit;color:inherit}
         </div>
       </div>
 
-      <div class="sec">
+      <div class="sec" id="addSec">
         <p class="sec-h">Add an account</p>
         <form id="newUserForm">
           <div class="arow">
@@ -320,7 +336,7 @@ button,input,select,textarea{font:inherit;color:inherit}
         <p class="amsg" id="newUserMsg">Any address works here &mdash; school, Hotmail, Gmail. No confirmation email is sent. The explainer and the chat start switched off.</p>
       </div>
 
-      <div class="sec">
+      <div class="sec" id="sharedSec">
         <p class="sec-h">Shortcuts everyone gets</p>
         <p class="amsg">These appear on everybody&rsquo;s dashboard under &ldquo;From school&rdquo;. Each person can put one away if they don&rsquo;t use it.</p>
         <div id="sharedRows"></div>
@@ -429,7 +445,7 @@ button,input,select,textarea{font:inherit;color:inherit}
         </div>
       </div>
 
-      <div class="sec">
+      <div class="sec" id="modSec">
         <p class="sec-h">Moderation</p>
         <div class="arow">
           <button type="button" class="abtn quiet" id="modTest">Test the filter and checker</button>
@@ -438,7 +454,7 @@ button,input,select,textarea{font:inherit;color:inherit}
         <p class="amsg" id="modMsg">Runs the real filter and the real checker against known phrases. Nothing is posted and nothing is stored. The phrases live on the server, so the words this blocks are never published in this page.</p>
       </div>
 
-      <div class="sec">
+      <div class="sec" id="chatlogSec">
         <p class="sec-h">Chat log</p>
         <div class="stats" id="logStats"></div>
         <div class="arow">
@@ -448,7 +464,7 @@ button,input,select,textarea{font:inherit;color:inherit}
         <p class="amsg" id="logMsg">Live messages, ones you deleted, and ones the filter turned away — newest first.</p>
       </div>
 
-      <div class="sec">
+      <div class="sec" id="boardlogSec">
         <p class="sec-h">Board log</p>
         <div class="stats" id="boardStats"></div>
         <div class="arow">
@@ -502,6 +518,18 @@ var SUPABASE_KEY = "sb_publishable_BTzbP_oOZnfvCgs4UBJYXA_WCTyT88M";
 /* The page only decides what to SHOW. Every button below asks the server,
    which checks the signed-in account before doing anything. */
 var OWNER_EMAIL = "shivkforindia@gmail.com";
+
+/* An account for showing the panel on somebody else's laptop, so Shiv's
+   own is never signed in on a teacher's machine. It is not a second
+   administrator: the server refuses it everything except looking, and
+   the sections below are hidden so it doesn't look broken.
+
+   The logs are the line. They hold what people actually typed before the
+   filter hashed it out, which is the one thing here that would genuinely
+   hurt if it got out - and a password is a thing that can be guessed or
+   read over a shoulder. */
+var SHOW_EMAIL = "test@silocell.com";
+var showOnly = false;
 var SALT = "hl$2026$";
 var THEME_KEY = "hl.theme";
 
@@ -549,6 +577,26 @@ function show(id){
 }
 
 var unlocked = false;
+
+/* What the demo account cannot reach, hidden rather than left to fail.
+   A panel full of buttons that answer "not allowed" looks broken; one
+   with fewer sections looks finished. */
+function hideForDemo(){
+  ["addSec","chatlogSec","boardlogSec","modSec",
+   "backupSec","allowSec","roomSec","askSec","siteSec"].forEach(function(id){
+    var el = document.getElementById(id);
+    if(el) el.hidden = true;
+  });
+
+  /* Accounts and shortcuts stay, because seeing them is the point of
+     showing the panel - but their buttons would be refused. Done with a
+     class rather than by disabling what is on screen now: those rows
+     arrive later, and a button added after this ran would still work. */
+  document.body.classList.add("demo");
+
+  var note = document.getElementById("mainNote");
+  if(note) note.hidden = false;
+}
 
 function say(id, text, kind){
   var el = document.getElementById(id);
@@ -2004,25 +2052,33 @@ applyTheme(recall(THEME_KEY,null));
 
     /* Anyone else, signed in or not, gets the same nothing-here page:
        no hint that there is anything to find. */
-    if(!s || !s.user || String(s.user.email||"").toLowerCase() !== OWNER_EMAIL){
+    var seen = String((s && s.user && s.user.email) || "").toLowerCase();
+    if(!s || !s.user || (seen !== OWNER_EMAIL && seen !== SHOW_EMAIL)){
       show("deadEnd");
       return;
     }
+    showOnly = seen === SHOW_EMAIL;
 
     currentUser = { email:s.user.email, uid:s.user.id, offline:false };
     unlocked = true;
     show("mainPanel");
+    if(showOnly) hideForDemo();
+    /* The demo account is refused most of these, so don't ask. A panel
+       quietly firing calls it knows will come back 403 is how a log fills
+       with noise that hides the real faults. */
     loadUsers();
-    loadAllows();
     loadShared();
     loadWords();
     cacheStats();
     loadSwitches();
-    loadSite();
-    loadRooms();
-    loadAsks();
-    checkBackup();
     refreshAskAllowance();
+    if(!showOnly){
+      loadAllows();
+      loadSite();
+      loadRooms();
+      loadAsks();
+      checkBackup();
+    }
   }).catch(function(){ show("deadEnd"); });
 })();
 </script>
