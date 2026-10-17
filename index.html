@@ -2111,9 +2111,14 @@ document.getElementById("waitingOut").addEventListener("click",function(){
    them from staring at a dashboard where nothing works. */
 function openDashboard(who, supaUser){
   doneSigningIn();
-  /* Closed, and not one of the two who may still come in. */
+  /* Closed, and not one of the two who may still come in.
+
+     Their session is left alone. Signing them out would mean everybody
+     logging in again afterwards, and it protects nothing: this screen is
+     a notice, not a lock - the functions would answer them either way.
+     So when the site opens again their tab reloads and they are simply
+     back, mid-homework, where they left off. */
   if(!siteOpen && !letInWhenClosed(who && who.email)){
-    if(sb){ try{ sb.auth.signOut(); }catch(e){} }
     currentUser = null;
     showClosed();
     return;
