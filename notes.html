@@ -590,9 +590,41 @@ function flagBtn(u, flag, onNow, labelOn, labelOff){
   return b;
 }
 
+/* ---------- what each person has left hanging ----------
+   Counts only. The board is readable by everyone signed in, so nothing
+   here is private - and a to-do's text still never leaves the person who
+   wrote it. The panel says how many, never what.
+
+   A question counts as waiting while nobody has replied to it, and as
+   open until its author marks it solved. Both are worth seeing: the first
+   means nobody helped, the second means it was never finished. */
+var openBoard = {};
+
+function loadOutstanding(){
+  openBoard = {};
+  if(!sb) return Promise.resolve();
+  return Promise.all([
+    sb.from("posts").select("id,user_id,kind,solved_at").is("deleted_at", null),
+    sb.from("replies").select("post_id").is("deleted_at", null)
+  ]).then(function(res){
+    var posts = (res[0] && res[0].data) || [];
+    var reps  = (res[1] && res[1].data) || [];
+    var answered = {};
+    reps.forEach(function(r){ answered[r.post_id] = true; });
+
+    posts.forEach(function(p){
+      if(p.kind !== "question") return;
+      var slot = openBoard[p.user_id] || (openBoard[p.user_id] = { waiting:0, open:0 });
+      if(!answered[p.id]) slot.waiting++;
+      else if(!p.solved_at) slot.open++;
+    });
+  }).catch(function(){ openBoard = {}; });
+}
+
 function loadUsers(){
   say("usersMsg","Loading…");
-  call({ action:"list" }).then(function(d){
+  Promise.all([ call({ action:"list" }), loadOutstanding() ]).then(function(got){
+    var d = got[0];
     var host = document.getElementById("userRows");
     host.textContent = "";
 
@@ -682,10 +714,22 @@ function loadUsers(){
       var seen = u.lastSignIn
         ? new Date(u.lastSignIn).toLocaleDateString("en-GB",{day:"numeric",month:"short"})
         : "never";
-      meta.textContent =
-        "Last here " + seen +
-        " · " + u.aiToday + " explanation" + (u.aiToday === 1 ? "" : "s") + " today" +
-        " · " + u.todosOpen + " of " + u.todosAll + " jobs outstanding";
+      var bits = ["Last here " + seen,
+                  u.aiToday + " explanation" + (u.aiToday === 1 ? "" : "s") + " today"];
+
+      var left = [];
+      if(u.todosOpen > 0){
+        left.push(u.todosOpen + " job" + (u.todosOpen === 1 ? "" : "s") + " to do");
+      }
+      var b = openBoard[u.id] || { waiting:0, open:0 };
+      if(b.waiting > 0){
+        left.push(b.waiting + " question" + (b.waiting === 1 ? "" : "s") + " nobody has answered");
+      }
+      if(b.open > 0){
+        left.push(b.open + " question" + (b.open === 1 ? "" : "s") + " still open");
+      }
+      bits.push(left.length ? left.join(" \u00b7 ") : "nothing outstanding");
+      meta.textContent = bits.join(" \u00b7 ");
       card.appendChild(meta);
 
       /* ---- the things you can do ---- */
