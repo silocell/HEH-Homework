@@ -1252,6 +1252,20 @@ footer{
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.0/dist/umd/supabase.js"></script>
 <script>
+/* ?v=<number> is how a reload dodges the cache - after an update, or when
+   the site opens or closes. By the time anyone can see the page it has
+   done its job, so it comes off the address. Only v: a sign-in coming back
+   carries ?code= and that must be left exactly where it is. */
+(function(){
+  try{
+    var q = new URLSearchParams(location.search);
+    if(!q.has("v")) return;
+    q.delete("v");
+    var rest = q.toString();
+    history.replaceState(null, "", location.pathname + (rest ? "?" + rest : "") + location.hash);
+  }catch(e){}
+})();
+
 /* ==================================================================
    DISPLAY NAMES
    ------------------------------------------------------------------
