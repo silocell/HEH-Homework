@@ -766,13 +766,10 @@ function loadUsers(){
         del.textContent = "Delete";
         del.addEventListener("click",function(){ askDelete(u, card); });
         acts.appendChild(del);
-      } else {
-        var note = document.createElement("span");
-        note.className = "acct-meta";
-        note.style.margin = "0";
-        note.textContent = "Signs in with Google. No password to change, and it can't be deleted from here.";
-        acts.appendChild(note);
       }
+      /* The admin row gets no buttons and no explanation. It used to carry
+         a line about signing in with Google, which stopped being true the
+         day Microsoft went in front. */
       card.appendChild(acts);
 
       host.appendChild(card);
