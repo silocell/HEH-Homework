@@ -253,6 +253,18 @@ body.demo #mainNote{
   color:var(--ink); border:1px solid var(--rule);
   border-radius:9px; padding:10px 12px; margin-bottom:18px;
 }
+
+.pw-out{
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  margin:12px 0 0;padding:10px 12px;
+  border:1px solid var(--rule);border-radius:9px
+}
+.pw-who{font-size:.82rem;color:var(--ink-faint)}
+.pw-code{
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+  font-size:.95rem;letter-spacing:.02em;
+  user-select:all;word-break:break-all
+}
 </style>
 
 <div class="shell">
@@ -276,6 +288,18 @@ body.demo #mainNote{
       <p class="amsg" id="mainNote" hidden>You're on the demo account. You can look around and run the checks; changing things, and the chat and board logs, are on Shiv's account only.</p>
 
 
+
+      <div class="sec" id="showSec">
+        <p class="sec-h">Look-only accounts</p>
+        <div class="arow">
+          <input type="text" id="showEmail" placeholder="test@silocell.com" autocomplete="off" aria-label="Address for a look-only account">
+          <input type="text" id="showLabel" placeholder="What it's for" maxlength="40" autocomplete="off" aria-label="What it is for">
+          <button type="button" class="abtn" id="showMake">Make one</button>
+        </div>
+        <div id="showList"></div>
+        <p class="pw-out" id="showPass" hidden></p>
+        <p class="amsg" id="showMsg">These can open this panel and run the checks, and nothing else &mdash; not the chat or board logs, not deleting, not closing the site. For showing the panel on somebody else&rsquo;s laptop without signing in as yourself. Passwords aren&rsquo;t stored anywhere, so to get one again you make a new one.</p>
+      </div>
 
       <div class="sec" id="askSec" hidden>
         <p class="sec-h">Asked for a room</p>
@@ -528,7 +552,6 @@ var OWNER_EMAIL = "shivkforindia@gmail.com";
    filter hashed it out, which is the one thing here that would genuinely
    hurt if it got out - and a password is a thing that can be guessed or
    read over a shoulder. */
-var SHOW_EMAIL = "test@silocell.com";
 var showOnly = false;
 var SALT = "hl$2026$";
 var THEME_KEY = "hl.theme";
@@ -583,7 +606,7 @@ var unlocked = false;
    with fewer sections looks finished. */
 function hideForDemo(){
   ["addSec","chatlogSec","boardlogSec","modSec",
-   "backupSec","allowSec","roomSec","askSec","siteSec"].forEach(function(id){
+   "backupSec","allowSec","roomSec","askSec","siteSec","showSec"].forEach(function(id){
     var el = document.getElementById(id);
     if(el) el.hidden = true;
   });
@@ -1465,6 +1488,127 @@ document.getElementById("askForm").addEventListener("submit",function(e){
 });
 
 
+/* ---------- look-only accounts ----------
+   Nothing here keeps a password. Supabase stores a hash, as everybody
+   should: a plaintext password sitting in a table is a password waiting
+   to be read. So "copy it again" is "make a new one", which takes a
+   second and is safer in every way. */
+function showPassword(pw, who){
+  var box = document.getElementById("showPass");
+  if(!box) return;
+  box.textContent = "";
+  box.hidden = false;
+
+  var who_ = document.createElement("span");
+  who_.className = "pw-who";
+  who_.textContent = who + " \u2014 ";
+  var code = document.createElement("code");
+  code.className = "pw-code";
+  code.textContent = pw;
+
+  var copy = document.createElement("button");
+  copy.type = "button";
+  copy.className = "abtn";
+  copy.textContent = "Copy";
+  copy.addEventListener("click", function(){
+    var done = function(){ copy.textContent = "Copied"; setTimeout(function(){ copy.textContent = "Copy"; }, 1500); };
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(pw).then(done, function(){ selectText(code); });
+    }else{ selectText(code); }
+  });
+
+  box.appendChild(who_); box.appendChild(code); box.appendChild(copy);
+}
+
+/* Clipboard access can be refused; selecting it means Ctrl-C still works. */
+function selectText(node){
+  try{
+    var r = document.createRange(); r.selectNodeContents(node);
+    var sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r);
+  }catch(e){}
+}
+
+function paintShows(rows){
+  var host = document.getElementById("showList");
+  if(!host) return;
+  host.textContent = "";
+  if(!rows.length){
+    var p = document.createElement("p");
+    p.className = "amsg";
+    p.textContent = "None yet.";
+    host.appendChild(p);
+    return;
+  }
+  rows.forEach(function(r){
+    var card = document.createElement("div");
+    card.className = "acct";
+
+    var h = document.createElement("div");
+    h.className = "acct-head";
+    h.textContent = r.email;
+    card.appendChild(h);
+
+    var meta = document.createElement("div");
+    meta.className = "acct-meta";
+    meta.textContent = (r.label ? r.label + " \u00b7 " : "") +
+      (r.last_reset ? "password set " + new Date(r.last_reset)
+        .toLocaleDateString("en-GB",{day:"numeric",month:"short"}) : "no password yet");
+    card.appendChild(meta);
+
+    var acts = document.createElement("div");
+    acts.className = "acct-acts";
+
+    var reset = document.createElement("button");
+    reset.type = "button"; reset.className = "abtn";
+    reset.textContent = "New password";
+    reset.addEventListener("click", function(){
+      reset.disabled = true;
+      call({ action:"showreset", email:r.email })
+        .then(function(d){ showPassword(d.password, d.email); say("showMsg","New password made. It isn't stored \u2014 copy it now.","ok"); loadShows(); })
+        .catch(function(e){ say("showMsg", e.message, "err"); })
+        .then(function(){ reset.disabled = false; });
+    });
+
+    var drop = document.createElement("button");
+    drop.type = "button"; drop.className = "abtn quiet";
+    drop.textContent = "Stop it being one";
+    drop.addEventListener("click", function(){
+      drop.disabled = true;
+      call({ action:"showdrop", email:r.email })
+        .then(function(){ say("showMsg", r.email + " can't open this panel any more. The account itself is still in the list above.","ok"); loadShows(); })
+        .catch(function(e){ say("showMsg", e.message, "err"); drop.disabled = false; });
+    });
+
+    acts.appendChild(reset); acts.appendChild(drop);
+    card.appendChild(acts);
+    host.appendChild(card);
+  });
+}
+
+function loadShows(){
+  call({ action:"shows" })
+    .then(function(d){ paintShows(d.shows || []); })
+    .catch(function(){});
+}
+
+var showMake = document.getElementById("showMake");
+if(showMake) showMake.addEventListener("click", function(){
+  var em = document.getElementById("showEmail").value.trim();
+  var lb = document.getElementById("showLabel").value.trim();
+  if(!em){ say("showMsg","Give it an address.","err"); return; }
+  showMake.disabled = true;
+  call({ action:"shownew", email:em, label:lb })
+    .then(function(d){
+      document.getElementById("showEmail").value = "";
+      document.getElementById("showLabel").value = "";
+      showPassword(d.password, d.email);
+      say("showMsg","Made. Copy the password now \u2014 it isn't stored anywhere.","ok");
+      loadShows();
+    })
+    .catch(function(e){ say("showMsg", e.message, "err"); })
+    .then(function(){ showMake.disabled = false; });
+});
+
 /* ---------- people asking for a room ----------
    Anyone may ask; nobody may make one. The room is created at the moment
    you approve it, not when it was asked for, so a refusal leaves nothing
@@ -2052,33 +2196,39 @@ applyTheme(recall(THEME_KEY,null));
 
     /* Anyone else, signed in or not, gets the same nothing-here page:
        no hint that there is anything to find. */
-    var seen = String((s && s.user && s.user.email) || "").toLowerCase();
-    if(!s || !s.user || (seen !== OWNER_EMAIL && seen !== SHOW_EMAIL)){
-      show("deadEnd");
-      return;
-    }
-    showOnly = seen === SHOW_EMAIL;
+    if(!s || !s.user){ show("deadEnd"); return; }
 
     currentUser = { email:s.user.email, uid:s.user.id, offline:false };
-    unlocked = true;
-    show("mainPanel");
-    if(showOnly) hideForDemo();
+
+    /* Ask the server what this account is rather than comparing addresses
+       here. It was always the server deciding; now it is the only one
+       that knows, so the list of who may get in is no longer sitting in
+       a public page. Anyone else is refused and sees the same nothing. */
+    return call({ action:"whoami" }).then(function(w){
+      if(!w || (!w.owner && !w.demo)){ show("deadEnd"); return; }
+      showOnly = !!w.demo;
+
+      unlocked = true;
+      show("mainPanel");
+      if(showOnly) hideForDemo();
     /* The demo account is refused most of these, so don't ask. A panel
        quietly firing calls it knows will come back 403 is how a log fills
        with noise that hides the real faults. */
-    loadUsers();
-    loadShared();
-    loadWords();
-    cacheStats();
-    loadSwitches();
-    refreshAskAllowance();
-    if(!showOnly){
-      loadAllows();
-      loadSite();
-      loadRooms();
-      loadAsks();
-      checkBackup();
-    }
+      loadUsers();
+      loadShared();
+      loadWords();
+      cacheStats();
+      loadSwitches();
+      refreshAskAllowance();
+      if(!showOnly){
+        loadAllows();
+        loadSite();
+        loadRooms();
+        loadAsks();
+        loadShows();
+        checkBackup();
+      }
+    });
   }).catch(function(){ show("deadEnd"); });
 })();
 </script>
