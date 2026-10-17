@@ -780,25 +780,51 @@ function loadUsers(){
       nameIn.value = u.name || "";
       nameIn.placeholder = "their first name";
       nameIn.autocomplete = "off";
+      /* Saving used to hang off the box losing focus, and nothing else.
+         Some ways of leaving a box never fire that, so the name quietly
+         stayed unsaved. Now Enter, the Save button and leaving the box all
+         save, and a busy flag stops two saves racing each other. */
+      var nameSave = document.createElement("button");
+      nameSave.type = "button";
+      nameSave.className = "abtn quiet name-save";
+      nameSave.textContent = "Save name";
+      nameSave.hidden = true;
+      var nameBusy = false;
+      function nameChanged(){ return nameIn.value.trim() !== (u.name || ""); }
       function saveName(){
+        if(nameBusy || !nameChanged()) { nameSave.hidden = !nameChanged(); return; }
         var v = nameIn.value.trim();
-        if(v === (u.name || "")) return;
-        nameIn.disabled = true;
+        nameBusy = true;
+        nameSave.disabled = true;
+        nameSave.textContent = "Saving…";
+        say("usersMsg", "Saving the name for " + u.email + "…");
         call({ action:"setname", userId:u.id, name:v })
           .then(function(){
             u.name = v;
+            nameIn.value = v;
             say("usersMsg", v
-              ? ("Calling " + u.email + " “" + v + "” now.")
+              ? ("Saved. " + u.email + " is called “" + v + "” now — they'll see it next time their dashboard loads.")
               : ("Cleared the name for " + u.email + "."), "ok");
           })
-          .catch(function(e){ nameIn.value = u.name || ""; say("usersMsg", e.message, "err"); })
-          .then(function(){ nameIn.disabled = false; });
+          .catch(function(e){ say("usersMsg", "Didn't save: " + e.message, "err"); })
+          .then(function(){
+            nameBusy = false;
+            nameSave.disabled = false;
+            nameSave.textContent = "Save name";
+            nameSave.hidden = !nameChanged();
+          });
       }
+      nameIn.addEventListener("input", function(){ nameSave.hidden = !nameChanged(); });
+      nameIn.addEventListener("change", saveName);
       nameIn.addEventListener("blur", saveName);
       nameIn.addEventListener("keydown", function(e){
-        if(e.key === "Enter"){ e.preventDefault(); nameIn.blur(); }
+        if(e.key === "Enter"){ e.preventDefault(); saveName(); }
+        if(e.key === "Escape"){ nameIn.value = u.name || ""; nameSave.hidden = true; }
       });
+      nameSave.addEventListener("mousedown", function(e){ e.preventDefault(); });
+      nameSave.addEventListener("click", saveName);
       row.appendChild(nameIn);
+      row.appendChild(nameSave);
 
       if(u.isAdmin){
         var all = document.createElement("span");
