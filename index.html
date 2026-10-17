@@ -3129,6 +3129,10 @@ if(exForm) exForm.addEventListener("submit",function(e){
       renderExplanation(d.text);
       setLeft(d.remaining, d.limit);
       input.value = "";
+      /* The list was loaded once when the dashboard opened, so the thing
+         you just asked never appeared in it until you reloaded the page.
+         Asking is exactly the moment it changes, so re-read it then. */
+      loadAsked();
     }else{
       exError("Nothing came back. Try rewording the topic.");
     }
