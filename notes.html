@@ -262,6 +262,9 @@ body.demo #wordSec button{
   font-size:.95rem;letter-spacing:.02em;
   user-select:all;word-break:break-all
 }
+
+/* Look-only account: everything visible, only Diagnostics alive. */
+body.demo #mainPanel .sec.off{ opacity:.42; pointer-events:none; user-select:none; filter:grayscale(.6) }
 </style>
 
 <div class="shell">
@@ -611,12 +614,26 @@ var unlocked = false;
    A panel full of buttons that answer "not allowed" looks broken; one
    with fewer sections looks finished. */
 function hideForDemo(){
-  /* A look-only account gets Run checks and Test the explainer and nothing
-     else - no accounts, no names, no switches. Every other section is
-     hidden here, and the server refuses every other action anyway. */
+  /* A look-only account sees the whole panel, so the shape of it can be
+     shown, but only Diagnostics works. Every other section is greyed and
+     made inert - no clicks, no typing, no tabbing into it - and stays
+     empty: nothing in it is loaded, because filling it would mean
+     fetching classmates' names and messages onto somebody else's laptop.
+     The server refuses all of it anyway; this is so it looks deliberate
+     rather than broken. */
   document.querySelectorAll("#mainPanel .sec").forEach(function(sec){
-    if(sec.id !== "diagSec") sec.hidden = true;
+    if(sec.id === "diagSec") return;
+    sec.hidden = false;
+    sec.inert = true;
+    sec.classList.add("off");
+    sec.setAttribute("aria-disabled", "true");
+    sec.querySelectorAll("button, input, select, textarea").forEach(function(c){ c.disabled = true; });
   });
+  /* Nothing is loaded, so don't leave a "Checking..." that never ends. */
+  var st = document.getElementById("siteState");
+  if(st) st.textContent = "Open or closed";
+  var tg = document.getElementById("siteToggle");
+  if(tg) tg.textContent = "Close it";
   document.body.classList.add("demo");
 }
 
