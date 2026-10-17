@@ -1899,6 +1899,57 @@ function readSiteStatus(){
   }).catch(function(){ return true; });
 }
 
+/* Everyone finds out at once.
+
+   Realtime tells open tabs the moment the switch moves. Anyone who may no
+   longer be here is sent round again through a fresh address - a plain
+   reload can be served the cached page, and location.reload(true) has not
+   forced anything in Chrome for years, so the only honest way to get a new
+   copy of the HTML is to ask for a URL the cache has not seen. That has a
+   useful side effect: flipping the switch off and on again puts every tab
+   on the newest version of the site.
+
+   Shiv is not reloaded. He may be halfway through typing, and he is the
+   one who moved the switch, so his bar just appears.
+
+   A minute-by-minute check sits behind the subscription in case it quietly
+   dies - one row, so it costs nothing worth counting. */
+var siteWatch = null, sitePoll = null;
+
+function onSwitchMoved(open){
+  if(open === siteOpen) return;
+  siteOpen = open;
+
+  if(letInWhenClosed(currentUser && currentUser.email)){
+    var bar = document.getElementById("maintBar");
+    if(bar) bar.hidden = open;
+    return;
+  }
+  location.replace(location.pathname + "?v=" + Date.now());
+}
+
+function watchSiteStatus(){
+  if(!sb) return;
+  try{
+    if(siteWatch) sb.removeChannel(siteWatch);
+    siteWatch = sb.channel("site")
+      .on("postgres_changes",
+          { event:"UPDATE", schema:"public", table:"site_status" },
+          function(p){ onSwitchMoved(!(p && p.new && p.new.open_now === false)); })
+      .subscribe();
+  }catch(e){}
+
+  if(sitePoll) clearInterval(sitePoll);
+  sitePoll = setInterval(function(){
+    if(!sb || document.hidden) return;
+    sb.from("site_status").select("open_now").eq("id",1).maybeSingle()
+      .then(function(r){
+        if(r && r.error) return;
+        if(r && r.data) onSwitchMoved(r.data.open_now !== false);
+      }, function(){});
+  }, 60000);
+}
+
 function showClosed(){
   document.getElementById("gate").hidden = true;
   document.getElementById("dash").hidden = true;
@@ -1927,7 +1978,7 @@ if(maintOff) maintOff.addEventListener("click", function(){
       maintOff.disabled = false;
       maintOff.textContent = "Open it back up";
       if(r && r.error){ maintOff.textContent = "Couldn't - try the admin panel"; return; }
-      siteOpen = true;
+      siteOpen = true;   /* the subscription will tell the other tabs */
       document.getElementById("maintBar").hidden = true;
     }, function(){
       maintOff.disabled = false;
@@ -3962,6 +4013,7 @@ paintModes();
   if(!sb){ emailBox.focus(); return; }
 
   readSiteStatus().then(function(open){
+    watchSiteStatus();
     return sb.auth.getSession().then(function(r){
       var ses = r && r.data && r.data.session;
       if(ses && ses.user){
