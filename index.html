@@ -1087,7 +1087,7 @@ footer{
   *{transition:none!important;animation:none!important}
 }
 </style>
-<link rel="stylesheet" href="polish.css?b=20261018093714">
+<link rel="stylesheet" href="polish.css?b=20261018094033">
 </head>
 <body>
 
@@ -1223,7 +1223,7 @@ footer{
       <button class="ghost-btn" id="readerClose" type="button">Close</button>
     </div>
     <div class="reader-box" id="readerBox">
-      <iframe class="reader-frame" id="readerFrame" title="Page preview" referrerpolicy="no-referrer"></iframe>
+      <iframe class="reader-frame" id="readerFrame" title="Page preview" referrerpolicy="no-referrer" allow="fullscreen; encrypted-media; picture-in-picture" allowfullscreen></iframe>
       <div class="reader-wait" aria-hidden="true">Opening the page…</div>
     </div>
     <p class="reader-note">If this stays blank, the site is refusing to be shown inside another page — use "Open in a tab".</p>
@@ -1382,7 +1382,7 @@ footer{
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.0/dist/umd/supabase.js"></script>
-<script src="polish.js?b=20261018093714"></script>
+<script src="polish.js?b=20261018094033"></script>
 <script>
 /* ?v=<number> is how a reload dodges the cache - after an update, or when
    the site opens or closes. By the time anyone can see the page it has
@@ -3138,11 +3138,11 @@ function youtubeEmbed(u){
     if(/(^|\.)youtube\.com$/.test(u.hostname)){
       if(u.pathname === "/watch") id = u.searchParams.get("v") || "";
       else if(u.pathname.indexOf("/shorts/") === 0) id = u.pathname.split("/")[2] || "";
-      else if(u.pathname.indexOf("/embed/") === 0) return u.href;
+      else if(u.pathname.indexOf("/embed/") === 0) id = u.pathname.split("/")[2] || "";
     }else if(/(^|\.)youtu\.be$/.test(u.hostname)){
       id = u.pathname.replace("/","");
     }
-    if(/^[A-Za-z0-9_-]{6,20}$/.test(id)) return "https://www.youtube.com/embed/" + id;
+    if(/^[A-Za-z0-9_-]{6,20}$/.test(id)) return "https://www.youtube-nocookie.com/embed/" + id + "?rel=0";
   }catch(e){}
   return null;
 }
@@ -3188,6 +3188,10 @@ function openInReader(href){
   /* A site that refuses still fires load (with a blank page), but give
      up the shimmer anyway after a while so it never spins forever. */
   setTimeout(function(){ box.classList.remove("loading"); }, 8000);
+  /* YouTube's player refuses to start without knowing which site it is
+     on (it shows an error and a "Watch on YouTube" link that leads to the
+     refused page). It gets just the site's name - never the full address. */
+  frame.referrerPolicy = /youtube-nocookie\.com\/embed\//.test(src) ? "strict-origin-when-cross-origin" : "no-referrer";
   frame.src = src;
   var cse = document.getElementById("csePanel");
   document.getElementById("readerBack").hidden = !cse || cse.hidden;
