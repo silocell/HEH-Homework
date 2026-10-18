@@ -608,7 +608,11 @@ body.gsc-overflow-hidden{overflow:auto!important}
   background:transparent!important;width:auto!important
 }
 #csePanel .gsc-control-wrapper-cse,#csePanel .gsc-control-cse,#csePanel .gsc-results-wrapper-nooverlay{background:transparent!important}
-#csePanel .gsc-orderby{display:flex!important;align-items:center;gap:4px}
+/* This engine has no sort options, so Google draws an empty box. */
+#csePanel .gsc-orderby{display:none!important}
+#csePanel .gsc-wrapper,#csePanel .gsc-resultsbox-visible,#csePanel .gsc-results,
+#csePanel .gsc-above-wrapper-area-container,#csePanel .gsc-expansionArea,
+#csePanel .gsc-results-wrapper-overlay .gsc-above-wrapper-area{width:100%!important;max-width:none!important}
 #csePanel .gsc-selected-option-container{
   border:1px solid var(--rule)!important;border-radius:8px!important;box-shadow:none!important;
   padding:3px 26px 3px 10px!important;min-width:0!important;width:auto!important;font-size:.76rem!important;
@@ -1099,7 +1103,7 @@ footer{
   *{transition:none!important;animation:none!important}
 }
 </style>
-<link rel="stylesheet" href="polish.css?b=20261018091031">
+<link rel="stylesheet" href="polish.css?b=20261018091132">
 </head>
 <body>
 
@@ -1402,7 +1406,7 @@ footer{
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.0/dist/umd/supabase.js"></script>
-<script src="polish.js?b=20261018091031"></script>
+<script src="polish.js?b=20261018091132"></script>
 <script>
 /* ?v=<number> is how a reload dodges the cache - after an update, or when
    the site opens or closes. By the time anyone can see the page it has
