@@ -643,9 +643,22 @@ body.gsc-overflow-hidden{overflow:auto!important}
 }
 .reader-head .ghost-btn{padding:5px 10px;font-size:.74rem}
 .reader-frame{
-  width:100%;height:min(70vh,640px);border:1px solid var(--rule);
-  border-radius:10px;background:var(--paper);display:block;
+  width:100%;height:min(78vh,900px);border:1px solid var(--rule);
+  border-radius:12px;background:#fff;display:block;
+  transition:opacity .3s ease
 }
+.reader-box{position:relative}
+.reader-box.loading .reader-frame{opacity:0}
+.reader-wait{
+  position:absolute;inset:0;border-radius:12px;display:none;
+  align-items:center;justify-content:center;color:var(--ink-faint);font-size:.85rem;
+  background:linear-gradient(100deg,var(--card) 30%,var(--chip) 50%,var(--card) 70%);
+  background-size:300% 100%;animation:reader-shimmer 1.4s ease-in-out infinite;
+  border:1px solid var(--rule)
+}
+.reader-box.loading .reader-wait{display:flex}
+@keyframes reader-shimmer{from{background-position:100% 0}to{background-position:0 0}}
+@media (prefers-reduced-motion: reduce){ .reader-wait{animation:none} }
 .reader-note{
   margin:10px 0 0;font-size:.72rem;color:var(--ink-faint);line-height:1.5;
 }
@@ -1103,7 +1116,7 @@ footer{
   *{transition:none!important;animation:none!important}
 }
 </style>
-<link rel="stylesheet" href="polish.css?b=20261018091132">
+<link rel="stylesheet" href="polish.css?b=20261018091712">
 </head>
 <body>
 
@@ -1246,10 +1259,14 @@ footer{
   <div class="panel reader" id="reader" hidden>
     <div class="reader-head">
       <span class="reader-site" id="readerSite"></span>
+      <button class="ghost-btn" id="readerBack" type="button" hidden>Back to results</button>
       <a class="ghost-btn" id="readerOpen" href="#" target="_blank" rel="noopener noreferrer">Open in a tab</a>
       <button class="ghost-btn" id="readerClose" type="button">Close</button>
     </div>
-    <iframe class="reader-frame" id="readerFrame" title="Page preview" referrerpolicy="no-referrer"></iframe>
+    <div class="reader-box" id="readerBox">
+      <iframe class="reader-frame" id="readerFrame" title="Page preview" referrerpolicy="no-referrer"></iframe>
+      <div class="reader-wait" aria-hidden="true">Opening the page…</div>
+    </div>
     <p class="reader-note">Some sites refuse to be shown inside another page. If this stays blank, use "Open in a tab".</p>
   </div>
 
@@ -1406,7 +1423,7 @@ footer{
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.0/dist/umd/supabase.js"></script>
-<script src="polish.js?b=20261018091132"></script>
+<script src="polish.js?b=20261018091712"></script>
 <script>
 /* ?v=<number> is how a reload dodges the cache - after an update, or when
    the site opens or closes. By the time anyone can see the page it has
@@ -3306,7 +3323,16 @@ function openInReader(href){
 
   document.getElementById("readerSite").textContent = u.hostname.replace(/^www\./,"") + u.pathname;
   document.getElementById("readerOpen").href = u.href;
-  document.getElementById("readerFrame").src = src;
+  var box = document.getElementById("readerBox");
+  var frame = document.getElementById("readerFrame");
+  box.classList.add("loading");
+  frame.onload = function(){ box.classList.remove("loading"); };
+  /* A site that refuses still fires load (with a blank page), but give
+     up the shimmer anyway after a while so it never spins forever. */
+  setTimeout(function(){ box.classList.remove("loading"); }, 8000);
+  frame.src = src;
+  var cse = document.getElementById("csePanel");
+  document.getElementById("readerBack").hidden = !cse || cse.hidden;
   var panel = document.getElementById("reader");
   panel.hidden = false;
   panel.scrollIntoView({ behavior:"smooth", block:"start" });
@@ -3317,15 +3343,37 @@ document.getElementById("readerClose").addEventListener("click",function(){
   document.getElementById("reader").hidden = true;
   document.getElementById("readerFrame").src = "about:blank";
 });
+document.getElementById("readerBack").addEventListener("click",function(){
+  document.getElementById("reader").hidden = true;
+  document.getElementById("readerFrame").src = "about:blank";
+  var cse = document.getElementById("csePanel");
+  if(cse && !cse.hidden) cse.scrollIntoView({ behavior:"smooth", block:"start" });
+});
 
-/* Google renders its results into our page, so result clicks can be caught here. */
-document.getElementById("csePanel").addEventListener("click",function(e){
-  var a = e.target;
-  while(a && a !== this && a.tagName !== "A") a = a.parentNode;
-  if(!a || a.tagName !== "A") return;
-  var href = a.getAttribute("href") || "";
-  if(!href || href.charAt(0) === "#") return;
-  if(openInReader(href)) e.preventDefault();
+/* Google renders its results into our page, so result clicks can be
+   caught here - on the whole document, in the capture phase, so we get
+   there before Google's own handler on the link. Google's links are set
+   to open in this same tab, which would take people off the dashboard
+   altogether; so a result either opens in the reader, or in a new tab. */
+document.addEventListener("click",function(e){
+  var panel = document.getElementById("csePanel");
+  if(!panel || !panel.contains(e.target)) return;
+  var a = e.target.closest ? e.target.closest("a") : null;
+  if(!a || !panel.contains(a)) return;
+  var href = a.getAttribute("data-ctorig") || a.getAttribute("href") || "";
+  if(!href || href.charAt(0) === "#" || /^javascript:/i.test(href)) return;
+  if(e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey) return;   /* their own new-tab click */
+  e.preventDefault();
+  e.stopImmediatePropagation();
+  if(!openInReader(href)) window.open(href, "_blank", "noopener");
+}, true);
+/* Google also acts on mousedown (rewriting the address for its click
+   counting). Keep its hands off result links entirely. */
+document.addEventListener("mousedown",function(e){
+  var panel = document.getElementById("csePanel");
+  if(!panel || !panel.contains(e.target)) return;
+  var a = e.target.closest ? e.target.closest("a.gs-title, .gs-title a, a.gs-image") : null;
+  if(a && e.button === 0) e.stopImmediatePropagation();
 }, true);
 
 document.getElementById("searchForm").addEventListener("submit",function(e){
