@@ -1,0 +1,113 @@
+/* ==================================================================
+   POLISH - shared by the dashboard and the admin panel
+
+   The feel of the tour, everywhere: things ease in rather than pop,
+   buttons give a little when pressed, messages arrive as notifications,
+   and the typing cursor glides like Word's.
+
+   Every animation here uses "backwards" fill only, never "forwards" or
+   "both". A finished transform animation that stays applied turns its
+   element into a new containing block, which quietly breaks anything
+   fixed-position inside it. Backwards fill is over once it has played.
+   ================================================================== */
+
+@keyframes hl-rise{ from{ opacity:0; transform:translateY(10px) } }
+@keyframes hl-fade{ from{ opacity:0 } }
+@keyframes hl-pop{ from{ opacity:0; transform:translateY(6px) scale(.985) } }
+@keyframes hl-tick{ 40%{ transform:scale(1.28) } }
+@keyframes hl-blink{ 0%,45%{ opacity:1 } 55%,100%{ opacity:0 } }
+
+/* ---- panels ease up as they appear (also when un-hidden later) ---- */
+.panel,.sec,.gate-card{ animation:hl-rise .45s cubic-bezier(.2,.8,.2,1) backwards }
+.columns .col > :nth-child(2){ animation-delay:.05s }
+.columns .col > :nth-child(3){ animation-delay:.1s }
+.columns .col > :nth-child(4){ animation-delay:.15s }
+.columns .col > :nth-child(5){ animation-delay:.2s }
+
+/* ---- what arrives inside them ---- */
+.ex-out > *, .wiki-out > *, .lookup-result > *, .board-list > *, .asked > *{
+  animation:hl-pop .35s cubic-bezier(.2,.8,.2,1) backwards
+}
+.msg.fresh{ animation:hl-pop .3s cubic-bezier(.2,.8,.2,1) backwards }
+.todo-item{ animation:hl-pop .3s cubic-bezier(.2,.8,.2,1) backwards }
+.todo-item input[type=checkbox]:checked{ animation:hl-tick .3s ease }
+.amsg:not(:empty), .chat-msg:not(:empty), .ask-msg:not(:empty), .link-msg:not([hidden]){
+  animation:hl-fade .25s ease backwards
+}
+
+/* ---- buttons give a little ---- */
+button, .btn, .abtn, .ghost-btn, a.tile{
+  transition:transform .12s ease, background-color .2s ease, border-color .2s ease,
+             color .2s ease, box-shadow .2s ease, opacity .2s ease
+}
+button:not(:disabled):active, .btn:not(:disabled):active, .abtn:not(:disabled):active,
+.ghost-btn:active, a.tile:active{ transform:scale(.97) }
+input, textarea{ transition:border-color .2s ease, box-shadow .2s ease, background-color .2s ease }
+input:focus, textarea:focus{ box-shadow:0 0 0 3px var(--accent-soft) }
+
+/* ---- notifications ---- */
+.toasts{
+  position:fixed; right:18px; bottom:18px; z-index:70;
+  display:flex; flex-direction:column; gap:10px; align-items:flex-end;
+  pointer-events:none; width:min(360px, calc(100vw - 32px))
+}
+.toast{
+  pointer-events:auto; width:100%;
+  display:flex; align-items:flex-start; gap:10px;
+  background:var(--card); color:var(--ink);
+  border:1px solid var(--rule); border-left:4px solid var(--accent);
+  border-radius:12px; padding:12px 12px 12px 14px;
+  box-shadow:0 14px 40px rgba(0,0,0,.28);
+  font-size:.88rem; line-height:1.45;
+  opacity:0; transform:translateY(14px) scale(.98);
+  transition:opacity .25s ease, transform .3s cubic-bezier(.2,.8,.2,1)
+}
+.toast.in{ opacity:1; transform:none }
+.toast.out{ opacity:0; transform:translateX(24px) }
+.toast.ok{ border-left-color:var(--good) }
+.toast.err{ border-left-color:var(--margin) }
+.toast-text{ flex:1; margin:0; padding-top:2px; word-break:break-word }
+.toast-act{
+  font:inherit; font-size:.82rem; font-weight:600; cursor:pointer; border:0; border-radius:8px;
+  background:var(--accent); color:#fff; padding:6px 12px; flex:none
+}
+.toast-x{
+  font:inherit; font-size:1.1rem; line-height:1; cursor:pointer; border:0; background:none;
+  color:var(--ink-faint); padding:2px 4px; flex:none
+}
+.toast-x:hover{ color:var(--ink) }
+@media (max-width:600px){
+  .toasts{ top:12px; bottom:auto; right:50%; transform:translateX(50%); align-items:stretch }
+  .toast{ transform:translateY(-14px) scale(.98) }
+  .toast.out{ transform:translateY(-14px) }
+}
+
+/* ---- the gliding cursor ----
+   The field's own cursor is made see-through and this one is drawn in
+   its place, so it can slide between letters instead of jumping. */
+.glide{ caret-color:transparent !important }
+.hl-caret{
+  position:fixed; left:0; top:0; z-index:55; width:2px; border-radius:1px;
+  background:var(--accent); pointer-events:none; opacity:0;
+  transition:transform .09s cubic-bezier(.2,.8,.2,1), height .09s ease
+}
+.hl-caret.show{ opacity:1; animation:hl-blink 1.06s steps(1) infinite }
+.hl-caret.show.typing{ animation:none }
+.hl-caret.jump{ transition:none }
+
+/* ---- the chat's "new messages" pill ---- */
+.chat-newpill{
+  position:sticky; bottom:8px; display:block; margin:6px auto 0; width:max-content;
+  font:inherit; font-size:.8rem; font-weight:600; cursor:pointer; border:0; border-radius:999px;
+  background:var(--accent); color:#fff; padding:6px 14px; box-shadow:0 6px 18px rgba(0,0,0,.25);
+  animation:hl-pop .25s ease backwards
+}
+.chat-newpill[hidden]{ display:none }
+
+@media (prefers-reduced-motion: reduce){
+  .panel,.sec,.gate-card,.ex-out > *,.wiki-out > *,.lookup-result > *,.board-list > *,.asked > *,
+  .msg.fresh,.todo-item,.todo-item input[type=checkbox]:checked,.amsg,.chat-msg,.ask-msg,.link-msg,
+  .chat-newpill{ animation:none }
+  .toast,.toast.in,.toast.out{ transition:opacity .15s ease; transform:none }
+  button:active,.btn:active,.abtn:active,.ghost-btn:active,a.tile:active{ transform:none }
+}

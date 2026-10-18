@@ -1060,6 +1060,7 @@ footer{
   *{transition:none!important;animation:none!important}
 }
 </style>
+<link rel="stylesheet" href="polish.css?b=20261018080643">
 </head>
 <body>
 
@@ -1362,6 +1363,7 @@ footer{
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.0/dist/umd/supabase.js"></script>
+<script src="polish.js?b=20261018080643"></script>
 <script>
 /* ?v=<number> is how a reload dodges the cache - after an update, or when
    the site opens or closes. By the time anyone can see the page it has
@@ -2946,11 +2948,25 @@ function removeMine(item){
   sb.from("links").delete().eq("id", item.id).then(function(){}, function(){});
 }
 
+/* How messages reach people. Something still happening ("Adding…")
+   stays as a quiet line by the form it belongs to. How it turned out -
+   done, or what went wrong - arrives as a notification in the corner. */
+function busyWord(text){ return /\u2026$|…$/.test(text || ""); }
+function sayTo(el, cls, text, bad, key){
+  if(!el) return;
+  if(!text){ el.textContent = ""; if(el.id === "linkMsg") el.hidden = true; return; }
+  if(busyWord(text)){
+    el.textContent = text;
+    el.className = cls;
+    if(el.id === "linkMsg") el.hidden = false;
+    return;
+  }
+  el.textContent = "";
+  if(el.id === "linkMsg") el.hidden = true;
+  if(window.toast) toast(text, bad ? "err" : "ok", { key:key });
+}
 function linkSay(text, bad){
-  var el = document.getElementById("linkMsg");
-  el.textContent = text || "";
-  el.hidden = !text;
-  el.classList.toggle("err", !!bad);
+  sayTo(document.getElementById("linkMsg"), "link-msg", text, bad, "links");
 }
 
 function loadLinks(){
@@ -4151,10 +4167,7 @@ function withTimeout(promise, ms){
 }
 
 function chatSay(text, bad){
-  var el = document.getElementById("chatErr");
-  if(!el) return;
-  el.textContent = text || "";
-  el.className = "chat-msg" + (bad ? " err" : "");
+  sayTo(document.getElementById("chatErr"), "chat-msg", text, bad, "chat");
 }
 
 function setLive(on){
@@ -4217,7 +4230,7 @@ function clearPendingLike(text){
   });
 }
 
-function addMessage(m, atTop){
+function addMessage(m, atTop, fresh){
   if(!m || !m.id || chatSeen[m.id]) return;
   chatSeen[m.id] = true;
 
@@ -4233,7 +4246,7 @@ function addMessage(m, atTop){
   }
 
   var row = document.createElement("div");
-  row.className = "msg";
+  row.className = "msg" + (fresh ? " fresh" : "");
   row.setAttribute("data-id", m.id);
 
   var who = document.createElement("span");
@@ -4281,6 +4294,58 @@ function atBottom(log){
 function scrollChatDown(){
   var log = document.getElementById("chatLog");
   if(log) log.scrollTop = log.scrollHeight;
+  chatNewPill(false);
+}
+
+/* Scrolled up reading older messages when a new one lands: a pill at the
+   bottom of the chat says so, instead of yanking you down to it. */
+function chatNewPill(show){
+  var log = document.getElementById("chatLog");
+  if(!log) return;
+  var pill = document.getElementById("chatNewPill");
+  if(!pill){
+    if(!show) return;
+    pill = document.createElement("button");
+    pill.type = "button";
+    pill.id = "chatNewPill";
+    pill.className = "chat-newpill";
+    pill.textContent = "New messages \u2193";
+    pill.addEventListener("click", function(){
+      log.scrollTo({ top: log.scrollHeight, behavior: "smooth" });
+      chatNewPill(false);
+    });
+    log.addEventListener("scroll", function(){ if(atBottom(log)) chatNewPill(false); });
+  }
+  if(show){ log.appendChild(pill); pill.hidden = false; }
+  else pill.hidden = true;
+}
+
+/* Is any of the chat on screen right now? */
+function chatOnScreen(){
+  var p = document.getElementById("chatPanel");
+  if(!p || p.hidden || document.hidden) return false;
+  var r = p.getBoundingClientRect();
+  return r.bottom > 60 && r.top < innerHeight - 60;
+}
+
+/* A new message somewhere you aren't looking: a notification that
+   takes you there. One card per conversation, updated, not a pile. */
+function chatNotify(m, where){
+  if(!window.toast) return;
+  var who = m.name || "Someone";
+  var room = where ? roomNameOf(where) : "the year chat";
+  var text = (m.body || "").replace(/\s+/g, " ").trim();
+  if(text.length > 70) text = text.slice(0, 67) + "\u2026";
+  toast(who + " in " + room + ": " + text, "", {
+    key: "chat-" + String(where),
+    action: "Show",
+    onAction: function(){
+      if(where !== currentRoom && typeof switchRoom === "function") switchRoom(where);
+      var p = document.getElementById("chatPanel");
+      if(p) p.scrollIntoView({ behavior: "smooth", block: "center" });
+      setTimeout(scrollChatDown, 400);
+    }
+  });
 }
 
 /* ---------- rooms ----------
@@ -4305,6 +4370,12 @@ function roomLabel(){
     if(myRooms[i].id === currentRoom) return myRooms[i].name;
   }
   return "Room";
+}
+function roomNameOf(id){
+  for(var i=0;i<myRooms.length;i++){
+    if(myRooms[i].id === id) return "\u201c" + myRooms[i].name + "\u201d";
+  }
+  return "a private room";
 }
 
 function paintRoomTabs(){
@@ -4355,11 +4426,13 @@ function switchRoom(id){
 
    The name is checked like a message on the way in, because everyone in
    the room would see it on a tab. */
-function askSay(msg, bad){
+/* "stay" is for the standing line about your own requests, which
+   belongs by the button, not in a notification that goes away. */
+function askSay(msg, bad, stay){
   var el = document.getElementById("askMsg");
   if(!el) return;
-  el.textContent = msg || "";
-  el.className = "ask-msg" + (bad ? " bad" : "");
+  if(stay){ el.textContent = msg || ""; el.className = "ask-msg" + (bad ? " bad" : ""); return; }
+  sayTo(el, "ask-msg", msg, bad, "ask");
 }
 
 function showMyAsks(){
@@ -4370,10 +4443,10 @@ function showMyAsks(){
     if(open.length){
       askSay(open.length === 1
         ? "Asked for \u201c" + open[0].room_name + "\u201d. Shiv hasn't answered yet."
-        : "You've asked for " + open.length + " rooms. Waiting on Shiv.");
+        : "You've asked for " + open.length + " rooms. Waiting on Shiv.", false, true);
     }else if(no.length){
       askSay("\u201c" + no[0].room_name + "\u201d was turned down" +
-             (no[0].note ? ": " + no[0].note : "."));
+             (no[0].note ? ": " + no[0].note : "."), true, true);
     }
   }).catch(function(){});
 }
@@ -4488,8 +4561,10 @@ function loadChat(initial){
           log.appendChild(p);
         }
       }
-      rows.forEach(function(m){ addMessage(m); });
+      var before = log.querySelectorAll(".msg").length;
+      rows.forEach(function(m){ addMessage(m, false, !initial); });
       if(stick) log.scrollTop = log.scrollHeight;
+      else if(!initial && log.querySelectorAll(".msg").length > before) chatNewPill(true);
     }, function(){});
 }
 
@@ -4519,17 +4594,21 @@ function openChat(){
           function(p){
             var m = p.new || {};
             var where = m.room_id || null;
+            var mine = currentUser && m.user_id === currentUser.uid;
             if(where !== currentRoom){
               /* Somewhere else you belong. A dot on the tab, not a message
                  dropped into the conversation you are reading. */
               roomUnread[String(where)] = true;
               paintRoomTabs();
+              if(!mine) chatNotify(m, where);
               return;
             }
             var log = document.getElementById("chatLog");
             var stick = atBottom(log);
-            addMessage(m);
+            addMessage(m, false, true);
             if(stick) log.scrollTop = log.scrollHeight;
+            else if(!mine) chatNewPill(true);
+            if(!mine && !chatOnScreen()) chatNotify(m, where);
           })
       .subscribe(function(status){
         setLive(status === "SUBSCRIBED");
@@ -4646,11 +4725,12 @@ var boardKind = "notice";
 var boardBusy = false;
 var boardPoll = null;
 
-function boardSay(text, bad){
+function boardSay(text, bad, stay){
   var el = document.getElementById("boardErr");
-  if(!el) return;
-  el.textContent = text || "";
-  el.className = "chat-msg" + (bad ? " err" : "");
+  /* The board failing to load is a state, not an event - it stays as a
+     line on the board rather than popping up on every refresh. */
+  if(stay && el){ el.textContent = text || ""; el.className = "chat-msg" + (bad ? " err" : ""); return; }
+  sayTo(el, "chat-msg", text, bad, "board");
 }
 
 function whenOf(iso){
@@ -4846,7 +4926,7 @@ function loadBoard(){
       list.appendChild(postEl(p, byPost[p.id] || [], d.me));
     });
   }, function(err){
-    boardSay(err.message, true);
+    boardSay(err.message, true, true);
   });
 }
 
