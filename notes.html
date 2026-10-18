@@ -280,7 +280,7 @@ body.demo #wordSec button{
 /* Look-only account: everything visible, only Diagnostics alive. */
 body.demo #mainPanel .sec.off{ opacity:.42; pointer-events:none; user-select:none; filter:grayscale(.6) }
 </style>
-<link rel="stylesheet" href="polish.css?b=20261018171420">
+<link rel="stylesheet" href="polish.css?b=20261018172026">
 
 <div class="shell">
 
@@ -548,7 +548,7 @@ body.demo #mainPanel .sec.off{ opacity:.42; pointer-events:none; user-select:non
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.0/dist/umd/supabase.js"></script>
-<script src="polish.js?b=20261018171420"></script>
+<script src="polish.js?b=20261018172026"></script>
 <script>
 var SUPABASE_URL = "https://lkyfpvlrqgezgitfmpqo.supabase.co";
 var SUPABASE_KEY = "sb_publishable_BTzbP_oOZnfvCgs4UBJYXA_WCTyT88M";
@@ -1496,10 +1496,12 @@ function loadWords(){
       del.style.fontSize = ".76rem";
       del.textContent = "Remove";
       del.addEventListener("click",function(){
+        if(del.disabled) return;
+        del.disabled = true;
         call({ action:"clearword", day:w.day }).then(function(){
           say("wordMsg","Removed the word for " + w.day + ".","ok");
           loadWords();
-        }).catch(function(e){ say("wordMsg", e.message, "err"); });
+        }).catch(function(e){ say("wordMsg", e.message, "err"); del.disabled = false; });
       });
       tdX.appendChild(del);
 
@@ -2082,10 +2084,13 @@ document.getElementById("cacheWipe").addEventListener("click",function(){
   var showing = document.getElementById("cacheRows").children.length;
   if(!window.confirm("Delete every stored answer matching \u201c" + term + "\u201d?" +
                      (showing ? "\n\n" + showing + " shown below." : ""))) return;
+  var wipe = document.getElementById("cacheWipe");
+  wipe.disabled = true;
   call({ action:"cache", mode:"delete", term:term }).then(function(d){
     say("cacheMsg","Deleted " + (d.removed || 0) + ".","ok");
     cacheFind(); cacheStats();
-  }).catch(function(e){ say("cacheMsg", e.message, "err"); });
+  }).catch(function(e){ say("cacheMsg", e.message, "err"); })
+    .then(function(){ wipe.disabled = false; });
 });
 
 /* ---------- chat log ---------- */

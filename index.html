@@ -566,7 +566,7 @@ a.gs-title:hover{text-decoration:underline!important}
   width:auto!important;height:auto!important;max-height:none!important;
   padding:0!important;margin:0!important;background:transparent!important;
   box-shadow:none!important;border:0!important;border-radius:0!important;overflow:visible!important;
-  opacity:1!important;transform:none!important;animation:hl-pop .35s cubic-bezier(.2,.8,.2,1) backwards
+  opacity:1!important;transform:none!important
 }
 #csePanel .gsc-modal-background-image,#csePanel .gsc-modal-background-image-visible{display:none!important}
 #csePanel .gsc-results-close-btn,#csePanel .gsc-results-close-btn-visible{display:none!important}
@@ -1106,7 +1106,7 @@ footer{
   *{transition:none!important;animation:none!important}
 }
 </style>
-<link rel="stylesheet" href="polish.css?b=20261018171420">
+<link rel="stylesheet" href="polish.css?b=20261018172026">
 </head>
 <body>
 
@@ -1409,7 +1409,7 @@ footer{
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.0/dist/umd/supabase.js"></script>
-<script src="polish.js?b=20261018171420"></script>
+<script src="polish.js?b=20261018172026"></script>
 <script>
 /* ?v=<number> is how a reload dodges the cache - after an update, or when
    the site opens or closes. By the time anyone can see the page it has
@@ -2159,7 +2159,7 @@ document.getElementById("loginForm").addEventListener("submit",function(e){
 function signOutTeardown(){ document.getElementById("switchBtn").click(); }
 document.getElementById("switchBtn").addEventListener("click",function(){
   guideReset();
-  try{ localStorage.removeItem(GUIDE_KEY); }catch(e){}
+  try{ localStorage.removeItem(guideKeyFor(null)); }catch(e){}
   hideAsked();
   showExplainPanel(false);
   stopSyncTimer();
@@ -2216,14 +2216,18 @@ var myBuild = null;
 var updateSeen = false;
 
 function typingSomewhere(){
-  var ids = ["chatInput","exInput","todoInput","wikiInput","lookupInput",
-             "askName","askWho","askWhy","boardInput","linkLabel","linkUrl"];
-  for(var i=0;i<ids.length;i++){
-    var el = document.getElementById(ids[i]);
-    if(el && el.value && el.value.trim()) return true;
+  /* Any box with something in it - including reply boxes made on the fly. */
+  var boxes = document.querySelectorAll("input[type=text], input:not([type]), input[type=search], textarea");
+  for(var i=0;i<boxes.length;i++){
+    if(boxes[i].value && boxes[i].value.trim()) return true;
   }
-  var a = document.activeElement;
-  if(a && (a.tagName === "TEXTAREA") && a.value && a.value.trim()) return true;
+  /* Reading a page or watching a video in the reader, part-way through the
+     tour, or looking at search results: not a moment to pull the rug. */
+  var rd = document.getElementById("reader");
+  if(rd && !rd.hidden) return true;
+  if(typeof guideCards !== "undefined" && guideCards) return true;
+  var cp = document.getElementById("csePanel");
+  if(cp && !cp.hidden) return true;
   return false;
 }
 
@@ -2502,6 +2506,10 @@ var GUIDE = {
 };
 
 var GUIDE_KEY = "hl-guide";
+function guideKeyFor(supaUser){
+  var id = (supaUser && supaUser.id) || (currentUser && currentUser.uid) || "";
+  return id ? GUIDE_KEY + "." + id : GUIDE_KEY;
+}
 var guideSeen = {};
 var guideQueue = [];
 var guideCards = null, guideAt = 0, guideName = "";
@@ -2510,7 +2518,9 @@ var tourCalm = window.matchMedia && window.matchMedia("(prefers-reduced-motion: 
 
 function guideLoad(supaUser){
   var local = {};
-  try{ local = JSON.parse(localStorage.getItem(GUIDE_KEY) || "{}") || {}; }catch(e){}
+  /* Keyed by account: on a shared laptop the next person gets their own
+     welcome rather than inheriting "seen" from whoever was here before. */
+  try{ local = JSON.parse(localStorage.getItem(guideKeyFor(supaUser)) || "{}") || {}; }catch(e){}
   var meta = (supaUser && supaUser.user_metadata && supaUser.user_metadata.guide) || {};
   guideSeen = {};
   Object.keys(local).forEach(function(k){ if(local[k]) guideSeen[k] = true; });
@@ -2519,7 +2529,7 @@ function guideLoad(supaUser){
 
 function guideMarkSeen(name){
   guideSeen[name] = true;
-  try{ localStorage.setItem(GUIDE_KEY, JSON.stringify(guideSeen)); }catch(e){}
+  try{ localStorage.setItem(guideKeyFor(null), JSON.stringify(guideSeen)); }catch(e){}
   if(sb && currentUser && !currentUser.offline){
     try{ sb.auth.updateUser({ data: { guide: guideSeen } }); }catch(e){}
   }
@@ -3655,7 +3665,14 @@ function toggleItem(id, done){
       if(list[i].pending !== "insert") list[i].pending = "update";
     }
   }
-  setLocal(list); renderTodos(); flush();
+  setLocal(list);
+  /* In place, not a full redraw: the tick keeps keyboard focus and the
+     other rows don't replay their arrive-animation every time. */
+  var cb = document.getElementById("todo-" + id);
+  var li = cb && cb.closest(".todo-item");
+  if(li){ li.classList.toggle("done", !!done); }
+  else renderTodos();
+  flush();
 }
 function removeItem(id){
   var list = getLocal(), out = [];
