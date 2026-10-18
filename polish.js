@@ -109,7 +109,9 @@
     if(el.tagName === "TEXTAREA") return true;
     if(el.tagName !== "INPUT") return false;
     var t = (el.getAttribute("type") || "text").toLowerCase();
-    return t === "text" || t === "search" || t === "email" || t === "url" || t === "tel";
+    /* Not "email": the browser gives no cursor position for those, so the
+       glide can't follow and the box would show no cursor at all. */
+    return t === "text" || t === "search" || t === "url" || t === "tel";
   }
 
   function caretEl(){
@@ -175,7 +177,7 @@
     if(!field || !glideOn) return;
     if(document.activeElement !== field){ stop(); return; }
     var s = field.selectionStart, e = field.selectionEnd;
-    if(s == null){ hide(); return; }
+    if(s == null){ stop(); return; }   /* no position available: back to the normal cursor */
     if(s !== e){ hide(); lastKey = ""; return; }   /* a selection: the browser's own highlight shows it */
     var r0 = field.getBoundingClientRect();
     var key = s + "|" + field.value.length + "|" + field.scrollLeft + "|" + field.scrollTop + "|" +
@@ -213,11 +215,13 @@
     if(!field) return;
     /* Watch how smoothly the page is drawing while someone types. A few
        long stutters within a few seconds of typing and it switches off. */
+    /* A single huge gap is a script loading or a tab coming back, not a
+       slow machine; sustained stutter while typing is. */
     if(prevFrame && now - lastInput < 1200){
-      if(now - prevFrame > 70){
+      if(now - prevFrame > 70 && now - prevFrame < 400){
         slowFrames.push(now);
         slowFrames = slowFrames.filter(function(t){ return now - t < 4000; });
-        if(slowFrames.length >= 4){ giveUp(); return; }
+        if(slowFrames.length >= 6){ giveUp(); return; }
       }
     }
     prevFrame = now;

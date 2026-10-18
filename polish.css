@@ -69,11 +69,11 @@ input:focus, textarea:focus{ box-shadow:0 0 0 3px var(--accent-soft) }
 .toast-text{ flex:1; margin:0; padding-top:2px; word-break:break-word }
 .toast-act{
   font:inherit; font-size:.82rem; font-weight:600; cursor:pointer; border:0; border-radius:8px;
-  background:var(--accent); color:#fff; padding:6px 12px; flex:none
+  background:var(--accent); color:var(--on-accent, #fff); padding:6px 12px; flex:none
 }
 .toast-x{
-  font:inherit; font-size:1.1rem; line-height:1; cursor:pointer; border:0; background:none;
-  color:var(--ink-faint); padding:2px 4px; flex:none
+  font:inherit; font-size:1.2rem; line-height:1; cursor:pointer; border:0; background:none;
+  color:var(--ink-faint); padding:4px 8px; margin:-4px -4px -4px 0; min-width:30px; min-height:30px; flex:none
 }
 .toast-x:hover{ color:var(--ink) }
 @media (max-width:600px){
@@ -87,7 +87,7 @@ input:focus, textarea:focus{ box-shadow:0 0 0 3px var(--accent-soft) }
    its place, so it can slide between letters instead of jumping. */
 .glide{ caret-color:transparent !important }
 .hl-caret{
-  position:fixed; left:0; top:0; z-index:55; width:2px; border-radius:1px;
+  position:fixed; left:0; top:0; z-index:45; width:2px; border-radius:1px;
   background:var(--accent); pointer-events:none; opacity:0;
   transition:transform .09s cubic-bezier(.2,.8,.2,1), height .09s ease
 }
@@ -99,7 +99,7 @@ input:focus, textarea:focus{ box-shadow:0 0 0 3px var(--accent-soft) }
 .chat-newpill{
   position:sticky; bottom:8px; display:block; margin:6px auto 0; width:max-content;
   font:inherit; font-size:.8rem; font-weight:600; cursor:pointer; border:0; border-radius:999px;
-  background:var(--accent); color:#fff; padding:6px 14px; box-shadow:0 6px 18px rgba(0,0,0,.25);
+  background:var(--accent); color:var(--on-accent, #fff); padding:6px 14px; box-shadow:0 6px 18px rgba(0,0,0,.25);
   animation:hl-pop .25s ease backwards
 }
 .chat-newpill[hidden]{ display:none }
