@@ -1087,7 +1087,7 @@ footer{
   *{transition:none!important;animation:none!important}
 }
 </style>
-<link rel="stylesheet" href="polish.css?b=20261018094033">
+<link rel="stylesheet" href="polish.css?b=20261018094456">
 </head>
 <body>
 
@@ -1382,7 +1382,7 @@ footer{
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.0/dist/umd/supabase.js"></script>
-<script src="polish.js?b=20261018094033"></script>
+<script src="polish.js?b=20261018094456"></script>
 <script>
 /* ?v=<number> is how a reload dodges the cache - after an update, or when
    the site opens or closes. By the time anyone can see the page it has
@@ -3294,9 +3294,21 @@ document.getElementById("searchForm").addEventListener("submit",function(e){
   e.preventDefault();
   var q = document.getElementById("searchInput").value.trim();
   if(!q) return;
+  /* A new search replaces whatever is open: the page being read closes
+     and the fresh results take its place, no need to press Close first. */
+  var reader = document.getElementById("reader");
+  if(reader && !reader.hidden){
+    reader.hidden = true;
+    document.getElementById("readerFrame").src = "about:blank";
+  }
   /* Revision sites only - there is no way out to the open web from here.
      The text stays in the box so it can be refined. */
   runRevisionSearch(q);
+  var cse = document.getElementById("csePanel");
+  if(cse && !cse.hidden){
+    var r = cse.getBoundingClientRect();
+    if(r.top < 70 || r.top > innerHeight * 0.6) cse.scrollIntoView({ behavior:"smooth", block:"start" });
+  }
 });
 
 /* ---------- word of the day ---------- */
