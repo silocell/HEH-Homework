@@ -1106,7 +1106,7 @@ footer{
   *{transition:none!important;animation:none!important}
 }
 </style>
-<link rel="stylesheet" href="polish.css?b=20261018172128">
+<link rel="stylesheet" href="polish.css?b=20261018180953">
 </head>
 <body>
 
@@ -1409,7 +1409,7 @@ footer{
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.0/dist/umd/supabase.js"></script>
-<script src="polish.js?b=20261018172128"></script>
+<script src="polish.js?b=20261018180953"></script>
 <script>
 /* ?v=<number> is how a reload dodges the cache - after an update, or when
    the site opens or closes. By the time anyone can see the page it has
@@ -4228,12 +4228,28 @@ function wikiLookup(term){
   btn.disabled = true;
   btn.textContent = "Looking…";
 
-  /* Rung one, then rung two, then the near misses. */
+  /* People type "the Romans"; the article is called "Romans". A leading
+     "the" or "a" is worth one more go before giving up - the box's own
+     example used to fail on this. */
+  var bare = term.replace(/^\s*(?:the|a|an)\s+/i, "").trim();
+
+  /* Rung one, then rung two, then without the article, then near misses. */
   wikiSummary("simple", term).then(function(d){
     var why = wikiWhy(d);
     if(!why){ renderWiki(d, "simple", ""); return; }
     return wikiSummary("en", term).then(function(d2){
       if(!wikiWhy(d2)){ renderWiki(d2, "en", why); return; }
+      if(bare && bare.toLowerCase() !== term.toLowerCase()){
+        return wikiSummary("simple", bare).then(function(d3){
+          if(!wikiWhy(d3)){ renderWiki(d3, "simple", ""); return; }
+          return wikiSummary("en", bare).then(function(d4){
+            if(!wikiWhy(d4)){ renderWiki(d4, "en", why); return; }
+            return wikiGuesses(term).then(function(titles){
+              renderWikiGuesses(term, titles);
+            });
+          });
+        });
+      }
       return wikiGuesses(term).then(function(titles){
         renderWikiGuesses(term, titles);
       });
