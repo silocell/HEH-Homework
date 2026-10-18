@@ -310,36 +310,60 @@ button,input,select,textarea{font:inherit;color:inherit}
   background:var(--margin);margin-left:6px;vertical-align:middle
 }
 .cse-note{font-size:.85rem;color:var(--ink-faint);margin:6px 0 10px;line-height:1.5}
-/* ---- the first-time guide ---- */
-.guide-back{
-  position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;
-  padding:16px;background:rgba(10,14,22,.55)
+/* ---- the first-time guide: a spotlight tour ---- */
+.tour{position:fixed;inset:0;z-index:60}
+.tour[hidden]{display:none}
+/* Catches clicks so nothing underneath gets pressed mid-tour. */
+.tour-catch{position:absolute;inset:0}
+.tour-hole{
+  position:fixed;border-radius:14px;pointer-events:none;
+  box-shadow:0 0 0 9999px rgba(10,14,22,.62),0 0 0 3px var(--accent),0 0 28px 6px rgba(255,255,255,.12);
+  transition:top .3s ease,left .3s ease,width .3s ease,height .3s ease
 }
-.guide-back[hidden]{display:none}
-.guide-card{
-  width:100%;max-width:420px;background:var(--card);color:var(--ink);
+.tour-bubble{
+  position:fixed;width:min(360px,calc(100vw - 32px));background:var(--card);color:var(--ink);
   border:1px solid var(--rule);border-left:4px solid var(--margin);
-  border-radius:14px;padding:22px 22px 18px;box-shadow:0 18px 50px rgba(0,0,0,.35)
+  border-radius:14px;padding:18px 18px 14px;box-shadow:0 18px 50px rgba(0,0,0,.35);
+  transition:top .3s ease,left .3s ease
 }
+.tour-bubble::before{
+  content:"";position:absolute;left:var(--ax,40px);width:14px;height:14px;margin-left:-7px;
+  background:var(--card);border:1px solid var(--rule);transform:rotate(45deg);display:none
+}
+.tour-bubble.below::before{display:block;top:-8px;border-right:0;border-bottom:0}
+.tour-bubble.above::before{display:block;bottom:-8px;border-left:0;border-top:0}
 .guide-kicker{
   font-family:var(--font-mono);font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;
   color:var(--ink-faint);margin:0 0 6px
 }
-.guide-title{font-size:1.25rem;font-weight:700;margin:0 0 10px;line-height:1.25}
-.guide-text{font-size:.92rem;line-height:1.6;margin:0 0 18px;color:var(--ink)}
+.guide-title{font-size:1.15rem;font-weight:700;margin:0 0 8px;line-height:1.25}
+.guide-text{font-size:.9rem;line-height:1.6;margin:0 0 14px;color:var(--ink)}
 .guide-foot{display:flex;align-items:center;justify-content:space-between;gap:12px}
-.guide-dots{display:flex;gap:6px}
+.guide-dots{display:flex;gap:6px;flex-wrap:wrap}
 .guide-dots span{width:7px;height:7px;border-radius:50%;background:var(--rule)}
 .guide-dots span.on{background:var(--accent)}
-.guide-btns{display:flex;gap:8px}
+.guide-btns{display:flex;gap:6px;align-items:center}
 .guide-skip{
   font:inherit;font-size:.84rem;cursor:pointer;background:none;border:0;
-  color:var(--ink-faint);padding:8px 10px
+  color:var(--ink-faint);padding:8px 8px
 }
 .guide-skip:hover,.guide-skip:focus-visible{color:var(--ink)}
 .guide-next{
   font:inherit;font-size:.86rem;font-weight:600;cursor:pointer;border:0;border-radius:9px;
   background:var(--accent);color:#fff;padding:9px 18px
+}
+/* The pretend menu for the search-engine stop. Drawn by the tour, so the
+   real dropdown is never opened and nothing is ever searched. */
+.tour-menu{
+  position:fixed;min-width:170px;background:var(--card);color:var(--ink);
+  border:1px solid var(--rule);border-radius:10px;padding:4px;
+  box-shadow:0 10px 28px rgba(0,0,0,.3);font-size:.88rem
+}
+.tour-menu[hidden]{display:none}
+.tour-menu div{padding:7px 12px;border-radius:7px;transition:background .2s,color .2s}
+.tour-menu div.on{background:var(--accent);color:#fff}
+@media (prefers-reduced-motion: reduce){
+  .tour-hole,.tour-bubble,.tour-menu div{transition:none}
 }
 .guide-again{
   font:inherit;font-size:.8rem;cursor:pointer;background:none;border:0;
@@ -1059,8 +1083,11 @@ footer{
 <!-- ============================================================
      DASHBOARD
      ============================================================ -->
-<div class="guide-back" id="guideBack" hidden>
-  <div class="guide-card" id="guideCard" role="dialog" aria-modal="true" aria-labelledby="guideTitle">
+<div class="tour" id="tour" hidden>
+  <div class="tour-catch"></div>
+  <div class="tour-hole" id="tourHole"></div>
+  <div class="tour-menu" id="tourMenu" hidden aria-hidden="true"></div>
+  <div class="tour-bubble" id="tourBubble" role="dialog" aria-modal="true" aria-labelledby="guideTitle">
     <p class="guide-kicker" id="guideKicker"></p>
     <h2 class="guide-title" id="guideTitle"></h2>
     <p class="guide-text" id="guideText"></p>
@@ -1068,6 +1095,7 @@ footer{
       <div class="guide-dots" id="guideDots" aria-hidden="true"></div>
       <div class="guide-btns">
         <button type="button" class="guide-skip" id="guideSkip">Skip</button>
+        <button type="button" class="guide-skip" id="guidePrev">Back</button>
         <button type="button" class="guide-next" id="guideNext">Next</button>
       </div>
     </div>
@@ -2312,9 +2340,15 @@ document.getElementById("waitingOut").addEventListener("click",function(){
 /* ==================================================================
    THE FIRST-TIME GUIDE
 
-   A few cards the first time someone signs in, and one card the first
-   time each feature is switched on for them - because the explainer and
-   the chat arrive later, when Shiv lets them in, not on day one.
+   A spotlight tour. The page dims, the tour scrolls to each real thing
+   on the dashboard, lights it up, and a speech bubble beside it says
+   what it is. The welcome tour runs the first time someone signs in; a
+   shorter one runs the first time each feature is switched on for them
+   - the explainer, the chat, a private room - because those arrive
+   later, when Shiv lets them in, not on day one.
+
+   A stop whose thing isn't on this person's screen is skipped, so no
+   one is walked to a feature they don't have.
 
    "Seen" lives in the account (user_metadata.guide), so it follows a
    person between the school laptop and home and they are not shown the
@@ -2322,32 +2356,56 @@ document.getElementById("waitingOut").addEventListener("click",function(){
    account answers. Skipping counts as seen - it is a guide, not a gate.
    "Show me around again" under Make it yours brings the welcome back.
    ================================================================== */
+function byId(id){ return document.getElementById(id); }
+function panelOf(id){
+  var el = byId(id);
+  return el ? (el.closest(".panel") || el) : null;
+}
+
 var GUIDE = {
   welcome: [
-    { kicker:"Welcome", title:"Everything for homework, in one place",
-      text:"The tiles at the top open your school sites - Sparx, Seneca, Teams and the rest - so you don't need six tabs. Press Edit to add your own." },
-    { kicker:"Yours only", title:"Your to-do list",
-      text:"Add what's due and tick it off as you go. Nobody else can see it - the admin panel only shows Shiv how many things are on it, never what. It follows you to any computer you sign in on." },
-    { kicker:"Free", title:"Look it up",
+    { at:function(){ return panelOf("tileGroups"); },
+      kicker:"Welcome", title:"Everything for homework, in one place",
+      text:"These open your school sites - Sparx, Seneca, Teams and the rest - so you don't need six tabs. Press Edit to add your own." },
+    { at:function(){ return byId("searchForm"); },
+      kicker:"Search", title:"Search the web from here",
+      text:"Type what you're looking for and press Search." },
+    { at:function(){ return byId("searchForm"); }, demo:"engine",
+      kicker:"Search", title:"Pick Revision sites",
+      text:"Open this menu and choose Revision sites to search only revision websites instead of the whole web. This is just a demo - nothing has been searched." },
+    { at:function(){ return byId("wikiPanel"); },
+      kicker:"Free", title:"Look it up",
       text:"Type a topic and get the Wikipedia version - the Simple English one first, because it's easier to read. It doesn't cost anything." },
-    { kicker:"Make it yours", title:"Change how it looks",
-      text:"Pick a colour, switch to dark mode, or choose the easier-to-read font. More things switch on as Shiv lets you in to them." }
+    { at:function(){ return panelOf("todoList"); },
+      kicker:"Yours only", title:"Your to-do list",
+      text:"Add what's due and tick it off as you go. Nobody else can see it - the admin panel only shows Shiv how many things are on it, never what. It follows you to any computer you sign in on." },
+    { at:function(){ return panelOf("swatches"); },
+      kicker:"Make it yours", title:"Change how it looks",
+      text:"Pick a colour, switch to dark mode, or choose the easier-to-read font. “Show me around again” down here replays this tour. More things switch on as Shiv lets you in to them." }
   ],
   explainer: [
-    { kicker:"Now switched on", title:"The explainer",
+    { at:function(){ return byId("explainPanel"); },
+      kicker:"Now switched on", title:"The explainer",
       text:"Type a topic you didn't understand and get it explained, with an example and a question to check yourself. You get ten a day. It won't do your homework - give it a homework question and it explains the topic behind it instead." },
-    { kicker:"Saves your ten", title:"What people are asking",
-      text:"Topics someone has already asked come back instantly and don't use any of your ten. Tap one in the list to read it." }
+    { at:function(){ return byId("askedPanel"); },
+      kicker:"Saves your ten", title:"What people are asking",
+      text:"Topics someone has already asked come back instantly and don't use any of your ten. Tap one to read it." }
   ],
   chat: [
-    { kicker:"Now switched on", title:"The year chat",
+    { at:function(){ return byId("chatPanel"); },
+      kicker:"Now switched on", title:"The year chat",
       text:"Talk to the rest of the year. Rude words are hashed out, and anything nastier is stopped - and pauses you for a minute and a half. Shiv can see everything, including what's deleted. Messages clear after two days." },
-    { kicker:"Next to it", title:"The noticeboard",
+    { at:function(){ return byId("askOpen"); },
+      kicker:"Just your friends", title:"Make a private room",
+      text:"Ask for a room with a few people. Shiv says yes or no. Private means private from other pupils - not from Shiv, and the same rules apply." },
+    { at:function(){ return byId("boardPanel"); },
+      kicker:"Next to it", title:"The noticeboard",
       text:"Notices for everyone, and homework questions people can answer. Ask one when you're stuck - unanswered questions stay at the top." }
   ],
   rooms: [
-    { kicker:"New", title:"You're in a private room",
-      text:"Tabs above the chat switch between the year chat and your rooms. A dot means something new. Private means private from other pupils - not from Shiv, and the same rules apply." }
+    { at:function(){ return byId("roomTabs"); },
+      kicker:"New", title:"You're in a private room",
+      text:"These tabs switch between the year chat and your rooms. A dot means something new. Private means private from other pupils - not from Shiv, and the same rules apply." }
   ]
 };
 
@@ -2355,6 +2413,8 @@ var GUIDE_KEY = "hl-guide";
 var guideSeen = {};
 var guideQueue = [];
 var guideCards = null, guideAt = 0, guideName = "";
+var tourLoop = 0, tourTimers = [], tourSaved = null, tourStarting = 0;
+var tourCalm = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 function guideLoad(supaUser){
   var local = {};
@@ -2377,67 +2437,230 @@ function maybeGuide(name){
   if(!GUIDE[name] || guideSeen[name]) return;
   if(guideName === name || guideQueue.indexOf(name) > -1) return;
   guideQueue.push(name);
-  if(!guideCards) guideNextInQueue();
+  if(!guideCards && !tourStarting) guideSoon();
+}
+
+/* A feature's panel is often un-hidden in the same moment it asks for
+   its tour, so give the page a beat to lay itself out first. */
+function guideSoon(){
+  clearTimeout(tourStarting);
+  tourStarting = setTimeout(function(){ tourStarting = 0; guideNextInQueue(); }, 350);
+}
+
+function onScreen(el){
+  if(!el || el.hidden || el.closest("[hidden]")) return false;
+  var r = el.getBoundingClientRect();
+  return r.width > 0 && r.height > 0;
 }
 
 function guideNextInQueue(){
-  var name = guideQueue.shift();
-  if(!name){ return; }
-  guideName = name;
-  guideCards = GUIDE[name];
-  guideAt = 0;
-  guidePaint();
-  document.getElementById("guideBack").hidden = false;
-  document.getElementById("guideNext").focus();
+  var dash = byId("dash");
+  if(!dash || dash.hidden){ return; }
+  while(guideQueue.length){
+    var name = guideQueue.shift();
+    if(guideSeen[name]) continue;
+    var steps = GUIDE[name].filter(function(s){ return onScreen(s.at()); });
+    /* Nothing of it on screen yet - leave it unseen, so it runs next time
+       the feature asks, rather than being ticked off unshown. */
+    if(!steps.length) continue;
+    guideName = name;
+    guideCards = steps;
+    guideAt = 0;
+    tourOpen();
+    guideGo(0);
+    return;
+  }
 }
 
-function guidePaint(){
-  var c = guideCards[guideAt];
-  document.getElementById("guideKicker").textContent = c.kicker;
-  document.getElementById("guideTitle").textContent = c.title;
-  document.getElementById("guideText").textContent = c.text;
-  var last = guideAt === guideCards.length - 1;
-  document.getElementById("guideNext").textContent = last ? "Got it" : "Next";
-  document.getElementById("guideSkip").hidden = last || guideCards.length === 1;
-  var dots = document.getElementById("guideDots");
+function tourOpen(){
+  byId("tour").hidden = false;
+  var hole = byId("tourHole");
+  hole.style.left = (innerWidth / 2) + "px";
+  hole.style.top = (innerHeight / 2) + "px";
+  hole.style.width = "0px"; hole.style.height = "0px";
+  cancelAnimationFrame(tourLoop);
+  (function follow(){
+    tourPlace();
+    tourLoop = requestAnimationFrame(follow);
+  })();
+}
+
+function tourShut(){
+  tourDemoStop();
+  cancelAnimationFrame(tourLoop);
+  tourLoop = 0;
+  var t = byId("tour");
+  if(t) t.hidden = true;
+}
+
+function guideGo(i){
+  tourDemoStop();
+  guideAt = i;
+  var c = guideCards[i];
+  byId("guideKicker").textContent = c.kicker;
+  byId("guideTitle").textContent = c.title;
+  byId("guideText").textContent = c.text;
+  var last = i === guideCards.length - 1;
+  byId("guideNext").textContent = last ? "Got it" : "Next";
+  byId("guideSkip").hidden = last || guideCards.length === 1;
+  byId("guidePrev").hidden = i === 0;
+  var dots = byId("guideDots");
   dots.textContent = "";
   if(guideCards.length > 1){
-    guideCards.forEach(function(_, i){
+    guideCards.forEach(function(_, n){
       var d = document.createElement("span");
-      if(i === guideAt) d.className = "on";
+      if(n === i) d.className = "on";
       dots.appendChild(d);
     });
+  }
+  tourScrollTo(c.at());
+  if(c.demo === "engine") tourTimers.push(setTimeout(tourEngineDemo, tourCalm ? 0 : 650));
+  byId("guideNext").focus({ preventScroll:true });
+}
+
+/* Scroll so the thing and its bubble both fit, centred if they can. */
+function tourScrollTo(el){
+  if(!el) return;
+  var r = el.getBoundingClientRect();
+  var bh = byId("tourBubble").offsetHeight || 200;
+  var extra = guideCards[guideAt].demo === "engine" ? 170 : 0;
+  var need = r.height + extra + bh + 40;
+  var head = 70;  /* the bar that stays at the top while scrolling */
+  var top = need < innerHeight - head ? Math.max(head, (innerHeight - need) / 2) : head;
+  /* Already comfortably on screen with room for the bubble: stay put. */
+  var room = innerHeight - r.bottom - extra;
+  if(r.top >= 70 && (room >= bh + 40 || r.top >= bh + 40) && r.bottom + extra <= innerHeight - 16) return;
+  window.scrollTo({ top: Math.max(0, scrollY + r.top - top), behavior: tourCalm ? "auto" : "smooth" });
+}
+
+/* Runs every frame while the tour is open, so the light and the bubble
+   follow the page as it scrolls, resizes or changes under them. */
+function tourPlace(){
+  var c = guideCards && guideCards[guideAt];
+  if(!c) return;
+  var el = c.at();
+  if(!el) return;
+  var r = el.getBoundingClientRect();
+  var top = r.top, left = r.left, right = r.right, bottom = r.bottom;
+
+  var menu = byId("tourMenu");
+  if(!menu.hidden){
+    var sel = byId("engineSelect").getBoundingClientRect();
+    var mw = Math.max(sel.width, 170);
+    var ml = Math.min(sel.left, innerWidth - mw - 8);
+    menu.style.left = ml + "px";
+    menu.style.top = (sel.bottom + 4) + "px";
+    menu.style.minWidth = mw + "px";
+    var m = menu.getBoundingClientRect();
+    left = Math.min(left, m.left); right = Math.max(right, m.right);
+    bottom = Math.max(bottom, m.bottom);
+  }
+
+  var pad = 8;
+  var hole = byId("tourHole");
+  hole.style.left = (left - pad) + "px";
+  hole.style.top = (top - pad) + "px";
+  hole.style.width = (right - left + pad * 2) + "px";
+  hole.style.height = (bottom - top + pad * 2) + "px";
+
+  var b = byId("tourBubble");
+  var bw = b.offsetWidth, bh = b.offsetHeight, gap = 14;
+  var bt, cls = "";
+  if(innerHeight - (bottom + pad) >= bh + gap + 8){ bt = bottom + pad + gap; cls = "below"; }
+  else if(top - pad >= bh + gap + 8){ bt = top - pad - gap - bh; cls = "above"; }
+  else { bt = innerHeight - bh - 16; }
+  var mid = (left + right) / 2;
+  var bl = Math.max(16, Math.min(mid - bw / 2, innerWidth - bw - 16));
+  b.style.top = bt + "px";
+  b.style.left = bl + "px";
+  b.style.setProperty("--ax", Math.max(22, Math.min(mid - bl, bw - 22)) + "px");
+  if(b.className !== "tour-bubble " + cls) b.className = "tour-bubble " + cls;
+}
+
+/* The search-engine stop: pretend-type a search, draw a menu that looks
+   like the dropdown, and slide down to Revision sites. The real dropdown
+   is never opened and nothing is searched; both are put back after. */
+function tourEngineDemo(){
+  var input = byId("searchInput"), sel = byId("engineSelect"), menu = byId("tourMenu");
+  if(!input || !sel) return;
+  tourSaved = { q: input.value, v: sel.value };
+  input.value = "";
+  var word = "volcanoes", n = 0;
+  function typeOne(){
+    if(!guideCards) return;
+    n++;
+    input.value = word.slice(0, n);
+    if(n < word.length) tourTimers.push(setTimeout(typeOne, tourCalm ? 0 : 85));
+    else tourTimers.push(setTimeout(openMenu, tourCalm ? 0 : 400));
+  }
+  function openMenu(){
+    menu.textContent = "";
+    var rows = [];
+    for(var i = 0; i < sel.options.length; i++){
+      var d = document.createElement("div");
+      d.textContent = sel.options[i].textContent;
+      if(sel.options[i].value === sel.value) d.className = "on";
+      menu.appendChild(d); rows.push(d);
+    }
+    menu.hidden = false;
+    var target = rows.length - 1, at = sel.selectedIndex < 0 ? 0 : sel.selectedIndex;
+    function step(){
+      if(!guideCards) return;
+      if(at < target){
+        rows[at].className = ""; at++; rows[at].className = "on";
+        tourTimers.push(setTimeout(step, tourCalm ? 0 : 300));
+      } else {
+        tourTimers.push(setTimeout(function(){ sel.value = "cse"; }, tourCalm ? 0 : 500));
+      }
+    }
+    tourTimers.push(setTimeout(step, tourCalm ? 0 : 450));
+  }
+  typeOne();
+}
+
+function tourDemoStop(){
+  tourTimers.forEach(clearTimeout);
+  tourTimers = [];
+  var menu = byId("tourMenu");
+  if(menu) menu.hidden = true;
+  if(tourSaved){
+    byId("searchInput").value = tourSaved.q;
+    byId("engineSelect").value = tourSaved.v;
+    tourSaved = null;
   }
 }
 
 function guideClose(){
   if(guideName) guideMarkSeen(guideName);
-  document.getElementById("guideBack").hidden = true;
+  tourShut();
   guideCards = null; guideName = "";
   /* Anything that switched on while this was open gets its turn next. */
-  if(guideQueue.length) setTimeout(guideNextInQueue, 250);
+  if(guideQueue.length) guideSoon();
 }
 
 function guideReset(){
   guideQueue = [];
+  clearTimeout(tourStarting); tourStarting = 0;
+  tourShut();
   guideCards = null; guideName = "";
-  var b = document.getElementById("guideBack");
-  if(b) b.hidden = true;
 }
 
-document.getElementById("guideNext").addEventListener("click", function(){
+byId("guideNext").addEventListener("click", function(){
   if(!guideCards) return;
-  if(guideAt < guideCards.length - 1){ guideAt++; guidePaint(); }
+  if(guideAt < guideCards.length - 1) guideGo(guideAt + 1);
   else guideClose();
 });
-document.getElementById("guideSkip").addEventListener("click", guideClose);
-document.getElementById("guideBack").addEventListener("click", function(e){
-  if(e.target === this) guideClose();
+byId("guidePrev").addEventListener("click", function(){
+  if(guideCards && guideAt > 0) guideGo(guideAt - 1);
 });
+byId("guideSkip").addEventListener("click", guideClose);
 document.addEventListener("keydown", function(e){
-  if(e.key === "Escape" && guideCards) guideClose();
+  if(!guideCards) return;
+  if(e.key === "Escape") guideClose();
+  else if(e.key === "ArrowRight") byId("guideNext").click();
+  else if(e.key === "ArrowLeft") byId("guidePrev").click();
 });
-document.getElementById("guideAgain").addEventListener("click", function(){
+byId("guideAgain").addEventListener("click", function(){
   delete guideSeen.welcome;
   maybeGuide("welcome");
 });
