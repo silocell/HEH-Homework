@@ -388,6 +388,15 @@ button,input,select,textarea{font:inherit;color:inherit}
   font:inherit;font-size:.8rem;cursor:pointer;margin-left:auto;
   background:#fff;color:var(--accent);border:0;border-radius:7px;padding:6px 12px
 }
+.notyet-bar{
+  display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+  background:var(--card);border:1px solid var(--rule);border-left:4px solid var(--accent);
+  color:var(--ink-soft);
+  padding:10px 16px;border-radius:10px;margin-bottom:18px;
+  font-size:.86rem;line-height:1.5
+}
+.notyet-bar[hidden]{display:none}
+.notyet-bar strong{color:var(--ink)}
 .maint-bar{
   display:flex;align-items:center;gap:12px;flex-wrap:wrap;
   background:var(--margin);color:#fff;
@@ -1106,7 +1115,7 @@ footer{
   *{transition:none!important;animation:none!important}
 }
 </style>
-<link rel="stylesheet" href="polish.css?b=20261018180953">
+<link rel="stylesheet" href="polish.css?b=20261018185612">
 </head>
 <body>
 
@@ -1191,22 +1200,17 @@ footer{
   </div>
 </div>
 
-<div class="gate" id="waiting" hidden>
-  <div class="gate-card">
-    <h1>Nearly there</h1>
-    <p class="sub">Your account exists, but it hasn't been let in yet.</p>
-    <p class="gate-hint" style="margin-bottom:20px">
-      Ask Shiv to approve it, then sign in again. Nothing is lost in the meantime.
-    </p>
-    <button type="button" class="btn" id="waitingOut">Sign out</button>
-  </div>
-</div>
-
 <div class="shell" id="dash" hidden>
 
   <div class="update-bar" id="updateBar" hidden>
     <span><strong>There's a newer version of this page.</strong> Finish what you're typing, then load it.</span>
     <button type="button" id="updateNow">Load it</button>
+  </div>
+
+  <div class="notyet-bar" id="notYetBar" hidden>
+    <span><strong>You're in, but not everything is switched on yet.</strong>
+    Your shortcuts, the search, Look it up and your to-do list all work now. The year chat,
+    the board and the explainer arrive once Shiv has let your account in.</span>
   </div>
 
   <div class="maint-bar" id="maintBar" hidden>
@@ -1409,7 +1413,7 @@ footer{
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.0/dist/umd/supabase.js"></script>
-<script src="polish.js?b=20261018180953"></script>
+<script src="polish.js?b=20261018185612"></script>
 <script>
 /* ?v=<number> is how a reload dodges the cache - after an update, or when
    the site opens or closes. By the time anyone can see the page it has
@@ -2174,6 +2178,7 @@ document.getElementById("switchBtn").addEventListener("click",function(){
   var rd = document.getElementById("reader"); if(rd && !rd.hidden){ rd.hidden = true; document.getElementById("readerFrame").src = "about:blank"; }
   var cp = document.getElementById("csePanel"); if(cp) cp.hidden = true;
   var si = document.getElementById("searchInput"); if(si) si.value = "";
+  waitingOn = false; hideNotYetNote();
   myLinks = []; sharedLinks = []; hiddenUrls = {}; tilesEditing = false;
   try{ buildTiles(); }catch(e){}
   var ao = document.getElementById("askOpen"); if(ao) ao.textContent = "Make a private room";
@@ -2291,7 +2296,11 @@ function doneSigningIn(){
   if(si) si.hidden = true;
 }
 
-var LET_IN_WHEN_CLOSED = ["shivkforindia@gmail.com", "26kush@hatchend.harrow.sch.uk"];
+/* Only the account that runs the place. The school address was on this
+   list, but it is an ordinary pupil account now - so when the site is
+   closed it sees the maintenance notice like everybody else. Sign in with
+   the Google option to get in while it is shut. */
+var LET_IN_WHEN_CLOSED = ["shivkforindia@gmail.com"];
 var siteOpen = true;
 
 function letInWhenClosed(email){
@@ -2378,7 +2387,6 @@ function showClosed(){
   doneSigningIn();
   document.getElementById("gate").hidden = true;
   document.getElementById("dash").hidden = true;
-  document.getElementById("waiting").hidden = true;
   document.getElementById("closed").hidden = false;
 }
 
@@ -2417,22 +2425,19 @@ if(maintOff) maintOff.addEventListener("click", function(){
 /* ==================================================================
    DASHBOARD
    ================================================================== */
-function showWaiting(){
-  doneSigningIn();
-  document.getElementById("gate").hidden = true;
-  document.getElementById("dash").hidden = true;
-  document.getElementById("waiting").hidden = false;
+/* Signed in but not let in yet. They get the dashboard with the free
+   things on it and a line saying the rest is coming; the chat, the board,
+   the explainer and "what people are asking" never appear, because the
+   server refuses them and the page only shows what the server allows. */
+var waitingOn = false;
+function showNotYetNote(){
+  var bar = document.getElementById("notYetBar");
+  if(bar) bar.hidden = false;
 }
-
-document.getElementById("waitingOut").addEventListener("click",function(){
-  if(sb){ try{ sb.auth.signOut(); }catch(e){} }
-  currentUser = null;
-  document.getElementById("waiting").hidden = true;
-  document.getElementById("gate").hidden = false;
-  document.getElementById("email").value = "";
-  document.getElementById("password").value = "";
-  document.getElementById("gateError").textContent = "";
-});
+function hideNotYetNote(){
+  var bar = document.getElementById("notYetBar");
+  if(bar) bar.hidden = true;
+}
 
 /* The database already refuses an unapproved account; this only saves
    them from staring at a dashboard where nothing works. */
@@ -2759,12 +2764,15 @@ function openDashboard(who, supaUser){
     sb.from("profiles").select("approved,name").eq("id", who.uid).maybeSingle()
       .then(function(r){
         if(currentUser !== asked) return;   /* signed out, or someone else, since */
-        if(r && !r.error && r.data && r.data.approved === false){
-          currentUser = null;
-          stopSyncTimer();
-          showWaiting();
-          return;
-        }
+        /* Not let in yet. They used to get a dead-end "nearly there"
+           screen. Now they get the dashboard with the free things on it -
+           their shortcuts, the search, Wikipedia, their to-do list - and
+           the chat, the board, the explainer and what people are asking
+           stay away until Shiv switches them on. Nothing opens that the
+           server would refuse anyway; this is a quieter version of the
+           same page, not a way round it. */
+        waitingOn = !!(r && !r.error && r.data && r.data.approved === false);
+        if(waitingOn) showNotYetNote();
         /* A name set in the admin panel beats anything guessed from an
            address. "26paaa@..." does not mangle into a person's name. */
         if(r && !r.error && r.data && r.data.name && currentUser){
@@ -2776,7 +2784,6 @@ function openDashboard(who, supaUser){
   }
 
   document.getElementById("gate").hidden = true;
-  document.getElementById("waiting").hidden = true;
   document.getElementById("dash").hidden = false;
 
   if(supaUser && supaUser.user_metadata && supaUser.user_metadata.theme){
