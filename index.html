@@ -589,6 +589,43 @@ a.gs-title:hover{text-decoration:underline!important}
 .gcsc-find-more-on-google-magnifier{fill:var(--accent)!important}
 .gsc-adBlock{border-bottom:1px solid var(--rule)!important;padding-bottom:6px!important}
 
+/* Google's search engine settings show results in a white pop-up box
+   over the page. Pulled back down into our own panel instead, so the
+   results sit in a card like everything else, in light and dark. */
+.gsc-results-wrapper-overlay{
+  position:static!important;top:auto!important;left:auto!important;
+  width:auto!important;height:auto!important;max-height:none!important;
+  padding:0!important;margin:0!important;background:transparent!important;
+  box-shadow:none!important;border:0!important;border-radius:0!important;overflow:visible!important;
+  opacity:1!important;transform:none!important;animation:hl-pop .35s cubic-bezier(.2,.8,.2,1) backwards
+}
+.gsc-modal-background-image,.gsc-modal-background-image-visible{display:none!important}
+.gsc-results-close-btn,.gsc-results-close-btn-visible{display:none!important}
+body.gsc-overflow-hidden{overflow:auto!important}
+.gsc-results-wrapper-overlay .gsc-wrapper,.gsc-resultsbox-visible,.gsc-results{
+  background:transparent!important;width:auto!important
+}
+.gsc-control-wrapper-cse,.gsc-control-cse,.gsc-results-wrapper-nooverlay{background:transparent!important}
+.gsc-orderby{display:flex!important;align-items:center;gap:4px}
+.gsc-selected-option-container{
+  border:1px solid var(--rule)!important;border-radius:8px!important;box-shadow:none!important;
+  padding:3px 26px 3px 10px!important;min-width:0!important;width:auto!important;font-size:.76rem!important;
+  color:var(--ink-soft)!important;background-color:var(--card)!important
+}
+.gsc-selected-option{color:var(--ink-soft)!important}
+.gsc-option-menu{border-radius:10px!important;padding:4px!important;box-shadow:0 10px 28px rgba(0,0,0,.28)!important}
+.gsc-option-menu-item{border-radius:7px!important;padding:6px 10px!important;color:var(--ink)!important}
+.gsc-option-menu-item-highlighted{background:var(--accent-soft)!important}
+.gsc-tabsArea{display:flex!important;gap:4px;border-color:var(--rule)!important}
+.gsc-tabHeader{border-radius:8px 8px 0 0!important}
+.gsc-tabHeader.gsc-tabhActive{background:transparent!important}
+.gsc-above-wrapper-area,.gsc-tabsArea,.gsc-webResult.gsc-result,.gsc-cursor-box{border-color:var(--rule)!important}
+.gs-per-result-labels,.gs-bidi-start-align.gs-visibleUrl{color:var(--ink-faint)!important}
+.gsc-result .gs-title{height:auto!important}
+.gs-snippet{color:var(--ink-soft)!important}
+.gsc-webResult .gs-promotion,.gs-webResult.gs-result{background:transparent!important}
+.gsc-adBlock,.gsc-adBlockInvisible{border-radius:10px!important}
+
 /* ---------- READER (a result opened inside the page) ---------- */
 .reader{margin-bottom:20px}
 .reader-head{
@@ -1060,7 +1097,7 @@ footer{
   *{transition:none!important;animation:none!important}
 }
 </style>
-<link rel="stylesheet" href="polish.css?b=20261018080643">
+<link rel="stylesheet" href="polish.css?b=20261018090853">
 </head>
 <body>
 
@@ -1363,7 +1400,7 @@ footer{
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.0/dist/umd/supabase.js"></script>
-<script src="polish.js?b=20261018080643"></script>
+<script src="polish.js?b=20261018090853"></script>
 <script>
 /* ?v=<number> is how a reload dodges the cache - after an update, or when
    the site opens or closes. By the time anyone can see the page it has
