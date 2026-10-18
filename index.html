@@ -1082,7 +1082,7 @@ footer{
   *{transition:none!important;animation:none!important}
 }
 </style>
-<link rel="stylesheet" href="polish.css?b=20261018092259">
+<link rel="stylesheet" href="polish.css?b=20261018092444">
 </head>
 <body>
 
@@ -1377,7 +1377,7 @@ footer{
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.0/dist/umd/supabase.js"></script>
-<script src="polish.js?b=20261018092259"></script>
+<script src="polish.js?b=20261018092444"></script>
 <script>
 /* ?v=<number> is how a reload dodges the cache - after an update, or when
    the site opens or closes. By the time anyone can see the page it has
@@ -2416,7 +2416,7 @@ var GUIDE = {
       text:"These open your school sites - Sparx, Seneca, Teams and the rest - so you don't need six tabs. Press Edit to add your own." },
     { at:function(){ return byId("searchForm"); }, demo:"search",
       kicker:"Search", title:"Search revision sites",
-      text:"Type what you're revising and press Search. It only looks through approved revision sites - BBC Bitesize, Wikipedia, Khan Academy and the like - and they open right here on the page. This is just a demo - nothing has been searched." },
+      text:"Type what you're revising and press Search. It only looks through approved revision sites - Wikipedia, Khan Academy, Corbettmaths and the like - and they open right here on the page. This is just a demo - nothing has been searched." },
     { at:function(){ return byId("wikiPanel"); },
       kicker:"Free", title:"Look it up",
       text:"Type a topic and get the Wikipedia version - the Simple English one first, because it's easier to read. It doesn't cost anything." },
@@ -3118,7 +3118,8 @@ document.getElementById("cseClose").addEventListener("click",function(){
 var READABLE = [
   "en.wikipedia.org","simple.wikipedia.org","wikipedia.org",
   "www.khanacademy.org","khanacademy.org",
-  "www.bbc.co.uk","bbc.co.uk",
+  /* Not BBC Bitesize: it sends "X-Frame-Options: DENY", so it shows as a
+     blank box inside another page whatever we do. Checked 18 Oct 2026. */
   "www.physicsandmathstutor.com","physicsandmathstutor.com",
   "www.natgeokids.com","natgeokids.com",
   "www.internetgeography.net","internetgeography.net",
