@@ -480,48 +480,6 @@ button,input,select,textarea{font:inherit;color:inherit}
   box-shadow:var(--shadow);
 }
 .searchbar input:focus{border-color:var(--accent);outline:none}
-/* The engine picker. A real <select> stays underneath for the value,
-   but its list is drawn by the page, because the browser's own list
-   can't be styled and looks nothing like the rest of the site. */
-.engine{position:relative;flex:none}
-.engine select{
-  position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;
-  left:0;bottom:0;border:0;padding:0
-}
-.engine-btn{
-  display:flex;align-items:center;gap:10px;justify-content:space-between;
-  background:var(--card);border:1px solid var(--rule);
-  border-radius:10px;padding:0 12px 0 14px;font:inherit;font-size:.85rem;
-  color:var(--ink-soft);cursor:pointer;box-shadow:var(--shadow);
-  min-height:46px;min-width:150px
-}
-.engine-btn:hover{border-color:var(--ink-faint)}
-.engine-btn:focus-visible,.engine.open .engine-btn{border-color:var(--accent);outline:none}
-.engine-caret{
-  width:8px;height:8px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;
-  transform:translateY(-2px) rotate(45deg);transition:transform .2s ease;flex:none
-}
-.engine.open .engine-caret{transform:translateY(2px) rotate(225deg)}
-.engine-menu{
-  position:absolute;top:calc(100% + 6px);left:0;min-width:100%;z-index:30;
-  margin:0;padding:4px;list-style:none;
-  background:var(--card);color:var(--ink);border:1px solid var(--rule);border-radius:10px;
-  box-shadow:0 10px 28px rgba(0,0,0,.28);font-size:.88rem;
-  opacity:0;transform:translateY(-6px) scale(.98);transform-origin:top;
-  visibility:hidden;transition:opacity .18s ease,transform .18s ease,visibility 0s linear .18s
-}
-.engine.open .engine-menu{
-  opacity:1;transform:none;visibility:visible;transition:opacity .18s ease,transform .18s ease
-}
-.engine-menu li{
-  padding:8px 12px;border-radius:7px;cursor:pointer;white-space:nowrap;
-  transition:background .2s ease,color .2s ease
-}
-.engine-menu li.hot{background:var(--margin);background:color-mix(in srgb,var(--accent) 14%,transparent)}
-.engine-menu li[aria-selected="true"]{background:var(--accent);color:#fff}
-@media (prefers-reduced-motion: reduce){
-  .engine-menu,.engine.open .engine-menu,.engine-caret,.engine-menu li{transition:none}
-}
 .searchbar .btn{width:auto;flex:none;padding:12px 22px}
 
 /* ---------- REVISION SEARCH (Google widget, restyled) ---------- */
@@ -608,6 +566,12 @@ body.gsc-overflow-hidden{overflow:auto!important}
   background:transparent!important;width:auto!important
 }
 #csePanel .gsc-control-wrapper-cse,#csePanel .gsc-control-cse,#csePanel .gsc-results-wrapper-nooverlay{background:transparent!important}
+/* Web results only: the Image tab links off to any page an image sits
+   on, and adverts go anywhere at all. The result count is Google's
+   total before the unapproved ones are taken out, so it would mislead. */
+#csePanel .gsc-tabsArea,#csePanel .gsc-adBlock,#csePanel .gsc-adBlockVertical,
+#csePanel .gsc-result-info-container,#csePanel .gcsc-find-more-on-google-root,
+#csePanel .gcsc-more-maybe-branding-root{display:none!important}
 /* This engine has no sort options, so Google draws an empty box. */
 #csePanel .gsc-orderby{display:none!important}
 #csePanel .gsc-wrapper,#csePanel .gsc-resultsbox-visible,#csePanel .gsc-results,
@@ -622,7 +586,7 @@ body.gsc-overflow-hidden{overflow:auto!important}
 #csePanel .gsc-option-menu{border-radius:10px!important;padding:4px!important;box-shadow:0 10px 28px rgba(0,0,0,.28)!important}
 #csePanel .gsc-option-menu-item{border-radius:7px!important;padding:6px 10px!important;color:var(--ink)!important}
 #csePanel .gsc-option-menu-item-highlighted{background:var(--accent-soft)!important}
-#csePanel .gsc-tabsArea{display:flex!important;gap:4px;border-color:var(--rule)!important}
+#csePanel .gsc-tabsArea{border-color:var(--rule)!important}
 #csePanel .gsc-tabHeader{border-radius:8px 8px 0 0!important}
 #csePanel .gsc-tabHeader.gsc-tabhActive{background:transparent!important}
 #csePanel .gsc-above-wrapper-area,#csePanel .gsc-tabsArea,#csePanel .gsc-webResult.gsc-result,#csePanel .gsc-cursor-box{border-color:var(--rule)!important}
@@ -634,6 +598,8 @@ body.gsc-overflow-hidden{overflow:auto!important}
 
 /* ---------- READER (a result opened inside the page) ---------- */
 .reader{margin-bottom:20px}
+/* Clear the bar that stays at the top when these are scrolled to. */
+.reader,.cse-panel,.panel{scroll-margin-top:76px}
 .reader-head{
   display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap;
 }
@@ -1116,7 +1082,7 @@ footer{
   *{transition:none!important;animation:none!important}
 }
 </style>
-<link rel="stylesheet" href="polish.css?b=20261018091712">
+<link rel="stylesheet" href="polish.css?b=20261018092259">
 </head>
 <body>
 
@@ -1240,19 +1206,7 @@ footer{
   </div>
 
   <form class="searchbar" id="searchForm">
-    <input type="text" id="searchInput" placeholder="Search the web…" autocomplete="off" aria-label="Search the web">
-    <div class="engine" id="engineWrap">
-      <button type="button" class="engine-btn" id="engineBtn" aria-haspopup="listbox" aria-expanded="false" aria-controls="engineMenu" aria-label="Search engine">
-        <span id="engineLabel">Google</span><span class="engine-caret" aria-hidden="true"></span>
-      </button>
-      <ul class="engine-menu" id="engineMenu" role="listbox" aria-label="Search engine" tabindex="-1"></ul>
-      <select id="engineSelect" aria-hidden="true" tabindex="-1">
-        <option value="https://www.google.com/search?q=">Google</option>
-        <option value="https://www.bing.com/search?q=">Bing</option>
-        <option value="https://duckduckgo.com/?q=">DuckDuckGo</option>
-        <option value="cse">Revision sites</option>
-      </select>
-    </div>
+    <input type="text" id="searchInput" placeholder="Search revision sites…" autocomplete="off" aria-label="Search revision sites">
     <button type="submit" class="btn">Search</button>
   </form>
 
@@ -1267,7 +1221,7 @@ footer{
       <iframe class="reader-frame" id="readerFrame" title="Page preview" referrerpolicy="no-referrer"></iframe>
       <div class="reader-wait" aria-hidden="true">Opening the page…</div>
     </div>
-    <p class="reader-note">Some sites refuse to be shown inside another page. If this stays blank, use "Open in a tab".</p>
+    <p class="reader-note">If this stays blank, the site is refusing to be shown inside another page — use "Open in a tab".</p>
   </div>
 
   <div class="panel cse-panel" id="csePanel" hidden>
@@ -1423,7 +1377,7 @@ footer{
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.0/dist/umd/supabase.js"></script>
-<script src="polish.js?b=20261018091712"></script>
+<script src="polish.js?b=20261018092259"></script>
 <script>
 /* ?v=<number> is how a reload dodges the cache - after an update, or when
    the site opens or closes. By the time anyone can see the page it has
@@ -2460,12 +2414,9 @@ var GUIDE = {
     { at:function(){ return panelOf("tileGroups"); },
       kicker:"Welcome", title:"Everything for homework, in one place",
       text:"These open your school sites - Sparx, Seneca, Teams and the rest - so you don't need six tabs. Press Edit to add your own." },
-    { at:function(){ return byId("searchForm"); },
-      kicker:"Search", title:"Search the web from here",
-      text:"Type what you're looking for and press Search." },
-    { at:function(){ return byId("searchForm"); }, demo:"engine",
-      kicker:"Search", title:"Pick Revision sites",
-      text:"Open this menu and choose Revision sites to search only revision websites instead of the whole web. This is just a demo - nothing has been searched." },
+    { at:function(){ return byId("searchForm"); }, demo:"search",
+      kicker:"Search", title:"Search revision sites",
+      text:"Type what you're revising and press Search. It only looks through approved revision sites - BBC Bitesize, Wikipedia, Khan Academy and the like - and they open right here on the page. This is just a demo - nothing has been searched." },
     { at:function(){ return byId("wikiPanel"); },
       kicker:"Free", title:"Look it up",
       text:"Type a topic and get the Wikipedia version - the Simple English one first, because it's easier to read. It doesn't cost anything." },
@@ -2607,7 +2558,7 @@ function guideGo(i){
     });
   }
   tourScrollTo(c.at());
-  if(c.demo === "engine") tourTimers.push(setTimeout(tourEngineDemo, tourCalm ? 0 : 650));
+  if(c.demo === "search") tourTimers.push(setTimeout(tourSearchDemo, tourCalm ? 0 : 650));
   byId("guideNext").focus({ preventScroll:true });
 }
 
@@ -2616,7 +2567,7 @@ function tourScrollTo(el){
   if(!el) return;
   var r = el.getBoundingClientRect();
   var bh = byId("tourBubble").offsetHeight || 200;
-  var extra = guideCards[guideAt].demo === "engine" ? 170 : 0;
+  var extra = 0;
   var need = r.height + extra + bh + 40;
   var head = 70;  /* the bar that stays at the top while scrolling */
   var top = need < innerHeight - head ? Math.max(head, (innerHeight - need) / 2) : head;
@@ -2636,12 +2587,6 @@ function tourPlace(){
   var r = el.getBoundingClientRect();
   var top = r.top, left = r.left, right = r.right, bottom = r.bottom;
 
-  var wrap = byId("engineWrap");
-  if(c.demo === "engine" && wrap && wrap.classList.contains("open")){
-    var m = byId("engineMenu").getBoundingClientRect();
-    left = Math.min(left, m.left); right = Math.max(right, m.right);
-    bottom = Math.max(bottom, m.bottom);
-  }
 
   var pad = 8;
   var hole = byId("tourHole");
@@ -2664,13 +2609,12 @@ function tourPlace(){
   if(b.className !== "tour-bubble " + cls) b.className = "tour-bubble " + cls;
 }
 
-/* The search-engine stop: pretend-type a search, draw a menu that looks
-   like the dropdown, and slide down to Revision sites. The real dropdown
-   is never opened and nothing is searched; both are put back after. */
-function tourEngineDemo(){
-  var input = byId("searchInput"), sel = byId("engineSelect");
-  if(!input || !sel || !byId("engineWrap")) return;
-  tourSaved = { q: input.value, v: sel.value };
+/* The search stop: pretend-type a search into the box. Nothing is
+   searched, and the box is put back as it was afterwards. */
+function tourSearchDemo(){
+  var input = byId("searchInput");
+  if(!input) return;
+  tourSaved = { q: input.value };
   input.value = "";
   var word = "volcanoes", n = 0;
   function typeOne(){
@@ -2678,23 +2622,6 @@ function tourEngineDemo(){
     n++;
     input.value = word.slice(0, n);
     if(n < word.length) tourTimers.push(setTimeout(typeOne, tourCalm ? 0 : 85));
-    else tourTimers.push(setTimeout(openMenu, tourCalm ? 0 : 400));
-  }
-  function openMenu(){
-    engineOpen();
-    var target = sel.options.length - 1;
-    function step(){
-      if(!guideCards) return;
-      if(engineHot < target){
-        engineSetHot(engineHot + 1);
-        tourTimers.push(setTimeout(step, tourCalm ? 0 : 300));
-      } else {
-        /* Shown as picked, but no change event - so the revision search
-           is never loaded and nothing is searched. */
-        tourTimers.push(setTimeout(function(){ sel.value = "cse"; engineSync(); }, tourCalm ? 0 : 450));
-      }
-    }
-    tourTimers.push(setTimeout(step, tourCalm ? 0 : 450));
   }
   typeOne();
 }
@@ -2702,11 +2629,8 @@ function tourEngineDemo(){
 function tourDemoStop(){
   tourTimers.forEach(clearTimeout);
   tourTimers = [];
-  if(byId("engineWrap") && typeof engineShut === "function") engineShut();
   if(tourSaved){
     byId("searchInput").value = tourSaved.q;
-    byId("engineSelect").value = tourSaved.v;
-    if(typeof engineSync === "function") engineSync();
     tourSaved = null;
   }
 }
@@ -3119,10 +3043,8 @@ function cseElement(){
 /* Google's script is not loaded with the page any more. It writes its
    state into the address bar the moment it arrives - "#gsc.tab=0" - so
    everybody's URL carried it whether they had ever searched or not. Now
-   it is fetched the first time someone picks "Revision sites" in the
-   engine box, and only they see it. Picking the option starts the
-   download, so by the time they have typed something it is usually
-   ready. */
+   it is fetched the first time someone types in the search box, so by
+   the time they press Search it is usually ready. */
 var CSE_SRC = "https://cse.google.com/cse.js?cx=074b14cfe7e434226";
 var cseLoading = null;
 
@@ -3145,7 +3067,7 @@ function loadCse(){
     sc.onerror = function(){ cseLoading = null; finish(false); };
     document.head.appendChild(sc);
     /* A school filter can swallow the request without an error. */
-    setTimeout(function(){ finish(!!cseElement()); }, 8000);
+    setTimeout(function(){ var ok = !!cseElement(); if(!ok) cseLoading = null; finish(ok); }, 8000);
   });
   return cseLoading;
 }
@@ -3162,7 +3084,7 @@ function runRevisionSearch(q){
   /* Not here yet. Open the panel now and say so, then search when it
      arrives. A new tab can't be opened from here once we have waited -
      the browser only allows that straight after a click - so if it never
-     comes the fallback is a link in the panel, not a blocked pop-up. */
+     comes, the panel just says so. */
   panel.hidden = false;
   if(note){ note.hidden = false; note.textContent = "Loading the revision search\u2026"; }
   loadCse().then(function(ok){
@@ -3173,105 +3095,17 @@ function runRevisionSearch(q){
       return;
     }
     if(note){
-      note.textContent = "";
-      note.appendChild(document.createTextNode("The revision search didn't load \u2014 it may be blocked on this network. "));
-      var a = document.createElement("a");
-      a.href = "https://www.google.com/search?q=" + encodeURIComponent(q);
-      a.target = "_blank"; a.rel = "noopener";
-      a.textContent = "Search Google instead";
-      note.appendChild(a);
+      note.textContent = "The revision search didn't load \u2014 it may be blocked on this network. Try again in a minute.";
     }
   });
   return true;
 }
 
-var engineSel = document.getElementById("engineSelect");
-if(engineSel) engineSel.addEventListener("change", function(){
-  if(engineSel.value === "cse") loadCse();
-});
-
-/* ---- the engine picker's own list ----
-   The hidden <select> keeps the value (the search reads it), and this
-   draws a list that matches the rest of the site. Mouse, touch and
-   keyboard all work: arrows move, Enter picks, Esc closes. */
-var engineWrap = byId("engineWrap"), engineBtn = byId("engineBtn"), engineMenu = byId("engineMenu");
-var engineHot = 0;
-
-function engineSync(){
-  var o = engineSel.options[engineSel.selectedIndex] || engineSel.options[0];
-  byId("engineLabel").textContent = o.textContent;
-  var items = engineMenu.children;
-  for(var i = 0; i < items.length; i++){
-    items[i].setAttribute("aria-selected", i === engineSel.selectedIndex ? "true" : "false");
-  }
-}
-function engineBuild(){
-  engineMenu.textContent = "";
-  for(var i = 0; i < engineSel.options.length; i++){
-    var li = document.createElement("li");
-    li.id = "engineOpt" + i;
-    li.setAttribute("role", "option");
-    li.textContent = engineSel.options[i].textContent;
-    li.dataset.i = i;
-    engineMenu.appendChild(li);
-  }
-  engineSync();
-}
-function engineSetHot(i){
-  var items = engineMenu.children;
-  engineHot = (i + items.length) % items.length;
-  for(var k = 0; k < items.length; k++) items[k].classList.toggle("hot", k === engineHot);
-  engineMenu.setAttribute("aria-activedescendant", "engineOpt" + engineHot);
-}
-function engineOpen(){
-  engineWrap.classList.add("open");
-  engineBtn.setAttribute("aria-expanded", "true");
-  engineSetHot(Math.max(0, engineSel.selectedIndex));
-}
-function engineShut(){
-  engineWrap.classList.remove("open");
-  engineBtn.setAttribute("aria-expanded", "false");
-  var items = engineMenu.children;
-  for(var k = 0; k < items.length; k++) items[k].classList.remove("hot");
-}
-function enginePick(i){
-  var changed = engineSel.selectedIndex !== i;
-  engineSel.selectedIndex = i;
-  engineSync();
-  engineShut();
-  engineBtn.focus();
-  if(changed) engineSel.dispatchEvent(new Event("change"));
-}
-if(engineWrap){
-  engineBuild();
-  engineBtn.addEventListener("click", function(){
-    if(engineWrap.classList.contains("open")) engineShut(); else engineOpen();
-  });
-  engineMenu.addEventListener("mousemove", function(e){
-    var li = e.target.closest("li");
-    if(li) engineSetHot(+li.dataset.i);
-  });
-  engineMenu.addEventListener("click", function(e){
-    var li = e.target.closest("li");
-    if(li) enginePick(+li.dataset.i);
-  });
-  engineBtn.addEventListener("keydown", function(e){
-    var open = engineWrap.classList.contains("open");
-    if(e.key === "ArrowDown" || e.key === "ArrowUp"){
-      e.preventDefault();
-      if(!open) engineOpen(); else engineSetHot(engineHot + (e.key === "ArrowDown" ? 1 : -1));
-    } else if((e.key === "Enter" || e.key === " ") && open){
-      e.preventDefault(); enginePick(engineHot);
-    } else if(e.key === "Escape" && open){
-      e.preventDefault(); e.stopPropagation(); engineShut();
-    } else if(e.key === "Tab" && open){
-      engineShut();
-    }
-  });
-  document.addEventListener("mousedown", function(e){
-    if(engineWrap.classList.contains("open") && !engineWrap.contains(e.target)) engineShut();
-  });
-}
+/* Warm the revision search up as soon as someone starts typing, so it's
+   usually ready by the time they press Search. Not on focus: the box is
+   focused by itself when the dashboard opens, and loading Google's script
+   then would put "#gsc.tab=0" in everybody's address bar. */
+document.getElementById("searchInput").addEventListener("input", function(){ loadCse(); }, { once:true });
 
 document.getElementById("cseClose").addEventListener("click",function(){
   document.getElementById("csePanel").hidden = true;
@@ -3307,19 +3141,23 @@ function youtubeEmbed(u){
   return null;
 }
 
-function openInReader(href){
+/* The address to show in the reader for an approved page, or null if
+   the page isn't one that can open here. */
+function readerSrc(href){
   var u;
-  try{ u = new URL(href, location.href); }catch(e){ return false; }
-  if(u.protocol !== "https:" && u.protocol !== "http:") return false;
+  try{ u = new URL(href, location.href); }catch(e){ return null; }
+  if(u.protocol !== "https:" && u.protocol !== "http:") return null;
+  var yt = youtubeEmbed(u);
+  if(yt) return yt;
+  var host = u.hostname.toLowerCase();
+  for(var i=0;i<READABLE.length;i++){ if(host === READABLE[i]) return u.href; }
+  return null;
+}
 
-  var src = youtubeEmbed(u);
-  if(!src){
-    var host = u.hostname.toLowerCase();
-    var ok = false;
-    for(var i=0;i<READABLE.length;i++){ if(host === READABLE[i]){ ok = true; break; } }
-    if(!ok) return false;
-    src = u.href;
-  }
+function openInReader(href){
+  var src = readerSrc(href);
+  if(!src) return false;
+  var u = new URL(href, location.href);
 
   document.getElementById("readerSite").textContent = u.hostname.replace(/^www\./,"") + u.pathname;
   document.getElementById("readerOpen").href = u.href;
@@ -3362,11 +3200,52 @@ document.addEventListener("click",function(e){
   if(!a || !panel.contains(a)) return;
   var href = a.getAttribute("data-ctorig") || a.getAttribute("href") || "";
   if(!href || href.charAt(0) === "#" || /^javascript:/i.test(href)) return;
-  if(e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey) return;   /* their own new-tab click */
   e.preventDefault();
   e.stopImmediatePropagation();
-  if(!openInReader(href)) window.open(href, "_blank", "noopener");
+  /* Approved pages open here. Anything else goes nowhere - the search is
+     for revision sites only, not a way out to the rest of the web. */
+  if(!openInReader(href) && window.toast){
+    toast("That one isn't on the approved list, so it can't open here.", "err", { key:"reader" });
+  }
 }, true);
+
+/* Results from sites that can't open in the page are taken out of the
+   list, so everything left opens right here. Google redraws the list on
+   every search and page, so this watches for that and tidies each time. */
+(function(){
+  var panel = document.getElementById("csePanel");
+  if(!panel || !window.MutationObserver) return;
+  var busy = false;
+  function tidy(){
+    busy = false;
+    var shown = 0, any = false;
+    Array.prototype.forEach.call(panel.querySelectorAll(".gsc-webResult.gsc-result"), function(r){
+      var a = r.querySelector("a.gs-title");
+      if(!a) return;
+      any = true;
+      var ok = !!readerSrc(a.getAttribute("data-ctorig") || a.getAttribute("href") || "");
+      if(r.style.display !== (ok ? "" : "none")) r.style.display = ok ? "" : "none";
+      if(ok) shown++;
+    });
+    var note = document.getElementById("cseNone");
+    if(any && !shown){
+      if(!note){
+        note = document.createElement("p");
+        note.id = "cseNone";
+        note.className = "cse-note";
+        note.textContent = "Nothing on this page of results comes from a site that opens here. Try other words, or the next page.";
+      }
+      var res = panel.querySelector(".gsc-results");
+      if(res && note.parentNode !== res) res.insertBefore(note, res.firstChild);
+      note.hidden = false;
+    } else if(note){ note.hidden = true; }
+  }
+  new MutationObserver(function(){
+    if(busy) return;
+    busy = true;
+    requestAnimationFrame(tidy);
+  }).observe(panel, { childList:true, subtree:true });
+})();
 /* Google also acts on mousedown (rewriting the address for its click
    counting). Keep its hands off result links entirely. */
 document.addEventListener("mousedown",function(e){
@@ -3378,18 +3257,11 @@ document.addEventListener("mousedown",function(e){
 
 document.getElementById("searchForm").addEventListener("submit",function(e){
   e.preventDefault();
-  var input = document.getElementById("searchInput");
-  var q = input.value.trim();
+  var q = document.getElementById("searchInput").value.trim();
   if(!q) return;
-  var base = document.getElementById("engineSelect").value;
-
-  if(base === "cse"){
-    if(runRevisionSearch(q)) return;   /* keep the text so it can be refined */
-    base = "https://www.google.com/search?q=";
-  }
-
-  window.open(base + encodeURIComponent(q), "_blank", "noopener");
-  input.value = "";
+  /* Revision sites only - there is no way out to the open web from here.
+     The text stays in the box so it can be refined. */
+  runRevisionSearch(q);
 });
 
 /* ---------- word of the day ---------- */
