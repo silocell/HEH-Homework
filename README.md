@@ -40,6 +40,25 @@ Not this repository being tidy. Three things:
 3. **One filter, one pipeline.** Chat, noticeboard, rooms and the explainer
    all go through the same word list and the same checker. There's no back
    way in, because there's only one way in.
+4. **Column rules as well as row rules.** Row Level Security says which
+   rows you may read; it says nothing about which columns. The chat table
+   also holds the unmasked text behind a hashed-out message, and everyone's
+   address, so those columns are taken away from pupils at the database
+   level. The page asks for columns by name and never `select("*")`.
+5. **Counting that can't be raced.** The explainer's ten-a-day is taken in
+   one step inside the database, and the chat's messages-a-minute is a
+   trigger on the table, so firing fifty requests at once gets fifty
+   refusals, not fifty messages.
+
+### If the server side ever has to be rebuilt
+
+Three Supabase Edge Functions — `chat`, `admin`, `explain` — and a handful
+of SQL files that are run once in the SQL editor, in this order:
+`site_status.sql`, `rooms.sql`, `room_requests.sql`, `demo_admins.sql`,
+`lock_columns.sql`, `spend_ai.sql`, `rate_limits.sql`. The functions need
+three secrets: `GROQ_API_KEY`, and for sign-in the Azure client id and
+secret. None of these files live in this repository; keep the current
+copies with the backups.
 
 ## Honest notes
 
