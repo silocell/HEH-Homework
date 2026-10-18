@@ -352,18 +352,8 @@ button,input,select,textarea{font:inherit;color:inherit}
   font:inherit;font-size:.86rem;font-weight:600;cursor:pointer;border:0;border-radius:9px;
   background:var(--accent);color:#fff;padding:9px 18px
 }
-/* The pretend menu for the search-engine stop. Drawn by the tour, so the
-   real dropdown is never opened and nothing is ever searched. */
-.tour-menu{
-  position:fixed;min-width:170px;background:var(--card);color:var(--ink);
-  border:1px solid var(--rule);border-radius:10px;padding:4px;
-  box-shadow:0 10px 28px rgba(0,0,0,.3);font-size:.88rem
-}
-.tour-menu[hidden]{display:none}
-.tour-menu div{padding:7px 12px;border-radius:7px;transition:background .2s,color .2s}
-.tour-menu div.on{background:var(--accent);color:#fff}
 @media (prefers-reduced-motion: reduce){
-  .tour-hole,.tour-bubble,.tour-menu div{transition:none}
+  .tour-hole,.tour-bubble{transition:none}
 }
 .guide-again{
   font:inherit;font-size:.8rem;cursor:pointer;background:none;border:0;
@@ -490,11 +480,47 @@ button,input,select,textarea{font:inherit;color:inherit}
   box-shadow:var(--shadow);
 }
 .searchbar input:focus{border-color:var(--accent);outline:none}
-.searchbar select{
+/* The engine picker. A real <select> stays underneath for the value,
+   but its list is drawn by the page, because the browser's own list
+   can't be styled and looks nothing like the rest of the site. */
+.engine{position:relative;flex:none}
+.engine select{
+  position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;
+  left:0;bottom:0;border:0;padding:0
+}
+.engine-btn{
+  display:flex;align-items:center;gap:10px;justify-content:space-between;
   background:var(--card);border:1px solid var(--rule);
-  border-radius:10px;padding:0 12px;font-size:.85rem;
+  border-radius:10px;padding:0 12px 0 14px;font:inherit;font-size:.85rem;
   color:var(--ink-soft);cursor:pointer;box-shadow:var(--shadow);
-  min-height:46px;
+  min-height:46px;min-width:150px
+}
+.engine-btn:hover{border-color:var(--ink-faint)}
+.engine-btn:focus-visible,.engine.open .engine-btn{border-color:var(--accent);outline:none}
+.engine-caret{
+  width:8px;height:8px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;
+  transform:translateY(-2px) rotate(45deg);transition:transform .2s ease;flex:none
+}
+.engine.open .engine-caret{transform:translateY(2px) rotate(225deg)}
+.engine-menu{
+  position:absolute;top:calc(100% + 6px);left:0;min-width:100%;z-index:30;
+  margin:0;padding:4px;list-style:none;
+  background:var(--card);color:var(--ink);border:1px solid var(--rule);border-radius:10px;
+  box-shadow:0 10px 28px rgba(0,0,0,.28);font-size:.88rem;
+  opacity:0;transform:translateY(-6px) scale(.98);transform-origin:top;
+  visibility:hidden;transition:opacity .18s ease,transform .18s ease,visibility 0s linear .18s
+}
+.engine.open .engine-menu{
+  opacity:1;transform:none;visibility:visible;transition:opacity .18s ease,transform .18s ease
+}
+.engine-menu li{
+  padding:8px 12px;border-radius:7px;cursor:pointer;white-space:nowrap;
+  transition:background .2s ease,color .2s ease
+}
+.engine-menu li.hot{background:var(--margin);background:color-mix(in srgb,var(--accent) 14%,transparent)}
+.engine-menu li[aria-selected="true"]{background:var(--accent);color:#fff}
+@media (prefers-reduced-motion: reduce){
+  .engine-menu,.engine.open .engine-menu,.engine-caret,.engine-menu li{transition:none}
 }
 .searchbar .btn{width:auto;flex:none;padding:12px 22px}
 
@@ -1086,7 +1112,6 @@ footer{
 <div class="tour" id="tour" hidden>
   <div class="tour-catch"></div>
   <div class="tour-hole" id="tourHole"></div>
-  <div class="tour-menu" id="tourMenu" hidden aria-hidden="true"></div>
   <div class="tour-bubble" id="tourBubble" role="dialog" aria-modal="true" aria-labelledby="guideTitle">
     <p class="guide-kicker" id="guideKicker"></p>
     <h2 class="guide-title" id="guideTitle"></h2>
@@ -1159,12 +1184,18 @@ footer{
 
   <form class="searchbar" id="searchForm">
     <input type="text" id="searchInput" placeholder="Search the web…" autocomplete="off" aria-label="Search the web">
-    <select id="engineSelect" aria-label="Search engine">
-      <option value="https://www.google.com/search?q=">Google</option>
-      <option value="https://www.bing.com/search?q=">Bing</option>
-      <option value="https://duckduckgo.com/?q=">DuckDuckGo</option>
-      <option value="cse">Revision sites</option>
-    </select>
+    <div class="engine" id="engineWrap">
+      <button type="button" class="engine-btn" id="engineBtn" aria-haspopup="listbox" aria-expanded="false" aria-controls="engineMenu" aria-label="Search engine">
+        <span id="engineLabel">Google</span><span class="engine-caret" aria-hidden="true"></span>
+      </button>
+      <ul class="engine-menu" id="engineMenu" role="listbox" aria-label="Search engine" tabindex="-1"></ul>
+      <select id="engineSelect" aria-hidden="true" tabindex="-1">
+        <option value="https://www.google.com/search?q=">Google</option>
+        <option value="https://www.bing.com/search?q=">Bing</option>
+        <option value="https://duckduckgo.com/?q=">DuckDuckGo</option>
+        <option value="cse">Revision sites</option>
+      </select>
+    </div>
     <button type="submit" class="btn">Search</button>
   </form>
 
@@ -2543,15 +2574,9 @@ function tourPlace(){
   var r = el.getBoundingClientRect();
   var top = r.top, left = r.left, right = r.right, bottom = r.bottom;
 
-  var menu = byId("tourMenu");
-  if(!menu.hidden){
-    var sel = byId("engineSelect").getBoundingClientRect();
-    var mw = Math.max(sel.width, 170);
-    var ml = Math.min(sel.left, innerWidth - mw - 8);
-    menu.style.left = ml + "px";
-    menu.style.top = (sel.bottom + 4) + "px";
-    menu.style.minWidth = mw + "px";
-    var m = menu.getBoundingClientRect();
+  var wrap = byId("engineWrap");
+  if(c.demo === "engine" && wrap && wrap.classList.contains("open")){
+    var m = byId("engineMenu").getBoundingClientRect();
     left = Math.min(left, m.left); right = Math.max(right, m.right);
     bottom = Math.max(bottom, m.bottom);
   }
@@ -2581,8 +2606,8 @@ function tourPlace(){
    like the dropdown, and slide down to Revision sites. The real dropdown
    is never opened and nothing is searched; both are put back after. */
 function tourEngineDemo(){
-  var input = byId("searchInput"), sel = byId("engineSelect"), menu = byId("tourMenu");
-  if(!input || !sel) return;
+  var input = byId("searchInput"), sel = byId("engineSelect");
+  if(!input || !sel || !byId("engineWrap")) return;
   tourSaved = { q: input.value, v: sel.value };
   input.value = "";
   var word = "volcanoes", n = 0;
@@ -2594,23 +2619,17 @@ function tourEngineDemo(){
     else tourTimers.push(setTimeout(openMenu, tourCalm ? 0 : 400));
   }
   function openMenu(){
-    menu.textContent = "";
-    var rows = [];
-    for(var i = 0; i < sel.options.length; i++){
-      var d = document.createElement("div");
-      d.textContent = sel.options[i].textContent;
-      if(sel.options[i].value === sel.value) d.className = "on";
-      menu.appendChild(d); rows.push(d);
-    }
-    menu.hidden = false;
-    var target = rows.length - 1, at = sel.selectedIndex < 0 ? 0 : sel.selectedIndex;
+    engineOpen();
+    var target = sel.options.length - 1;
     function step(){
       if(!guideCards) return;
-      if(at < target){
-        rows[at].className = ""; at++; rows[at].className = "on";
+      if(engineHot < target){
+        engineSetHot(engineHot + 1);
         tourTimers.push(setTimeout(step, tourCalm ? 0 : 300));
       } else {
-        tourTimers.push(setTimeout(function(){ sel.value = "cse"; }, tourCalm ? 0 : 500));
+        /* Shown as picked, but no change event - so the revision search
+           is never loaded and nothing is searched. */
+        tourTimers.push(setTimeout(function(){ sel.value = "cse"; engineSync(); }, tourCalm ? 0 : 450));
       }
     }
     tourTimers.push(setTimeout(step, tourCalm ? 0 : 450));
@@ -2621,11 +2640,11 @@ function tourEngineDemo(){
 function tourDemoStop(){
   tourTimers.forEach(clearTimeout);
   tourTimers = [];
-  var menu = byId("tourMenu");
-  if(menu) menu.hidden = true;
+  if(byId("engineWrap") && typeof engineShut === "function") engineShut();
   if(tourSaved){
     byId("searchInput").value = tourSaved.q;
     byId("engineSelect").value = tourSaved.v;
+    if(typeof engineSync === "function") engineSync();
     tourSaved = null;
   }
 }
@@ -3094,6 +3113,89 @@ var engineSel = document.getElementById("engineSelect");
 if(engineSel) engineSel.addEventListener("change", function(){
   if(engineSel.value === "cse") loadCse();
 });
+
+/* ---- the engine picker's own list ----
+   The hidden <select> keeps the value (the search reads it), and this
+   draws a list that matches the rest of the site. Mouse, touch and
+   keyboard all work: arrows move, Enter picks, Esc closes. */
+var engineWrap = byId("engineWrap"), engineBtn = byId("engineBtn"), engineMenu = byId("engineMenu");
+var engineHot = 0;
+
+function engineSync(){
+  var o = engineSel.options[engineSel.selectedIndex] || engineSel.options[0];
+  byId("engineLabel").textContent = o.textContent;
+  var items = engineMenu.children;
+  for(var i = 0; i < items.length; i++){
+    items[i].setAttribute("aria-selected", i === engineSel.selectedIndex ? "true" : "false");
+  }
+}
+function engineBuild(){
+  engineMenu.textContent = "";
+  for(var i = 0; i < engineSel.options.length; i++){
+    var li = document.createElement("li");
+    li.id = "engineOpt" + i;
+    li.setAttribute("role", "option");
+    li.textContent = engineSel.options[i].textContent;
+    li.dataset.i = i;
+    engineMenu.appendChild(li);
+  }
+  engineSync();
+}
+function engineSetHot(i){
+  var items = engineMenu.children;
+  engineHot = (i + items.length) % items.length;
+  for(var k = 0; k < items.length; k++) items[k].classList.toggle("hot", k === engineHot);
+  engineMenu.setAttribute("aria-activedescendant", "engineOpt" + engineHot);
+}
+function engineOpen(){
+  engineWrap.classList.add("open");
+  engineBtn.setAttribute("aria-expanded", "true");
+  engineSetHot(Math.max(0, engineSel.selectedIndex));
+}
+function engineShut(){
+  engineWrap.classList.remove("open");
+  engineBtn.setAttribute("aria-expanded", "false");
+  var items = engineMenu.children;
+  for(var k = 0; k < items.length; k++) items[k].classList.remove("hot");
+}
+function enginePick(i){
+  var changed = engineSel.selectedIndex !== i;
+  engineSel.selectedIndex = i;
+  engineSync();
+  engineShut();
+  engineBtn.focus();
+  if(changed) engineSel.dispatchEvent(new Event("change"));
+}
+if(engineWrap){
+  engineBuild();
+  engineBtn.addEventListener("click", function(){
+    if(engineWrap.classList.contains("open")) engineShut(); else engineOpen();
+  });
+  engineMenu.addEventListener("mousemove", function(e){
+    var li = e.target.closest("li");
+    if(li) engineSetHot(+li.dataset.i);
+  });
+  engineMenu.addEventListener("click", function(e){
+    var li = e.target.closest("li");
+    if(li) enginePick(+li.dataset.i);
+  });
+  engineBtn.addEventListener("keydown", function(e){
+    var open = engineWrap.classList.contains("open");
+    if(e.key === "ArrowDown" || e.key === "ArrowUp"){
+      e.preventDefault();
+      if(!open) engineOpen(); else engineSetHot(engineHot + (e.key === "ArrowDown" ? 1 : -1));
+    } else if((e.key === "Enter" || e.key === " ") && open){
+      e.preventDefault(); enginePick(engineHot);
+    } else if(e.key === "Escape" && open){
+      e.preventDefault(); e.stopPropagation(); engineShut();
+    } else if(e.key === "Tab" && open){
+      engineShut();
+    }
+  });
+  document.addEventListener("mousedown", function(e){
+    if(engineWrap.classList.contains("open") && !engineWrap.contains(e.target)) engineShut();
+  });
+}
 
 document.getElementById("cseClose").addEventListener("click",function(){
   document.getElementById("csePanel").hidden = true;
