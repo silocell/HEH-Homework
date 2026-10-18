@@ -628,6 +628,16 @@ body.gsc-overflow-hidden{overflow:auto!important}
   border:1px solid var(--rule)
 }
 .reader-box.loading .reader-wait{display:flex}
+.reader-left{
+  position:absolute;inset:0;border-radius:12px;display:none;flex-direction:column;
+  align-items:center;justify-content:center;text-align:center;gap:8px;padding:24px;
+  background:var(--card);border:1px solid var(--rule);animation:hl-fade .25s ease backwards
+}
+.reader-box.left .reader-left{display:flex}
+.reader-left-h{margin:0;font-weight:700;font-size:1.05rem}
+.reader-left-t{margin:0 0 8px;color:var(--ink-soft);font-size:.88rem;max-width:420px;line-height:1.55}
+.reader-left-btns{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.reader-left-btns .btn{width:auto}
 @keyframes reader-shimmer{from{background-position:100% 0}to{background-position:0 0}}
 @media (prefers-reduced-motion: reduce){ .reader-wait{animation:none} }
 .reader-note{
@@ -1087,7 +1097,7 @@ footer{
   *{transition:none!important;animation:none!important}
 }
 </style>
-<link rel="stylesheet" href="polish.css?b=20261018094456">
+<link rel="stylesheet" href="polish.css?b=20261018094933">
 </head>
 <body>
 
@@ -1225,6 +1235,14 @@ footer{
     <div class="reader-box" id="readerBox">
       <iframe class="reader-frame" id="readerFrame" title="Page preview" referrerpolicy="no-referrer" allow="fullscreen; encrypted-media; picture-in-picture" allowfullscreen></iframe>
       <div class="reader-wait" aria-hidden="true">Opening the page…</div>
+      <div class="reader-left" role="status">
+        <p class="reader-left-h">YouTube's own site can't open in here</p>
+        <p class="reader-left-t">Videos play inside the page, but YouTube itself refuses to be shown inside another website.</p>
+        <div class="reader-left-btns">
+          <button type="button" class="btn" id="readerLeftBack">Back to the video</button>
+          <a class="ghost-btn" id="readerLeftGo" href="#" target="_blank" rel="noopener noreferrer">Watch on YouTube in a new tab</a>
+        </div>
+      </div>
     </div>
     <p class="reader-note">If this stays blank, the site is refusing to be shown inside another page — use "Open in a tab".</p>
   </div>
@@ -1382,7 +1400,7 @@ footer{
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.0/dist/umd/supabase.js"></script>
-<script src="polish.js?b=20261018094456"></script>
+<script src="polish.js?b=20261018094933"></script>
 <script>
 /* ?v=<number> is how a reload dodges the cache - after an update, or when
    the site opens or closes. By the time anyone can see the page it has
@@ -3184,7 +3202,25 @@ function openInReader(href){
   var box = document.getElementById("readerBox");
   var frame = document.getElementById("readerFrame");
   box.classList.add("loading");
-  frame.onload = function(){ box.classList.remove("loading"); };
+  box.classList.remove("left");
+  var isYt = /youtube-nocookie\.com\/embed\//.test(src);
+  var loads = 0;
+  frame.onload = function(){
+    box.classList.remove("loading");
+    loads++;
+    /* A video's player loads once. A second load means something inside
+       it (the title, the channel, "Watch on YouTube") has tried to take
+       the box to YouTube's own site - which refuses to be shown inside
+       another page, so all it would show is the sad face. Say so, and
+       offer the video on YouTube in a new tab instead. */
+    if(isYt && loads > 1 && frame.getAttribute("src") === src) box.classList.add("left");
+  };
+  document.getElementById("readerLeftGo").href = u.href;
+  document.getElementById("readerLeftBack").onclick = function(){
+    box.classList.remove("left");
+    loads = 0;
+    frame.src = src;   /* setting the same address loads it afresh */
+  };
   /* A site that refuses still fires load (with a blank page), but give
      up the shimmer anyway after a while so it never spins forever. */
   setTimeout(function(){ box.classList.remove("loading"); }, 8000);
