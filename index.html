@@ -1106,7 +1106,7 @@ footer{
   *{transition:none!important;animation:none!important}
 }
 </style>
-<link rel="stylesheet" href="polish.css?b=20261019151057">
+<link rel="stylesheet" href="polish.css?b=20261019151534">
 </head>
 <body>
 
@@ -1280,7 +1280,7 @@ footer{
         </form>
         <div class="wiki-out" id="wikiOut"></div>
         <p class="wiki-err" id="wikiErr" hidden></p>
-        <p class="ex-note">Straight from Wikipedia, so it's free and doesn't touch your ten.</p>
+        <p class="ex-note" id="wikiNote">Straight from Wikipedia.</p>
       </div>
 
       <div class="panel" id="explainPanel" hidden>
@@ -1398,7 +1398,7 @@ footer{
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.0/dist/umd/supabase.js"></script>
-<script src="polish.js?b=20261019151057"></script>
+<script src="polish.js?b=20261019151534"></script>
 <script>
 /* ?v=<number> is how a reload dodges the cache - after an update, or when
    the site opens or closes. By the time anyone can see the page it has
@@ -3772,6 +3772,13 @@ var exBusy = false;
 function showExplainPanel(on){
   var p = document.getElementById("explainPanel");
   if(p) p.hidden = !on;
+  /* The line under Look it up only mentions the ten a day to somebody
+     who HAS a ten a day. Without the explainer, Look it up is simply
+     where you look things up, and nothing on the page says otherwise. */
+  var note = document.getElementById("wikiNote");
+  if(note) note.textContent = on
+    ? "Straight from Wikipedia, so it's free and doesn't touch your ten."
+    : "Straight from Wikipedia.";
   if(!on){
     /* Hidden is not gone: clear the last answer so the next person to
        sign in on this laptop doesn't inherit it. */
