@@ -281,9 +281,10 @@ button,input,select,textarea{font:inherit;color:inherit}
 .btn.ms:hover{filter:none;border-color:var(--accent)}
 .btn.ms svg{width:17px;height:17px;flex:none}
 .pw-switch{margin:14px 0 0;text-align:center}
-/* Said before they see it, not after. Somebody who has been told to
-   expect the word "unverified" reads it as a formality; somebody meeting
-   it cold reads it as a warning about Shiv. */
+/* There was a note here warning that Microsoft calls this app
+   "unverified". It was taken out on 19 Oct 2026: a tester said reading
+   the warning first made him MORE uneasy, not less. Explaining a scary
+   word before anybody has seen it turns one small moment into two. */
 .room-tabs{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 12px}
 .ask-room{margin:0 0 14px}
 /* This was using the same faint grey as the spare-key link, which is
@@ -368,11 +369,6 @@ button,input,select,textarea{font:inherit;color:inherit}
   color:var(--ink-faint);padding:12px 0 4px;display:block;min-height:32px
 }
 .guide-again:hover,.guide-again:focus-visible{color:var(--accent)}
-.ms-note{
-  font-size:.76rem;color:var(--ink-faint);line-height:1.55;
-  margin:10px 2px 0
-}
-
 /* ---- the maintenance bar ----
    Only the people who can still get in ever see this, and it is loud on
    purpose: the worst outcome of this feature is leaving it switched on by
@@ -1106,7 +1102,7 @@ footer{
   *{transition:none!important;animation:none!important}
 }
 </style>
-<link rel="stylesheet" href="polish.css?b=20261019152102">
+<link rel="stylesheet" href="polish.css?b=20261019152946">
 </head>
 <body>
 
@@ -1121,7 +1117,6 @@ footer{
       <svg viewBox="0 0 23 23" aria-hidden="true"><path fill="#f25022" d="M1 1h10v10H1z"/><path fill="#7fba00" d="M12 1h10v10H12z"/><path fill="#00a4ef" d="M1 12h10v10H1z"/><path fill="#ffb900" d="M12 12h10v10H12z"/></svg>
       Sign in with Microsoft
     </button>
-    <p class="ms-note">Microsoft will say this app is &ldquo;unverified&rdquo;. That&rsquo;s normal &mdash; it means I&rsquo;m not a registered company. It can see your name and school email, nothing else.</p>
     <p class="gate-error" id="gateError"></p>
 
     <p class="pw-switch" id="pwSwitch">
@@ -1350,7 +1345,7 @@ footer{
   <div class="panel chat" id="chatPanel" hidden>
     <div class="chat-head">
       <p class="panel-title" id="chatTitle">Year chat</p>
-      <p class="chat-watch"><span class="live-dot" id="liveDot"></span><span id="liveText">Live</span> &middot; <span id="chatWatch">Shiv can see everything posted here, including anything deleted.</span></p>
+      <p class="chat-watch"><span class="live-dot" id="liveDot"></span><span id="liveText">Live</span> &middot; <span id="chatWatch">Shiv keeps an eye on this chat.</span></p>
     </div>
     <div class="room-tabs" id="roomTabs" hidden></div>
     <div class="ask-room">
@@ -1374,7 +1369,7 @@ footer{
   <div class="panel board" id="boardPanel" hidden>
     <div class="chat-head">
       <p class="panel-title">The board</p>
-      <p class="chat-watch">Notices last two weeks. Questions stay until they&rsquo;re answered. Shiv can see everything here, including anything deleted.</p>
+      <p class="chat-watch">Notices last two weeks. Questions stay until they&rsquo;re answered. Shiv keeps an eye on the board.</p>
     </div>
 
     <div class="board-tabs" id="boardTabs">
@@ -1398,7 +1393,7 @@ footer{
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.0/dist/umd/supabase.js"></script>
-<script src="polish.js?b=20261019152102"></script>
+<script src="polish.js?b=20261019152946"></script>
 <script>
 /* ?v=<number> is how a reload dodges the cache - after an update, or when
    the site opens or closes. By the time anyone can see the page it has
@@ -2261,7 +2256,7 @@ function checkForUpdate(){
    this morning the page sat on the sign-in form while that happened, so a
    Microsoft sign-in flashed the form for a second before the dashboard
    appeared. It looks like a failed login, which is exactly the wrong thing
-   to show somebody who has just been warned the app is unverified. */
+   to show somebody who has just come back from the Microsoft screen. */
 function comingBackFromSignIn(){
   var h = location.hash || "", q = location.search || "";
   return /(^|[#&?])(code|access_token|error)=/.test(h) ||
@@ -2496,10 +2491,10 @@ var GUIDE = {
   chat: [
     { at:function(){ return byId("chatPanel"); },
       kicker:"Now switched on", title:"The year chat",
-      text:"Talk to the rest of the year. Rude words are hashed out, and anything nastier is stopped - and pauses you for a minute and a half. Shiv can see everything, including what's deleted. Messages clear after two days." },
+      text:"Talk to the rest of the year. Rude words are hashed out, and anything nastier is stopped - and pauses you for a minute and a half. Shiv keeps an eye on it. Messages clear after two days." },
     { at:function(){ return byId("askOpen"); },
       kicker:"Just your friends", title:"Make a private room",
-      text:"Ask for a room with a few people. Shiv says yes or no. Private means private from other pupils - not from Shiv, and the same rules apply." },
+      text:"Ask for a room with a few people. Shiv says yes or no. It's private from other pupils, and he keeps an eye on it like the year chat." },
     { at:function(){ return byId("boardPanel"); },
       kicker:"Next to it", title:"The noticeboard",
       text:"Notices for everyone, and homework questions people can answer. Ask one when you're stuck - unanswered questions stay at the top." }
@@ -2507,7 +2502,7 @@ var GUIDE = {
   rooms: [
     { at:function(){ return byId("roomTabs"); },
       kicker:"New", title:"You're in a private room",
-      text:"These tabs switch between the year chat and your rooms. A dot means something new. Private means private from other pupils - not from Shiv, and the same rules apply." }
+      text:"These tabs switch between the year chat and your rooms. A dot means something new. They're private from other pupils, and Shiv keeps an eye on them like the year chat." }
   ]
 };
 
@@ -4601,8 +4596,8 @@ function paintRoomTabs(){
   var watch = document.getElementById("chatWatch");
   if(watch){
     watch.textContent = currentRoom
-      ? "Private from everyone else \u2014 but Shiv can see everything in here, including anything deleted."
-      : "Shiv can see everything posted here, including anything deleted.";
+      ? "Private from other pupils. Shiv keeps an eye on it, like the year chat."
+      : "Shiv keeps an eye on this chat.";
   }
 }
 
