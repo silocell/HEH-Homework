@@ -1106,7 +1106,7 @@ footer{
   *{transition:none!important;animation:none!important}
 }
 </style>
-<link rel="stylesheet" href="polish.css?b=20261019151534">
+<link rel="stylesheet" href="polish.css?b=20261019152102">
 </head>
 <body>
 
@@ -1176,8 +1176,8 @@ footer{
 
 <div class="gate" id="signingIn" hidden>
   <div class="gate-card" style="text-align:center">
-    <h1>Signing you in…</h1>
-    <p class="sub">One moment.</p>
+    <h1 id="signingInTitle">Signing you in…</h1>
+    <p class="sub" id="signingInSub">One moment.</p>
   </div>
 </div>
 
@@ -1398,7 +1398,7 @@ footer{
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.0/dist/umd/supabase.js"></script>
-<script src="polish.js?b=20261019151534"></script>
+<script src="polish.js?b=20261019152102"></script>
 <script>
 /* ?v=<number> is how a reload dodges the cache - after an update, or when
    the site opens or closes. By the time anyone can see the page it has
@@ -2268,11 +2268,36 @@ function comingBackFromSignIn(){
          /(^|[&?])(code|access_token|error)=/.test(q);
 }
 
-if(comingBackFromSignIn()){
+/* Already signed in, somewhere in this browser? Supabase keeps the
+   session in localStorage under a key ending "-auth-token", and we can
+   look at that straight away, while getSession() is still thinking.
+
+   Without this the sign-in form is what the page draws first, every
+   time: on a reload, and on the way back from the admin panel. Being
+   shown a login box when you are already logged in looks like you have
+   been thrown out, which is alarming and wrong. */
+function haveStoredSession(){
+  try{
+    for(var i = 0; i < localStorage.length; i++){
+      var k = localStorage.key(i);
+      if(k && /^sb-.*-auth-token$/.test(k) && localStorage.getItem(k)) return true;
+    }
+  }catch(e){}
+  return false;
+}
+
+if(comingBackFromSignIn() || haveStoredSession()){
   var g = document.getElementById("gate");
   var si = document.getElementById("signingIn");
   if(g) g.hidden = true;
   if(si) si.hidden = false;
+  /* Coming back to a page you are already signed into is not signing in. */
+  if(si && !comingBackFromSignIn()){
+    var t = document.getElementById("signingInTitle");
+    var u = document.getElementById("signingInSub");
+    if(t) t.textContent = "One moment\u2026";
+    if(u) u.textContent = "Getting your dashboard.";
+  }
 }
 
 function doneSigningIn(){
