@@ -388,15 +388,6 @@ button,input,select,textarea{font:inherit;color:inherit}
   font:inherit;font-size:.8rem;cursor:pointer;margin-left:auto;
   background:#fff;color:var(--accent);border:0;border-radius:7px;padding:6px 12px
 }
-.notyet-bar{
-  display:flex;align-items:center;gap:12px;flex-wrap:wrap;
-  background:var(--card);border:1px solid var(--rule);border-left:4px solid var(--accent);
-  color:var(--ink-soft);
-  padding:10px 16px;border-radius:10px;margin-bottom:18px;
-  font-size:.86rem;line-height:1.5
-}
-.notyet-bar[hidden]{display:none}
-.notyet-bar strong{color:var(--ink)}
 .maint-bar{
   display:flex;align-items:center;gap:12px;flex-wrap:wrap;
   background:var(--margin);color:#fff;
@@ -1115,7 +1106,7 @@ footer{
   *{transition:none!important;animation:none!important}
 }
 </style>
-<link rel="stylesheet" href="polish.css?b=20261018185612">
+<link rel="stylesheet" href="polish.css?b=20261019151057">
 </head>
 <body>
 
@@ -1205,12 +1196,6 @@ footer{
   <div class="update-bar" id="updateBar" hidden>
     <span><strong>There's a newer version of this page.</strong> Finish what you're typing, then load it.</span>
     <button type="button" id="updateNow">Load it</button>
-  </div>
-
-  <div class="notyet-bar" id="notYetBar" hidden>
-    <span><strong>You're in, but not everything is switched on yet.</strong>
-    Your shortcuts, the search, Look it up and your to-do list all work now. The year chat,
-    the board and the explainer arrive once Shiv has let your account in.</span>
   </div>
 
   <div class="maint-bar" id="maintBar" hidden>
@@ -1413,7 +1398,7 @@ footer{
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.0/dist/umd/supabase.js"></script>
-<script src="polish.js?b=20261018185612"></script>
+<script src="polish.js?b=20261019151057"></script>
 <script>
 /* ?v=<number> is how a reload dodges the cache - after an update, or when
    the site opens or closes. By the time anyone can see the page it has
@@ -2178,7 +2163,6 @@ document.getElementById("switchBtn").addEventListener("click",function(){
   var rd = document.getElementById("reader"); if(rd && !rd.hidden){ rd.hidden = true; document.getElementById("readerFrame").src = "about:blank"; }
   var cp = document.getElementById("csePanel"); if(cp) cp.hidden = true;
   var si = document.getElementById("searchInput"); if(si) si.value = "";
-  waitingOn = false; hideNotYetNote();
   myLinks = []; sharedLinks = []; hiddenUrls = {}; tilesEditing = false;
   try{ buildTiles(); }catch(e){}
   var ao = document.getElementById("askOpen"); if(ao) ao.textContent = "Make a private room";
@@ -2425,20 +2409,12 @@ if(maintOff) maintOff.addEventListener("click", function(){
 /* ==================================================================
    DASHBOARD
    ================================================================== */
-/* Signed in but not let in yet. They get the dashboard with the free
-   things on it and a line saying the rest is coming; the chat, the board,
-   the explainer and "what people are asking" never appear, because the
-   server refuses them and the page only shows what the server allows. */
-var waitingOn = false;
-function showNotYetNote(){
-  var bar = document.getElementById("notYetBar");
-  if(bar) bar.hidden = false;
-}
-function hideNotYetNote(){
-  var bar = document.getElementById("notYetBar");
-  if(bar) bar.hidden = true;
-}
-
+/* Signed in but not let in yet: the dashboard simply IS the shortcuts,
+   the search, Look it up, the word of the day and the to-do list. The
+   chat, the board, the explainer and "what people are asking" are not
+   mentioned, not greyed out and not hinted at - the page shows what the
+   account can use and nothing else. The server refuses the rest anyway,
+   so this is presentation, not protection. */
 /* The database already refuses an unapproved account; this only saves
    them from staring at a dashboard where nothing works. */
 /* ==================================================================
@@ -2479,10 +2455,10 @@ var GUIDE = {
       text:"Type a topic and get the Wikipedia version - the Simple English one first, because it's easier to read. It doesn't cost anything." },
     { at:function(){ return panelOf("todoList"); },
       kicker:"Yours only", title:"Your to-do list",
-      text:"Add what's due and tick it off as you go. Nobody else can see it - the admin panel only shows Shiv how many things are on it, never what. It follows you to any computer you sign in on." },
+      text:"Add what's due and tick it off as you go. Nobody else can see what's on your list, and it follows you to any computer you sign in on." },
     { at:function(){ return panelOf("swatches"); },
       kicker:"Make it yours", title:"Change how it looks",
-      text:"Pick a colour, switch to dark mode, or choose the easier-to-read font. “Show me around again” down here replays this tour. More things switch on as Shiv lets you in to them." }
+      text:"Pick a colour, switch to dark mode, or choose the easier-to-read font. “Show me around again” down here replays this tour." }
   ],
   explainer: [
     { at:function(){ return byId("explainPanel"); },
@@ -2771,8 +2747,8 @@ function openDashboard(who, supaUser){
            stay away until Shiv switches them on. Nothing opens that the
            server would refuse anyway; this is a quieter version of the
            same page, not a way round it. */
-        waitingOn = !!(r && !r.error && r.data && r.data.approved === false);
-        if(waitingOn) showNotYetNote();
+        /* Approved or not, the same page is drawn. Each feature decides
+           for itself whether to appear, by asking the server. */
         /* A name set in the admin panel beats anything guessed from an
            address. "26paaa@..." does not mangle into a person's name. */
         if(r && !r.error && r.data && r.data.name && currentUser){
