@@ -486,6 +486,19 @@ button,input,select,textarea{font:inherit;color:inherit}
 }
 .searchbar input:focus{border-color:var(--accent);outline:none}
 .searchbar .btn{width:auto;flex:none;padding:12px 22px}
+/* Chips that jump to the far-away parts of the page. Phones only: on a
+   laptop everything is one short scroll away, on a phone the chat is
+   half a mile down. */
+#jumpBar{display:none}
+@media (max-width:899px){
+  #jumpBar:not([hidden]){display:flex;flex-wrap:wrap;gap:8px;margin:-10px 0 20px}
+}
+.jump-chip{
+  font:inherit;font-size:.78rem;font-weight:600;cursor:pointer;
+  background:var(--card);color:var(--ink-soft);border:1px solid var(--rule);
+  border-radius:999px;padding:6px 14px
+}
+.jump-chip:active{color:var(--accent);border-color:var(--accent)}
 
 /* ---------- REVISION SEARCH (Google widget, restyled) ---------- */
 .cse-panel{margin-bottom:20px}
@@ -838,6 +851,18 @@ body.gsc-overflow-hidden{overflow:auto!important}
   margin-top:14px;padding-top:12px;border-top:1px solid var(--rule);
   font-size:.72rem;color:var(--ink-faint);line-height:1.5;
 }
+.ex-hist{margin-top:14px;border-top:1px solid var(--rule);padding-top:12px}
+.ex-hist-h{
+  font-family:var(--font-mono);font-size:.66rem;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--ink-faint);margin:0 0 8px
+}
+.ex-hist-list{display:flex;flex-wrap:wrap;gap:7px}
+.ex-hist-chip{
+  font:inherit;font-size:.78rem;cursor:pointer;max-width:100%;
+  background:var(--chip);color:var(--ink-soft);border:1px solid var(--rule);
+  border-radius:999px;padding:5px 12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap
+}
+.ex-hist-chip:hover{color:var(--accent);border-color:var(--accent)}
 .ex-clear{
   appearance:none;background:none;border:1px solid var(--rule);cursor:pointer;
   font:inherit;font-size:.72rem;color:var(--ink-faint);
@@ -1078,6 +1103,14 @@ body.gsc-overflow-hidden{overflow:auto!important}
   accent-color:var(--good);cursor:pointer;
 }
 .todo-text{flex:1;font-size:.89rem;line-height:1.45;min-width:0;overflow-wrap:anywhere}
+.todo-due{
+  display:inline-block;margin-left:8px;vertical-align:middle;white-space:nowrap;
+  font-family:var(--font-mono);font-size:.64rem;letter-spacing:.04em;text-transform:uppercase;
+  color:var(--ink-faint);border:1px solid var(--rule);border-radius:999px;padding:1px 8px
+}
+.todo-due.soon{color:var(--accent);border-color:var(--accent)}
+.todo-item.overdue:not(.done) .todo-due{color:var(--margin);border-color:var(--margin);font-weight:700}
+.todo-item[data-subject]{border-left:3px solid var(--rule);padding-left:9px}
 .todo-item.done .todo-text{text-decoration:line-through;color:var(--ink-faint)}
 .todo-del{
   flex:none;background:none;border:none;color:var(--ink-faint);
@@ -1102,7 +1135,7 @@ footer{
   *{transition:none!important;animation:none!important}
 }
 </style>
-<link rel="stylesheet" href="polish.css?b=20261019152946">
+<link rel="stylesheet" href="polish.css?b=20261019193510">
 </head>
 <body>
 
@@ -1218,6 +1251,8 @@ footer{
     <button type="submit" class="btn">Search</button>
   </form>
 
+  <nav id="jumpBar" aria-label="Jump to a section" hidden></nav>
+
   <div class="panel reader" id="reader" hidden>
     <div class="reader-head">
       <span class="reader-site" id="readerSite"></span>
@@ -1287,6 +1322,10 @@ footer{
         </form>
         <div class="ex-out" id="exOut"></div>
         <button type="button" class="ex-clear" id="exClear" hidden>Clear this</button>
+        <div class="ex-hist" id="exHist" hidden>
+          <p class="ex-hist-h">Earlier answers — free to reopen</p>
+          <div class="ex-hist-list" id="exHistList"></div>
+        </div>
         <p class="ex-err" id="exErr" hidden></p>
         <p class="ex-note">Explains topics so you can understand them. It won't do set work for you.</p>
       </div>
@@ -1393,7 +1432,7 @@ footer{
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.0/dist/umd/supabase.js"></script>
-<script src="polish.js?b=20261019152946"></script>
+<script src="polish.js?b=20261019193510"></script>
 <script>
 /* ?v=<number> is how a reload dodges the cache - after an update, or when
    the site opens or closes. By the time anyone can see the page it has
@@ -2160,6 +2199,8 @@ document.getElementById("switchBtn").addEventListener("click",function(){
   var si = document.getElementById("searchInput"); if(si) si.value = "";
   myLinks = []; sharedLinks = []; hiddenUrls = {}; tilesEditing = false;
   try{ buildTiles(); }catch(e){}
+  var jb = document.getElementById("jumpBar"); if(jb) jb.hidden = true;
+  var eh = document.getElementById("exHist"); if(eh) eh.hidden = true;
   var ao = document.getElementById("askOpen"); if(ao) ao.textContent = "Make a private room";
   askSay("", false, true);
   try{ forget(SESSION_HINT); }catch(e){}
@@ -2794,6 +2835,7 @@ function openDashboard(who, supaUser){
   paintWord();
   loadLinks();
   renderTodos();
+  setTimeout(paintJumpBar, 0);
   setSync(currentUser.offline ? "offline" : "syncing");
   if(!currentUser.offline){ flush(); startSyncTimer(); }
   refreshAllowance();
@@ -3622,9 +3664,27 @@ function renderTodos(){
     return;
   }
 
+  /* What's due soonest comes first: overdue, then today, tomorrow and on,
+     then the undated things in the order they were written. Done items
+     sink to the bottom so the list reads as "what's left". */
+  var today = todayIso();
+  list = list.slice().sort(function(a, b){
+    if(!!a.done !== !!b.done) return a.done ? 1 : -1;
+    var ad = a.due || "9999", bd = b.due || "9999";
+    if(ad !== bd) return ad < bd ? -1 : 1;
+    return (a.created_at || "") < (b.created_at || "") ? -1 : 1;
+  });
+
   list.forEach(function(item){
     var li = document.createElement("li");
-    li.className = "todo-item" + (item.done ? " done" : "");
+    var overdue = item.due && item.due < today;
+    li.className = "todo-item" + (item.done ? " done" : "") + (overdue ? " overdue" : "");
+    var subj = todoSubject(item.text);
+    if(subj){
+      li.setAttribute("data-subject", subj.name);
+      li.style.borderLeftColor = subj.color;
+      li.title = subj.name;
+    }
 
     var cb = document.createElement("input");
     cb.type = "checkbox";
@@ -3636,6 +3696,12 @@ function renderTodos(){
     label.className = "todo-text";
     label.setAttribute("for", cb.id);
     label.textContent = item.text;
+    if(item.due){
+      var chip = document.createElement("span");
+      chip.className = "todo-due" + ((item.due === today || dueWord(item.due) === "Tomorrow") && !item.done ? " soon" : "");
+      chip.textContent = dueWord(item.due);
+      label.appendChild(chip);
+    }
 
     var del = document.createElement("button");
     del.className = "todo-del";
@@ -3648,15 +3714,109 @@ function renderTodos(){
     host.appendChild(li);
   });
 
+  paintTodoCount(list);
+}
+
+function paintTodoCount(list){
+  var count = document.getElementById("todoCount");
+  if(!count) return;
+  list = list || getLocal().filter(function(i){ return i.pending !== "delete"; });
+  if(!list.length){ count.textContent = ""; return; }
   var left = list.filter(function(i){ return !i.done; }).length;
   count.textContent = left === 0
     ? "All done — " + list.length + " cleared"
     : left + " left of " + list.length;
 }
 
+/* "maths p42 friday" means something: the date. Spot the everyday ways a
+   Year 7 writes one - today, tomorrow, a weekday, 24/10 - and keep it on
+   the item, so the list can put Friday's work under Friday. */
+var DAY_NAMES = ["sunday","monday","tuesday","wednesday","thursday","friday","saturday"];
+function todoDueFrom(text){
+  var t = " " + String(text || "").toLowerCase() + " ";
+  var now = new Date();
+  function iso(d){ return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0"); }
+  if(/[^a-z](today|tonight|tod)[^a-z]/.test(t)) return iso(now);
+  if(/[^a-z](tomorrow|tomorow|tommorow|tmrw|tmr)[^a-z]/.test(t)){
+    var tm = new Date(now); tm.setDate(tm.getDate()+1); return iso(tm);
+  }
+  /* "sun", "sat" and "wed" are everyday words ("the sun", "we sat a
+     test"), so those three need the full day written out; the others
+     take their usual shorts, including tues, thurs and weds. */
+  var DAY_PATTERNS = [
+    [0, "sunday"], [1, "monday|mon"], [2, "tuesday|tues|tue"],
+    [3, "wednesday|weds"], [4, "thursday|thurs|thur|thu"],
+    [5, "friday|fri"], [6, "saturday"]
+  ];
+  for(var i=0;i<DAY_PATTERNS.length;i++){
+    if(new RegExp("[^a-z](" + DAY_PATTERNS[i][1] + ")[^a-z]").test(t)){
+      var d = new Date(now);
+      var ahead = (DAY_PATTERNS[i][0] - d.getDay() + 7) % 7;   /* "friday" on a Friday means today */
+      d.setDate(d.getDate() + ahead);
+      return iso(d);
+    }
+  }
+  var m = t.match(/[^0-9](\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?[^0-9]/);
+  if(m){
+    var day = +m[1], mon = +m[2];
+    /* "3/4 of the chapter" is a fraction, not the 3rd of April. */
+    var after = t.slice(m.index + m[0].length - 1);
+    if(day >= 1 && day <= 31 && mon >= 1 && mon <= 12 && !/^\s*of\b/.test(after)){
+      var yr = m[3] ? (+m[3] < 100 ? 2000 + +m[3] : +m[3]) : now.getFullYear();
+      var dt = new Date(yr, mon-1, day);
+      /* 31/2 "rolls over" to March in JavaScript; a made-up date is no date. */
+      if(dt.getDate() !== day || dt.getMonth() !== mon-1) return null;
+      if(!m[3] && dt < new Date(now.getFullYear(), now.getMonth(), now.getDate())){
+        dt.setFullYear(yr+1);
+        if(dt.getDate() !== day) return null;   /* 29/2 pushed into a non-leap year */
+      }
+      return iso(dt);
+    }
+  }
+  return null;
+}
+
+/* A splash of colour by subject, worked out from the words they typed.
+   Nothing to set up; no match, no colour. */
+var SUBJECTS = [
+  [/\b(maths?|numeracy|algebra|sparx maths)\b/, "#4b7bec", "Maths"],
+  [/\b(science|biology|bio|chemistry|chem|physics)\b/, "#2ecc71", "Science"],
+  [/\b(english|eng|reader|reading|writing|spelling)\b/, "#a55eea", "English"],
+  [/\b(french|spanish|german|language)\b/, "#fd9644", "Languages"],
+  [/\b(geography|geog)\b/, "#26c6da", "Geography"],
+  [/\b(history|hist)\b/, "#b4846c", "History"],
+  [/\b(re|religious|ethics)\b/, "#f06292", "RE"],
+  [/\b(music)\b/, "#9575cd", "Music"],
+  [/\b(computing|computer|ict|coding)\b/, "#00acc1", "Computing"],
+  [/\b(dt|design|food tech|textiles)\b/, "#8d9f3e", "DT"],
+  [/\b(art)\b/, "#ec407a", "Art"],
+  [/\b(pe|sport|games)\b/, "#e05c5c", "PE"]
+];
+function todoSubject(text){
+  var t = " " + String(text || "").toLowerCase() + " ";
+  for(var i=0;i<SUBJECTS.length;i++){
+    if(SUBJECTS[i][0].test(t)) return { color: SUBJECTS[i][1], name: SUBJECTS[i][2] };
+  }
+  return null;
+}
+
+function todayIso(){
+  var n = new Date();
+  return n.getFullYear() + "-" + String(n.getMonth()+1).padStart(2,"0") + "-" + String(n.getDate()).padStart(2,"0");
+}
+function dueWord(due){
+  var today = todayIso();
+  if(due === today) return "Today";
+  var t = new Date(due + "T12:00:00"), n = new Date(today + "T12:00:00");
+  var days = Math.round((t - n) / 86400000);
+  if(days === 1) return "Tomorrow";
+  if(days < 0) return "Was due " + t.toLocaleDateString("en-GB",{ weekday:"short", day:"numeric", month:"short" });
+  return t.toLocaleDateString("en-GB",{ weekday:"short", day:"numeric", month:"short" });
+}
+
 function addItem(text){
   var list = getLocal();
-  list.push({ id:uuid(), text:text, done:false,
+  list.push({ id:uuid(), text:text, done:false, due: todoDueFrom(text),
               created_at:new Date().toISOString(), pending:"insert" });
   setLocal(list); renderTodos(); flush();
 }
@@ -3673,7 +3833,7 @@ function toggleItem(id, done){
      other rows don't replay their arrive-animation every time. */
   var cb = document.getElementById("todo-" + id);
   var li = cb && cb.closest(".todo-item");
-  if(li){ li.classList.toggle("done", !!done); }
+  if(li){ li.classList.toggle("done", !!done); paintTodoCount(); }
   else renderTodos();
   flush();
 }
@@ -3716,6 +3876,7 @@ function pull(){
       (r.data||[]).forEach(function(row){
         if(pending[row.id]){ merged.push(pending[row.id]); delete pending[row.id]; }
         else merged.push({ id:row.id, text:row.text, done:row.done,
+                           due: row.due || null,
                            created_at:row.created_at, pending:null });
       });
       Object.keys(pending).forEach(function(k){
@@ -3740,11 +3901,30 @@ function flush(){
   var chain = Promise.resolve();
   ops.forEach(function(it){
     chain = chain.then(function(){
-      if(it.pending === "insert")   /* upsert: a lost reply must not wedge the list on "already exists" */
-        return sb.from("todos").upsert({ id:it.id, text:it.text, done:it.done }, { onConflict:"id" });
-      if(it.pending === "update")
-        return sb.from("todos").update({ text:it.text, done:it.done }).eq("id", it.id);
-      return sb.from("todos").delete().eq("id", it.id);
+      /* If the database hasn't been given its "due" column yet, sending
+         one breaks every save. Notice that once, drop the field, carry
+         on - dates start syncing the moment the column exists. */
+      function row(withDue){
+        var o = { text: it.text, done: it.done };
+        if(withDue) o.due = it.due || null;
+        return o;
+      }
+      function send(withDue){
+        if(it.pending === "insert"){
+          var ins = row(withDue); ins.id = it.id;
+          return sb.from("todos").upsert(ins, { onConflict:"id" });
+        }
+        if(it.pending === "update")
+          return sb.from("todos").update(row(withDue)).eq("id", it.id);
+        return sb.from("todos").delete().eq("id", it.id);
+      }
+      return send(!window.__todoNoDue).then(function(r){
+        if(r && r.error && !window.__todoNoDue && /due/i.test(r.error.message || "")){
+          window.__todoNoDue = true;
+          return send(false);
+        }
+        return r;
+      });
     }).then(function(r){
       if(r && r.error) throw r.error;
       var l = getLocal(), out = [];
@@ -3789,9 +3969,41 @@ document.addEventListener("visibilitychange", function(){
    ------------------------------------------------------------- */
 var exBusy = false;
 
+/* The chips under the search bar on a phone. Only sections that exist
+   for THIS account get a chip, so the bar never advertises anything. */
+function paintJumpBar(){
+  var bar = document.getElementById("jumpBar");
+  if(!bar) return;
+  var dash = document.getElementById("dash");
+  bar.textContent = "";
+  var spots = [
+    ["To-do", "todoList"],
+    ["Explainer", "explainPanel"],
+    ["Chat", "chatPanel"],
+    ["Board", "boardPanel"]
+  ];
+  var any = false;
+  spots.forEach(function(sp){
+    var el = document.getElementById(sp[1]);
+    if(!el || el.hidden) return;
+    var target = el.closest(".panel") || el;
+    var b = document.createElement("button");
+    b.type = "button";
+    b.className = "jump-chip";
+    b.textContent = sp[0];
+    b.addEventListener("click", function(){
+      target.scrollIntoView({ behavior:"smooth", block:"start" });
+    });
+    bar.appendChild(b);
+    any = true;
+  });
+  bar.hidden = !any || !dash || dash.hidden;
+}
+
 function showExplainPanel(on){
   var p = document.getElementById("explainPanel");
   if(p) p.hidden = !on;
+  paintJumpBar();
   /* The line under Look it up only mentions the ten a day to somebody
      who HAS a ten a day. Without the explainer, Look it up is simply
      where you look things up, and nothing on the page says otherwise. */
@@ -3799,6 +4011,7 @@ function showExplainPanel(on){
   if(note) note.textContent = on
     ? "Straight from Wikipedia, so it's free and doesn't touch your ten."
     : "Straight from Wikipedia.";
+  if(on) paintExHist();
   if(!on){
     /* Hidden is not gone: clear the last answer so the next person to
        sign in on this laptop doesn't inherit it. */
@@ -3815,7 +4028,7 @@ function setLeft(remaining, limit){
   var el = document.getElementById("exLeft");
   if(!el) return;
   if(remaining === null || remaining === undefined){ el.textContent = ""; return; }
-  el.textContent = remaining + " of " + limit + " left today";
+  el.textContent = remaining + " of " + limit + " left today \u00b7 they come back overnight";
 }
 
 function exError(msg){
@@ -3837,6 +4050,44 @@ function clearExplanation(){
   showClear(false);
   var input = document.getElementById("exInput");
   if(input){ input.value = ""; input.focus(); }
+}
+
+/* The last few answers, kept on this device, free to read again. Losing
+   an explanation the moment you close it, then paying another of your
+   ten to see it a second time, was the explainer's most annoying habit. */
+function exHistKey(){ return "hl-exhist." + ((currentUser && currentUser.uid) || "anon"); }
+function exRemember(topic, text){
+  if(!topic || !text || !currentUser) return;
+  try{
+    var list = [];
+    try{ list = JSON.parse(localStorage.getItem(exHistKey()) || "[]") || []; }catch(e){ list = []; }
+    list = list.filter(function(e){ return e.topic.toLowerCase() !== topic.toLowerCase(); });
+    list.unshift({ topic: topic, text: text, when: Date.now() });
+    localStorage.setItem(exHistKey(), JSON.stringify(list.slice(0, 10)));
+  }catch(e){}
+  paintExHist();
+}
+function paintExHist(){
+  var box = document.getElementById("exHist");
+  var host = document.getElementById("exHistList");
+  if(!box || !host) return;
+  var list = [];
+  try{ list = JSON.parse(localStorage.getItem(exHistKey()) || "[]"); }catch(e){}
+  host.textContent = "";
+  box.hidden = !list.length;
+  list.forEach(function(e){
+    var b = document.createElement("button");
+    b.type = "button";
+    b.className = "ex-hist-chip";
+    b.textContent = e.topic;
+    b.title = "Read this again — it doesn't use one of your ten";
+    b.addEventListener("click", function(){
+      renderExplanation(e.text);
+      exError("");
+      document.getElementById("explainPanel").scrollIntoView({ behavior:"smooth", block:"nearest" });
+    });
+    host.appendChild(b);
+  });
 }
 
 function renderExplanation(text){
@@ -4005,6 +4256,7 @@ if(exForm) exForm.addEventListener("submit",function(e){
       if(typeof d.remaining === "number") setLeft(d.remaining, d.limit || 10);
     }else if(d.text){
       renderExplanation(d.text);
+      exRemember(topic, d.text);
       setLeft(d.remaining, d.limit);
       input.value = "";
       /* The list was loaded once when the dashboard opened, so the thing
@@ -4789,6 +5041,7 @@ function startChat(){
 
 function openChat(){
   document.getElementById("chatPanel").hidden = false;
+  paintJumpBar();
   maybeGuide("chat");
   loadRooms();
   showMyAsks();
@@ -4839,6 +5092,7 @@ function stopChat(){
   chatSeen = {};
   var p = document.getElementById("chatPanel");
   if(p) p.hidden = true;
+  paintJumpBar();
   /* Leave nothing behind for the next person on a shared laptop. */
   var log = document.getElementById("chatLog");
   if(log) log.textContent = "";
@@ -5043,6 +5297,23 @@ function postEl(p, replies, meId){
   var acts = document.createElement("div");
   acts.className = "post-acts";
 
+  /* One click moves a board post onto your own list, dated if the post
+     names a day - so "French sheet due Friday" never gets retyped. */
+  acts.appendChild(actBtn("Add to my to-dos", function(){
+    var whole = (p.body || "").replace(/\s+/g, " ").trim();
+    var line = whole.slice(0, 120);
+    if(!line) return;
+    /* Already on the list? Once is enough. */
+    var dup = getLocal().some(function(i){ return i.pending !== "delete" && i.text === line; });
+    if(dup){ if(window.toast) toast("That's already on your list.", "", { key:"todo" }); return; }
+    var due = todoDueFrom(whole);   /* the date may sit past the cut */
+    var list = getLocal();
+    list.push({ id:uuid(), text:line, done:false, due:due,
+                created_at:new Date().toISOString(), pending:"insert" });
+    setLocal(list); renderTodos(); flush();
+    if(window.toast) toast("On your list" + (due ? " \u2014 dated " + dueWord(due).toLowerCase() + "." : "."), "ok", { key:"todo" });
+  }));
+
   acts.appendChild(actBtn("Reply", function(){
     if(card.querySelector(".reply-form")) return;
     var f = document.createElement("form");
@@ -5156,6 +5427,7 @@ function startBoard(){
       if(currentUser !== asked) return;
       if(r && !r.error && r.data && r.data.chat_ok === true){
         document.getElementById("boardPanel").hidden = false;
+        paintJumpBar();
         loadBoard();
         if(boardPoll) clearInterval(boardPoll);
         boardPoll = setInterval(function(){ if(canSync()) loadBoard(); }, 45000);
@@ -5167,6 +5439,7 @@ function stopBoard(){
   if(boardPoll){ clearInterval(boardPoll); boardPoll = null; }
   var p = document.getElementById("boardPanel");
   if(p) p.hidden = true;
+  paintJumpBar();
   var l = document.getElementById("boardList");
   if(l) l.textContent = "";
   var i = document.getElementById("boardInput");
