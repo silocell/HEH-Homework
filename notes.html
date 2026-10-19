@@ -25,6 +25,7 @@
   --accent-soft:#e7edfd;
   --on-accent:#fff;        /* text on an accent-coloured button */
   --margin:#d2403c;        /* the red margin line */
+  --warn:#a85f00;          /* a pattern worth seeing, not an emergency */
   --good:#1d7a4c;
   --shadow:0 1px 2px rgba(26,31,43,.06),0 8px 24px -12px rgba(26,31,43,.18);
   --radius:14px;
@@ -47,6 +48,7 @@
     --accent-soft:#1d2740;
     --on-accent:#0b1120;
     --margin:#e0605c;
+    --warn:#e5a84b;
     --good:#4fc08a;
     --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -12px rgba(0,0,0,.6);
     color-scheme:dark;
@@ -65,6 +67,7 @@
   --accent-soft:#1d2740;
   --on-accent:#0b1120;
   --margin:#e0605c;
+  --warn:#e5a84b;
   --good:#4fc08a;
   --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px -12px rgba(0,0,0,.6);
   color-scheme:dark;
@@ -215,6 +218,38 @@ button,input,select,textarea{font:inherit;color:inherit}
 .logrow.hashed .why{color:var(--margin)}
 .logrow.stopped .why{color:var(--margin)}
 .logempty{padding:18px 12px;color:var(--ink-faint);font-size:.83rem}
+/* ---------- worth a look ----------
+   Three levels, and only one of them is red. An amber pattern and a grey
+   swear word sitting next to a red self-harm message is the whole point:
+   the eye should land on the one that matters without reading any of
+   them. */
+.watch{display:flex;flex-direction:column;gap:8px}
+.witem{
+  display:flex;gap:12px;align-items:flex-start;padding:11px 13px;
+  border:1px solid var(--rule);border-left:3px solid var(--ink-faint);
+  border-radius:10px;background:var(--card);
+}
+.witem.serious{border-left-color:var(--margin)}
+.witem.pattern{border-left-color:var(--warn)}
+.witem.done{opacity:.45}
+.wbody{flex:1 1 auto;min-width:0}
+.wtop{
+  display:flex;gap:9px;align-items:baseline;flex-wrap:wrap;
+  font-size:.67rem;color:var(--ink-faint);font-variant-numeric:tabular-nums;
+}
+.wtop .wwho{font-size:.84rem;font-weight:600;color:var(--ink)}
+.wwhy{font-size:.6rem;letter-spacing:.06em;text-transform:uppercase;font-weight:600}
+.witem.serious .wwhy{color:var(--margin)}
+.witem.pattern .wwhy{color:var(--warn)}
+.wsaid{margin:7px 0 0;font-size:.85rem;overflow-wrap:anywhere;color:var(--ink)}
+.wsaid.nowords{color:var(--ink-faint);font-style:italic}
+.wadvice{margin:7px 0 0;font-size:.76rem;line-height:1.45;color:var(--ink-soft)}
+.witem.serious .wadvice{color:var(--ink)}
+.wempty{
+  padding:16px 13px;border:1px dashed var(--rule);border-radius:10px;
+  color:var(--ink-faint);font-size:.83rem;
+}
+.wtick{padding:3px 9px;font-size:.68rem;flex:0 0 auto}
 .check{
   display:flex;align-items:baseline;gap:10px;padding:8px 0;
   border-top:1px solid var(--rule);font-size:.84rem;
@@ -280,7 +315,7 @@ body.demo #wordSec button{
 /* Look-only account: everything visible, only Diagnostics alive. */
 body.demo #mainPanel .sec.off{ opacity:.42; pointer-events:none; user-select:none; filter:grayscale(.6) }
 </style>
-<link rel="stylesheet" href="polish.css?b=20261019193510">
+<link rel="stylesheet" href="polish.css?b=20261019202713">
 
 <div class="shell">
 
@@ -301,6 +336,19 @@ body.demo #mainPanel .sec.off{ opacity:.42; pointer-events:none; user-select:non
   <div class="panel" id="mainPanel" hidden>
 
 
+
+      <div class="sec" id="watchSec">
+        <p class="sec-h">Worth a look</p>
+        <div class="stats" id="watchStats"></div>
+        <div class="arow">
+          <button type="button" class="abtn quiet" id="watchGo">Check again</button>
+          <label style="display:flex;align-items:center;gap:8px;font-size:.8rem;color:var(--ink-soft)">
+            <input type="checkbox" id="watchDone"> Show the ones I&rsquo;ve dealt with
+          </label>
+        </div>
+        <div class="watch" id="watchBox"></div>
+        <p class="amsg" id="watchMsg">Everything from the last 30 days that wants a person rather than a filter &mdash; built fresh each time out of what already happened, so there is nothing here the chat log doesn&rsquo;t already hold. Anything in red goes to your form tutor or the safeguarding lead the same day; it isn&rsquo;t yours to handle on your own. Ticking one off only hides it from this list.</p>
+      </div>
 
       <div class="sec" id="showSec">
         <p class="sec-h">Look-only accounts</p>
@@ -548,7 +596,7 @@ body.demo #mainPanel .sec.off{ opacity:.42; pointer-events:none; user-select:non
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.0/dist/umd/supabase.js"></script>
-<script src="polish.js?b=20261019193510"></script>
+<script src="polish.js?b=20261019202713"></script>
 <script>
 var SUPABASE_URL = "https://lkyfpvlrqgezgitfmpqo.supabase.co";
 var SUPABASE_KEY = "sb_publishable_BTzbP_oOZnfvCgs4UBJYXA_WCTyT88M";
@@ -668,7 +716,11 @@ function say(id, text, kind){
   if(el.dataset.help === undefined) el.dataset.help = el.textContent || "";
   if(!text && el.dataset.help){ el.textContent = el.dataset.help; el.className = "amsg"; return; }
   if((kind === "ok" || kind === "err") && text && window.toast && !SAY_STAYS[id]){
-    el.textContent = "";
+    /* The outcome is going to the corner, so put the help line back
+       rather than leaving a gap where it was. Worth a line of code in
+       the watch section especially, where the help text is the bit
+       telling him to take the red ones to a teacher. */
+    el.textContent = el.dataset.help || "";
     el.className = "amsg";
     toast(text, kind, { key: id });
     return;
@@ -2184,6 +2236,186 @@ function loadLog(){
 
 document.getElementById("loadLog").addEventListener("click", loadLog);
 
+/* ---------- worth a look ----------
+   The first section, and the one that should make the rest unnecessary
+   to read. The server assembles it; this only draws it.
+
+   It loads itself when the panel opens. A list you have to remember to
+   press a button for is a list nobody looks at, and the one thing in
+   here that matters is the one you would never think to go looking for. */
+var watchSeen = false;
+
+function watchLevelWord(level){
+  return level === "serious" ? "needs a grown-up"
+    : level === "pattern" ? "a pattern"
+    : "minor";
+}
+
+function loadWatch(){
+  var box = document.getElementById("watchBox");
+  var showDone = document.getElementById("watchDone").checked;
+  say("watchMsg","Looking…");
+
+  return call({ action:"watch" }).then(function(d){
+    box.textContent = "";
+    var all = d.items || [];
+
+    /* The server sorts these already. Sorting them again here is not
+       distrust of it so much as the one place where being wrong is
+       expensive: a self-harm message sitting fourth because something
+       upstream changed is the exact failure this whole section exists
+       to prevent, and three lines are cheap insurance against it. */
+    var RANK = { serious:0, pattern:1, minor:2 };
+    all = all.slice().sort(function(a,b){
+      var ra = RANK[a.level], rb = RANK[b.level];
+      if(ra === undefined) ra = 9;
+      if(rb === undefined) rb = 9;
+      if(ra !== rb) return ra - rb;
+      return a.at < b.at ? 1 : a.at > b.at ? -1 : 0;
+    });
+
+    var rows = showDone ? all : all.filter(function(i){ return !i.done; });
+
+    var host = document.getElementById("watchStats");
+    host.textContent = "";
+    [[d.serious||0,"need a grown-up"],[d.pattern||0,"patterns"],
+     [d.minor||0,"minor"],[d.handled||0,"dealt with"]]
+      .forEach(function(pair){
+        var b = document.createElement("div"); b.className = "stat";
+        var n = document.createElement("div"); n.className = "stat-n";
+        n.textContent = String(pair[0]);
+        if(pair[1] === "need a grown-up" && pair[0] > 0) n.style.color = "var(--margin)";
+        var l = document.createElement("div"); l.className = "stat-l"; l.textContent = pair[1];
+        b.appendChild(n); b.appendChild(l); host.appendChild(b);
+      });
+
+    /* Something didn't load. Say so loudly and never, ever print the
+       all-clear underneath it: a safeguarding list reporting a quiet
+       week because it couldn't read the table is worse than no list. */
+    var missing = d.partial || [];
+    if(missing.length){
+      var warn = document.createElement("div");
+      warn.className = "witem serious";
+      var wb = document.createElement("div"); wb.className = "wbody";
+      var wt = document.createElement("div"); wt.className = "wtop";
+      var wl = document.createElement("span"); wl.className = "wwho";
+      wl.textContent = "This list is incomplete";
+      var wy = document.createElement("span"); wy.className = "wwhy";
+      wy.textContent = "couldn't load";
+      wt.appendChild(wl); wt.appendChild(wy);
+      var wp = document.createElement("p"); wp.className = "wadvice";
+      wp.textContent = "Couldn't read " + missing.join(", ") +
+        ". Whatever is below is only part of it, and there may be nothing below at all — don't read this as a quiet week. Try Check again, and if it keeps happening run the checks in Diagnostics.";
+      wb.appendChild(wt); wb.appendChild(wp);
+      warn.appendChild(wb);
+      box.appendChild(warn);
+    }
+
+    if(!rows.length){
+      var e = document.createElement("p");
+      e.className = "wempty";
+      e.textContent = missing.length
+        ? "Nothing else loaded."
+        : all.length
+        ? "Nothing left. The " + all.length + " there were are ticked off — the box above shows them."
+        : "Nothing in the last " + (d.days || 30) + " days. The filter turned nobody away and nobody asked the explainer anything worrying.";
+      box.appendChild(e);
+      say("watchMsg","");
+      return d;
+    }
+
+    rows.forEach(function(it){
+      var row = document.createElement("div");
+      row.className = "witem " + it.level + (it.done ? " done" : "");
+
+      var body = document.createElement("div"); body.className = "wbody";
+
+      var top = document.createElement("div"); top.className = "wtop";
+      var who = document.createElement("span"); who.className = "wwho";
+      who.textContent = it.who || it.email || "Someone";
+      if(it.email) who.title = it.email;
+      var w = document.createElement("span"); w.textContent = when(it.at);
+      var why = document.createElement("span"); why.className = "wwhy";
+      why.textContent = it.why || watchLevelWord(it.level);
+      top.appendChild(who); top.appendChild(w); top.appendChild(why);
+      body.appendChild(top);
+
+      /* An explainer concern has no wording on purpose, and saying so is
+         better than an empty gap that looks like a bug. */
+      var said = document.createElement("p");
+      if(it.what){
+        said.className = "wsaid";
+        said.textContent = it.what;
+      } else {
+        said.className = "wsaid nowords";
+        said.textContent = it.key.indexOf("concern:") === 0
+          ? "What they typed isn't kept."
+          : "—";
+      }
+      body.appendChild(said);
+
+      if(it.advice){
+        var ad = document.createElement("p");
+        ad.className = "wadvice";
+        ad.textContent = it.advice;
+        body.appendChild(ad);
+      }
+
+      if(it.done && it.doneAt){
+        var dn = document.createElement("p");
+        dn.className = "wadvice";
+        dn.textContent = "Ticked off " + when(it.doneAt) + ".";
+        body.appendChild(dn);
+      }
+
+      var tick = document.createElement("button");
+      tick.type = "button";
+      tick.className = "abtn quiet wtick";
+      tick.textContent = it.done ? "Put it back" : "Dealt with";
+      tick.addEventListener("click", function(){
+        tick.disabled = true;
+        /* Don't flip the local copy: the reload below is what decides,
+           and two places tracking the same thing is how a list ends up
+           disagreeing with the database. The note waits for the reload
+           as well, or loadWatch's own "start at the top" lands on top
+           of it a moment later and the tick looks like it failed. */
+        var hiding = !it.done;
+        call({ action:"watchdone", key:it.key, on: hiding }).then(function(){
+          return loadWatch();
+        }).then(function(){
+          say("watchMsg", hiding
+            ? "Hidden from this list. The message, the log and everything else about it are untouched."
+            : "Back on the list.", "ok");
+        }).catch(function(e){ tick.disabled = false; say("watchMsg", e.message, "err"); });
+      });
+
+      var acts = document.createElement("div"); acts.className = "wacts";
+      acts.appendChild(tick);
+
+      row.appendChild(body); row.appendChild(acts);
+      box.appendChild(row);
+    });
+
+    if(d.tooMany){
+      var more = document.createElement("p");
+      more.className = "wempty";
+      more.textContent = d.tooMany + " more below these, not shown. Clear some of " +
+        "these and the rest will come up.";
+      box.appendChild(more);
+    }
+
+    /* Deliberately NOT a status line here. The help text under this
+       section is the one that says a red item goes to a teacher today,
+       and "3 things to look at" is not worth covering it up with. */
+    say("watchMsg","");
+    watchSeen = true;
+    return d;
+  }).catch(function(e){ say("watchMsg", e.message, "err"); });
+}
+
+document.getElementById("watchGo").addEventListener("click", function(){ loadWatch(); });
+document.getElementById("watchDone").addEventListener("change", function(){ loadWatch(); });
+
 /* ---------- backup ---------- */
 function checkBackup(){
   /* "switches" is the cheapest action the new function understands. If
@@ -2349,6 +2581,7 @@ applyTheme(recall(THEME_KEY,null));
        quietly firing calls it knows will come back 403 is how a log fills
        with noise that hides the real faults. */
       if(!showOnly){
+        loadWatch();
         loadUsers();
         loadShared();
         loadWords();
