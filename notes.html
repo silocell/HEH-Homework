@@ -249,7 +249,7 @@ button,input,select,textarea{font:inherit;color:inherit}
   padding:16px 13px;border:1px dashed var(--rule);border-radius:10px;
   color:var(--ink-faint);font-size:.83rem;
 }
-.wtick{padding:3px 9px;font-size:.68rem;flex:0 0 auto}
+.wtick{padding:3px 9px;font-size:.68rem;flex:0 0 auto;white-space:nowrap}
 .check{
   display:flex;align-items:baseline;gap:10px;padding:8px 0;
   border-top:1px solid var(--rule);font-size:.84rem;
@@ -315,7 +315,7 @@ body.demo #wordSec button{
 /* Look-only account: everything visible, only Diagnostics alive. */
 body.demo #mainPanel .sec.off{ opacity:.42; pointer-events:none; user-select:none; filter:grayscale(.6) }
 </style>
-<link rel="stylesheet" href="polish.css?b=20261019202713">
+<link rel="stylesheet" href="polish.css?b=20261019202835">
 
 <div class="shell">
 
@@ -596,7 +596,7 @@ body.demo #mainPanel .sec.off{ opacity:.42; pointer-events:none; user-select:non
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.0/dist/umd/supabase.js"></script>
-<script src="polish.js?b=20261019202713"></script>
+<script src="polish.js?b=20261019202835"></script>
 <script>
 var SUPABASE_URL = "https://lkyfpvlrqgezgitfmpqo.supabase.co";
 var SUPABASE_KEY = "sb_publishable_BTzbP_oOZnfvCgs4UBJYXA_WCTyT88M";
@@ -2348,11 +2348,16 @@ function loadWatch(){
         said.textContent = it.what;
       } else {
         said.className = "wsaid nowords";
-        said.textContent = it.key.indexOf("concern:") === 0
+        /* A grouped item - a run of refusals, a burst - has no single
+           message behind it, so an em dash there was just a shrug. The
+           "why" line above already says what it is. */
+        var grouped = it.key.indexOf("repeat:") === 0 || it.key.indexOf("burst:") === 0;
+        if(grouped){ said = null; }
+        else said.textContent = it.key.indexOf("concern:") === 0
           ? "What they typed isn't kept."
           : "—";
       }
-      body.appendChild(said);
+      if(said) body.appendChild(said);
 
       if(it.advice){
         var ad = document.createElement("p");
