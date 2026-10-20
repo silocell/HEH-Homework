@@ -315,7 +315,7 @@ body.demo #wordSec button{
 /* Look-only account: everything visible, only Diagnostics alive. */
 body.demo #mainPanel .sec.off{ opacity:.42; pointer-events:none; user-select:none; filter:grayscale(.6) }
 </style>
-<link rel="stylesheet" href="polish.css?b=20261019202835">
+<link rel="stylesheet" href="polish.css?b=20261020062816">
 
 <div class="shell">
 
@@ -341,7 +341,7 @@ body.demo #mainPanel .sec.off{ opacity:.42; pointer-events:none; user-select:non
         <p class="sec-h">Worth a look</p>
         <div class="stats" id="watchStats"></div>
         <div class="arow">
-          <button type="button" class="abtn quiet" id="watchGo">Check again</button>
+          <button type="button" class="abtn quiet" id="watchGo">Check the last 30 days</button>
           <label style="display:flex;align-items:center;gap:8px;font-size:.8rem;color:var(--ink-soft)">
             <input type="checkbox" id="watchDone"> Show the ones I&rsquo;ve dealt with
           </label>
@@ -596,7 +596,7 @@ body.demo #mainPanel .sec.off{ opacity:.42; pointer-events:none; user-select:non
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.0/dist/umd/supabase.js"></script>
-<script src="polish.js?b=20261019202835"></script>
+<script src="polish.js?b=20261020062816"></script>
 <script>
 var SUPABASE_URL = "https://lkyfpvlrqgezgitfmpqo.supabase.co";
 var SUPABASE_KEY = "sb_publishable_BTzbP_oOZnfvCgs4UBJYXA_WCTyT88M";
@@ -2240,9 +2240,11 @@ document.getElementById("loadLog").addEventListener("click", loadLog);
    The first section, and the one that should make the rest unnecessary
    to read. The server assembles it; this only draws it.
 
-   It loads itself when the panel opens. A list you have to remember to
-   press a button for is a list nobody looks at, and the one thing in
-   here that matters is the one you would never think to go looking for. */
+   Nothing is fetched until the button is pressed, the same as the two
+   logs further down: opening the panel to change a word of the day
+   should not quietly pull thirty days of other people's refused
+   messages onto the screen. The cost is that it only tells you
+   something when you ask it to, so asking is worth making a habit. */
 var watchSeen = false;
 
 function watchLevelWord(level){
@@ -2253,10 +2255,19 @@ function watchLevelWord(level){
 
 function loadWatch(){
   var box = document.getElementById("watchBox");
+  var btn = document.getElementById("watchGo");
   var showDone = document.getElementById("watchDone").checked;
   say("watchMsg","Looking…");
+  btn.disabled = true;
+  var was = btn.textContent;
+  btn.textContent = "Looking…";
+  var done = function(){ btn.disabled = false; btn.textContent = watchSeen ? "Check again" : was; };
 
   return call({ action:"watch" }).then(function(d){
+    /* Set before done(), which reads it to decide whether the button
+       should now say "Check again". */
+    watchSeen = true;
+    done();
     box.textContent = "";
     var all = d.items || [];
 
@@ -2413,13 +2424,16 @@ function loadWatch(){
        section is the one that says a red item goes to a teacher today,
        and "3 things to look at" is not worth covering it up with. */
     say("watchMsg","");
-    watchSeen = true;
     return d;
-  }).catch(function(e){ say("watchMsg", e.message, "err"); });
+  }).catch(function(e){ done(); say("watchMsg", e.message, "err"); });
 }
 
 document.getElementById("watchGo").addEventListener("click", function(){ loadWatch(); });
-document.getElementById("watchDone").addEventListener("change", function(){ loadWatch(); });
+/* Nothing is fetched until the button is pressed, so ticking this box
+   before then must not go and fetch it by the back door. */
+document.getElementById("watchDone").addEventListener("change", function(){
+  if(watchSeen) loadWatch();
+});
 
 /* ---------- backup ---------- */
 function checkBackup(){
@@ -2586,7 +2600,6 @@ applyTheme(recall(THEME_KEY,null));
        quietly firing calls it knows will come back 403 is how a log fills
        with noise that hides the real faults. */
       if(!showOnly){
-        loadWatch();
         loadUsers();
         loadShared();
         loadWords();
