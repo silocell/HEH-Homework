@@ -218,6 +218,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 .logrow.hashed .why{color:var(--margin)}
 .logrow.stopped .why{color:var(--margin)}
 .logempty{padding:18px 12px;color:var(--ink-faint);font-size:.83rem}
+
 /* ---------- worth a look ----------
    Three levels, and only one of them is red. An amber pattern and a grey
    swear word sitting next to a red self-harm message is the whole point:
@@ -315,7 +316,7 @@ body.demo #wordSec button{
 /* Look-only account: everything visible, only Diagnostics alive. */
 body.demo #mainPanel .sec.off{ opacity:.42; pointer-events:none; user-select:none; filter:grayscale(.6) }
 </style>
-<link rel="stylesheet" href="polish.css?b=20261020062816">
+<link rel="stylesheet" href="polish.css?b=20261020170219">
 
 <div class="shell">
 
@@ -348,6 +349,15 @@ body.demo #mainPanel .sec.off{ opacity:.42; pointer-events:none; user-select:non
         </div>
         <div class="watch" id="watchBox"></div>
         <p class="amsg" id="watchMsg">Everything from the last 30 days that wants a person rather than a filter &mdash; built fresh each time out of what already happened, so there is nothing here the chat log doesn&rsquo;t already hold. Anything in red goes to your form tutor or the safeguarding lead the same day; it isn&rsquo;t yours to handle on your own. Ticking one off only hides it from this list.</p>
+      </div>
+
+      <div class="sec" id="helperSec" hidden>
+        <p class="sec-h">People</p>
+        <div id="helperRows"></div>
+        <p class="amsg" id="helperMsg">Turn somebody&rsquo;s explainer or chat off while they&rsquo;re messing about, and back on when they&rsquo;ve stopped. The switches above do the same for everyone at once. Nothing here shows what anybody actually typed.</p>
+        <div class="arow" style="margin-top:14px">
+          <button type="button" class="abtn quiet" id="helperRefresh">Refresh</button>
+        </div>
       </div>
 
       <div class="sec" id="showSec">
@@ -596,7 +606,7 @@ body.demo #mainPanel .sec.off{ opacity:.42; pointer-events:none; user-select:non
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.0/dist/umd/supabase.js"></script>
-<script src="polish.js?b=20261020062816"></script>
+<script src="polish.js?b=20261020170219"></script>
 <script>
 var SUPABASE_URL = "https://lkyfpvlrqgezgitfmpqo.supabase.co";
 var SUPABASE_KEY = "sb_publishable_BTzbP_oOZnfvCgs4UBJYXA_WCTyT88M";
@@ -758,7 +768,11 @@ function invokeOn(fn, payload){
 
 /* One feature, one person. Approval is the heavier switch and lives in its
    own button; these two just hand out the explainer and the chat. */
-function flagBtn(u, flag, onNow, labelOn, labelOff){
+/* The last two are for the helper's copy of this list, which lives in a
+   different section and has no addresses in it to name. */
+function flagBtn(u, flag, onNow, labelOn, labelOff, msgId, after){
+  msgId = msgId || "usersMsg";
+  after = after || loadUsers;
   var b = document.createElement("button");
   b.type = "button";
   b.className = onNow ? "abtn" : "abtn quiet";
@@ -767,13 +781,13 @@ function flagBtn(u, flag, onNow, labelOn, labelOff){
     b.disabled = true;
     call({ action:"flag", userId:u.id, flag:flag, on:!onNow })
       .then(function(){
-        say("usersMsg",
+        say(msgId,
             (onNow ? "Took the " : "Gave the ") +
             (flag === "ai_ok" ? "explainer " : "chat ") +
-            (onNow ? "away from " : "to ") + u.email + ".", "ok");
-        loadUsers();
+            (onNow ? "away from " : "to ") + (u.email || u.name) + ".", "ok");
+        after();
       })
-      .catch(function(e){ say("usersMsg", e.message, "err"); b.disabled = false; });
+      .catch(function(e){ say(msgId, e.message, "err"); b.disabled = false; });
   });
   return b;
 }
@@ -973,6 +987,35 @@ function loadUsers(){
         pwBtn.textContent = "Change password";
         pwBtn.addEventListener("click",function(){ askPassword(u, card); });
         acts.appendChild(pwBtn);
+
+        /* A helper, not an administrator. Worth spelling out on the
+           button's own confirmation, because the difference is the
+           whole point of it. */
+        var hpBtn = document.createElement("button");
+        hpBtn.className = u.isHelper ? "abtn" : "abtn quiet";
+        hpBtn.type = "button";
+        hpBtn.textContent = u.isHelper ? "Helper" : "Make a helper";
+        hpBtn.title = u.isHelper
+          ? "Can work the switches. Can't see the logs, the messages or the addresses."
+          : "Lets them work the switches and turn one person's explainer or chat off — nothing else.";
+        hpBtn.addEventListener("click",function(){
+          if(!u.isHelper && !confirm(
+            "Make " + u.email + " a helper?\n\n" +
+            "They'll be able to switch the explainer, chat and board off for " +
+            "everyone, and turn one person's explainer or chat off.\n\n" +
+            "They will NOT see the chat log, anybody's real messages, " +
+            "the addresses, the private rooms or Worth a look.")) return;
+          hpBtn.disabled = true;
+          call({ action:"helper", email:u.email, on:!u.isHelper })
+            .then(function(){
+              say("usersMsg", u.isHelper
+                ? (u.email + " isn't a helper any more.")
+                : (u.email + " is a helper now — switches only."), "ok");
+              loadUsers();
+            })
+            .catch(function(e){ say("usersMsg", e.message, "err"); hpBtn.disabled = false; });
+        });
+        acts.appendChild(hpBtn);
 
         var del = document.createElement("button");
         del.className = "abtn danger";
@@ -2019,8 +2062,11 @@ function loadSwitches(){
     if(!host) return;
     host.textContent = "";
 
-    var label = { explainer:"Explainer", chat:"Chat" };
-    var order = ["explainer","chat"];
+    /* The board belongs here too. The server has always accepted it and
+       the settings row exists, but there was no button, so it was the
+       one feature that could not actually be switched off. */
+    var label = { explainer:"Explainer", chat:"Chat", board:"Board" };
+    var order = ["explainer","chat","board"];
     var by = {};
     (d.switches||[]).forEach(function(r){ by[r.key] = r; });
 
@@ -2033,8 +2079,13 @@ function loadSwitches(){
       b.className = on ? "abtn" : "abtn quiet";
       b.textContent = label[k] + (on ? " on" : " off");
       b.addEventListener("click",function(){
+        /* Only the owner keeps using it while it's off. A helper does
+           not, and telling them otherwise would be a surprise at
+           exactly the wrong moment. */
         if(on && !window.confirm("Turn the " + label[k].toLowerCase() +
-            " off for everyone? You'll still be able to use it yourself.")) return;
+            " off for everyone?" + (document.body.classList.contains("helper")
+              ? " That includes you, until it's turned back on."
+              : " You'll still be able to use it yourself."))) return;
         b.disabled = true;
         call({ action:"switch", key:k, on:!on })
           .then(function(){
@@ -2235,6 +2286,58 @@ function loadLog(){
 }
 
 document.getElementById("loadLog").addEventListener("click", loadLog);
+
+/* ---------- a helper ----------
+   Not a second administrator. A helper sees two things: the switches
+   that apply to everyone, and a list of names with the same two toggles
+   the owner has. No addresses, no log, no messages, nothing anybody
+   typed. The server decides all of this - HELPER_MAY in the admin
+   function is an allow list - so this is only about the panel looking
+   deliberate rather than broken. */
+function hideForHelper(){
+  document.querySelectorAll("#mainPanel .sec").forEach(function(sec){
+    if(sec.id === "switchSec" || sec.id === "helperSec") return;
+    sec.hidden = true;
+  });
+  document.getElementById("helperSec").hidden = false;
+  document.body.classList.add("helper");
+  var brand = document.getElementById("brand");
+  if(brand) brand.lastChild.textContent = " Launchpad Helper";
+}
+
+function loadPeople(){
+  var host = document.getElementById("helperRows");
+  say("helperMsg","Loading…");
+  return call({ action:"people" }).then(function(d){
+    host.textContent = "";
+    var rows = d.people || [];
+    if(!rows.length){
+      var e = document.createElement("p");
+      e.className = "logempty";
+      e.textContent = "Nobody to show yet.";
+      host.appendChild(e);
+      say("helperMsg","");
+      return;
+    }
+    rows.forEach(function(u){
+      var card = document.createElement("div");
+      card.className = "acct";
+      var row = document.createElement("div");
+      row.className = "acct-top";
+      var nm = document.createElement("span");
+      nm.className = "acct-name";
+      nm.textContent = u.name;
+      row.appendChild(nm);
+      row.appendChild(flagBtn(u,"ai_ok",   u.aiOk,   "Explainer on", "Explainer off", "helperMsg", loadPeople));
+      row.appendChild(flagBtn(u,"chat_ok", u.chatOk, "Chat on",      "Chat off",      "helperMsg", loadPeople));
+      card.appendChild(row);
+      host.appendChild(card);
+    });
+    say("helperMsg","");
+  }).catch(function(e){ say("helperMsg", e.message, "err"); });
+}
+
+document.getElementById("helperRefresh").addEventListener("click", loadPeople);
 
 /* ---------- worth a look ----------
    The first section, and the one that should make the rest unnecessary
@@ -2590,12 +2693,19 @@ applyTheme(recall(THEME_KEY,null));
        that knows, so the list of who may get in is no longer sitting in
        a public page. Anyone else is refused and sees the same nothing. */
     return call({ action:"whoami" }).then(function(w){
-      if(!w || (!w.owner && !w.demo)){ show("deadEnd"); return; }
+      if(!w || (!w.owner && !w.demo && !w.helper)){ show("deadEnd"); return; }
       showOnly = !!w.demo;
+      var helperOnly = !w.owner && !w.demo && !!w.helper;
 
       unlocked = true;
       show("mainPanel");
       if(showOnly) hideForDemo();
+      if(helperOnly){
+        hideForHelper();
+        loadSwitches();
+        loadPeople();
+        return;
+      }
     /* The demo account is refused most of these, so don't ask. A panel
        quietly firing calls it knows will come back 403 is how a log fills
        with noise that hides the real faults. */
