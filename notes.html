@@ -251,6 +251,16 @@ button,input,select,textarea{font:inherit;color:inherit}
   color:var(--ink-faint);font-size:.83rem;
 }
 .wtick{padding:3px 9px;font-size:.68rem;flex:0 0 auto;white-space:nowrap}
+/* The badge is the whole compromise. Nothing loads until the button is
+   pressed, so this is the only thing that can tell him something is
+   waiting - and it is counted on the server from reasons alone, with no
+   message, no name and no address coming back for it. */
+.wbadge{
+  display:inline-block;margin-left:9px;padding:2px 8px;border-radius:999px;
+  font-size:.62rem;font-weight:700;letter-spacing:.04em;text-transform:none;
+  background:var(--rule);color:var(--ink-soft);vertical-align:middle;
+}
+.wbadge.loud{background:var(--margin);color:#fff}
 .check{
   display:flex;align-items:baseline;gap:10px;padding:8px 0;
   border-top:1px solid var(--rule);font-size:.84rem;
@@ -316,7 +326,7 @@ body.demo #wordSec button{
 /* Look-only account: everything visible, only Diagnostics alive. */
 body.demo #mainPanel .sec.off{ opacity:.42; pointer-events:none; user-select:none; filter:grayscale(.6) }
 </style>
-<link rel="stylesheet" href="polish.css?b=20261020170219">
+<link rel="stylesheet" href="polish.css?b=20261020175820">
 
 <div class="shell">
 
@@ -339,7 +349,7 @@ body.demo #mainPanel .sec.off{ opacity:.42; pointer-events:none; user-select:non
 
 
       <div class="sec" id="watchSec">
-        <p class="sec-h">Worth a look</p>
+        <p class="sec-h">Worth a look<span class="wbadge" id="watchBadge" hidden></span></p>
         <div class="stats" id="watchStats"></div>
         <div class="arow">
           <button type="button" class="abtn quiet" id="watchGo">Check the last 30 days</button>
@@ -606,7 +616,7 @@ body.demo #mainPanel .sec.off{ opacity:.42; pointer-events:none; user-select:non
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.0/dist/umd/supabase.js"></script>
-<script src="polish.js?b=20261020170219"></script>
+<script src="polish.js?b=20261020175820"></script>
 <script>
 var SUPABASE_URL = "https://lkyfpvlrqgezgitfmpqo.supabase.co";
 var SUPABASE_KEY = "sb_publishable_BTzbP_oOZnfvCgs4UBJYXA_WCTyT88M";
@@ -2339,6 +2349,52 @@ function loadPeople(){
 
 document.getElementById("helperRefresh").addEventListener("click", loadPeople);
 
+/* ---------- is anything waiting? ----------
+   Nothing is fetched until the button is pressed, which was the ask -
+   but a list that only speaks when spoken to will miss the one thing
+   it exists for. So on opening the panel it asks a single question:
+   how many, by how serious. Numbers only. No message, no name, no
+   address comes back for this, and the server works it out with the
+   same classifier the full list uses, so the badge can never disagree
+   with what is underneath it. */
+function paintWatchBadge(d){
+  var el = document.getElementById("watchBadge");
+  if(!el) return;
+  var serious = d.serious || 0;
+  var rest = (d.pattern || 0) + (d.minor || 0);
+
+  if((d.partial || []).length){
+    el.hidden = false;
+    el.className = "wbadge loud";
+    el.textContent = "couldn't check";
+    return;
+  }
+  if(serious){
+    el.hidden = false;
+    el.className = "wbadge loud";
+    el.textContent = serious + (serious === 1 ? " needs" : " need") + " a grown-up";
+    return;
+  }
+  if(rest){
+    el.hidden = false;
+    el.className = "wbadge";
+    el.textContent = rest + " to look at";
+    return;
+  }
+  el.hidden = true;
+  el.textContent = "";
+}
+
+function peekWatch(){
+  return call({ action:"watch", peek:true })
+    .then(paintWatchBadge)
+    /* An older server that doesn't know the word "peek" sends the whole
+       list instead, which still has the counts on it. Either way the
+       badge is right; and if the call fails there is simply no badge,
+       which is the state the panel was in before this existed. */
+    .catch(function(){});
+}
+
 /* ---------- worth a look ----------
    The first section, and the one that should make the rest unnecessary
    to read. The server assembles it; this only draws it.
@@ -2434,6 +2490,7 @@ function loadWatch(){
         ? "Nothing left. The " + all.length + " there were are ticked off — the box above shows them."
         : "Nothing in the last " + (d.days || 30) + " days. The filter turned nobody away and nobody asked the explainer anything worrying.";
       box.appendChild(e);
+      paintWatchBadge(d);
       say("watchMsg","");
       return d;
     }
@@ -2522,6 +2579,8 @@ function loadWatch(){
         "these and the rest will come up.";
       box.appendChild(more);
     }
+
+    paintWatchBadge(d);
 
     /* Deliberately NOT a status line here. The help text under this
        section is the one that says a red item goes to a teacher today,
@@ -2710,6 +2769,7 @@ applyTheme(recall(THEME_KEY,null));
        quietly firing calls it knows will come back 403 is how a log fills
        with noise that hides the real faults. */
       if(!showOnly){
+        peekWatch();
         loadUsers();
         loadShared();
         loadWords();
