@@ -326,7 +326,7 @@ body.demo #wordSec button{
 /* Look-only account: everything visible, only Diagnostics alive. */
 body.demo #mainPanel .sec.off{ opacity:.42; pointer-events:none; user-select:none; filter:grayscale(.6) }
 </style>
-<link rel="stylesheet" href="polish.css?b=20261020175820">
+<link rel="stylesheet" href="polish.css?b=20261020183701">
 
 <div class="shell">
 
@@ -616,7 +616,7 @@ body.demo #mainPanel .sec.off{ opacity:.42; pointer-events:none; user-select:non
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.0/dist/umd/supabase.js"></script>
-<script src="polish.js?b=20261020175820"></script>
+<script src="polish.js?b=20261020183701"></script>
 <script>
 var SUPABASE_URL = "https://lkyfpvlrqgezgitfmpqo.supabase.co";
 var SUPABASE_KEY = "sb_publishable_BTzbP_oOZnfvCgs4UBJYXA_WCTyT88M";
@@ -2312,7 +2312,8 @@ function hideForHelper(){
   document.getElementById("helperSec").hidden = false;
   document.body.classList.add("helper");
   var brand = document.getElementById("brand");
-  if(brand) brand.lastChild.textContent = " Launchpad Helper";
+  if(brand) brand.lastChild.textContent = " Helper panel";
+  document.title = "Helper panel";
 }
 
 function loadPeople(){
