@@ -1135,7 +1135,7 @@ footer{
   *{transition:none!important;animation:none!important}
 }
 </style>
-<link rel="stylesheet" href="polish.css?b=20261021182415">
+<link rel="stylesheet" href="polish.css?b=20261021185319">
 </head>
 <body>
 
@@ -1235,8 +1235,8 @@ footer{
     <div class="brand"><span class="dot"></span> Homework Launchpad</div>
     <div class="topbar-actions">
       <span class="sync" id="syncPill" title="Sync status"><span class="sync-dot"></span><span id="syncText">Synced</span></span>
-      <a class="ghost-btn" id="moreBtn" href="notes" hidden>Admin panel</a>
-      <a class="ghost-btn" id="gameBtn" href="game.html">Gate Run</a>
+      <a class="ghost-btn" id="moreBtn" hidden></a>
+      <a class="ghost-btn" id="gameBtn" href="https://silocell.github.io/HEH-Launchpad-Game/">Gate Run</a>
       <button class="ghost-btn" id="themeBtn" type="button">Dark mode</button>
       <button class="ghost-btn" id="switchBtn" type="button">Sign out</button>
     </div>
@@ -1433,7 +1433,7 @@ footer{
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.0/dist/umd/supabase.js"></script>
-<script src="polish.js?b=20261021182415"></script>
+<script src="polish.js?b=20261021185319"></script>
 <script>
 /* ?v=<number> is how a reload dodges the cache - after an update, or when
    the site opens or closes. By the time anyone can see the page it has
@@ -4559,16 +4559,31 @@ function isOwner(){
 function showOwnerButton(){
   var b = document.getElementById("moreBtn");
   if(!b) return;
-  b.hidden = !isOwner();
-  if(isOwner() || !canSync()) return;
+  b.hidden = true;
+
+  /* The address is filled in here rather than written into the page.
+     It used to sit in the markup as href="notes", hidden on screen but
+     in plain sight to anyone who pressed Ctrl+U - which told every
+     pupil that an admin panel exists and exactly where it lives.
+
+     This is not what keeps them out. The server refuses them whatever
+     they open, which is the only protection that counts. But there is
+     no reason to hand the address out with it. */
+  function show(label){
+    b.setAttribute("href", "notes");
+    b.textContent = label;
+    b.hidden = false;
+  }
+
+  if(isOwner()){ show("Admin panel"); return; }
+  if(!canSync()) return;
   sb.functions.invoke("admin",{ body:{ action:"whoami" } }).then(function(r){
     var d = (r && r.data) || {};
     if(r.error) return;
-    if(d.owner || d.demo || d.helper) b.hidden = false;
-    /* A helper's panel is a different, much smaller thing, so the way
-       in says so rather than promising them an admin panel they will
-       not get. */
-    if(!d.owner && !d.demo && d.helper) b.textContent = "Helper panel";
+    /* A helper's panel is a different, much smaller thing, so the way in
+       says so rather than promising an admin panel they will not get. */
+    if(d.owner || d.demo) show("Admin panel");
+    else if(d.helper) show("Helper panel");
   }).catch(function(){});
 }
 
