@@ -172,6 +172,28 @@ button,input,select,textarea{font:inherit;color:inherit}
   padding:9px 11px;font-size:.85rem;width:100%;
 }
 .afield input:focus{border-color:var(--accent);outline:none}
+/* The date box was 150px, which is narrower than dd/mm/yyyy needs: the
+   browser clipped it, so you were typing into a part of the field you
+   could not see - and a month box takes 03 but never 23, which is
+   exactly what it looked like from the outside. Wide enough to read
+   now, and it says the date back to you in words underneath so there
+   is no guessing which number went where. */
+.dayecho{font-size:.7rem;color:var(--ink-faint);min-height:1em}
+.dayecho.warn{color:var(--bad)}
+.dayrow{display:flex;gap:4px;align-items:stretch}
+.dayrow input{flex:1 1 auto;min-width:0}
+/* The arrows are the point. A date box is laid out in the browser's
+   own language, so on a machine set to US English it reads
+   mm/dd/yyyy - type 23 for the 23rd and it lands in the month box,
+   which takes 03 and never 23. These two move the date a day at a
+   time and the line underneath says which day it landed on, so the
+   order of the boxes stops mattering. */
+.daynudge{
+  flex:0 0 32px;background:var(--paper);border:1px solid var(--rule);
+  border-radius:8px;cursor:pointer;font-size:.72rem;color:var(--ink);
+  padding:0;line-height:1;
+}
+.daynudge:hover{border-color:var(--accent);color:var(--accent)}
 .abtn{
   background:var(--accent);color:var(--on-accent);border:none;border-radius:8px;
   padding:10px 15px;font-size:.84rem;font-weight:600;cursor:pointer;flex:none;
@@ -472,9 +494,16 @@ body.demo #mainPanel .sec.off{ opacity:.42; pointer-events:none; user-select:non
         <p class="sec-h" id="wordSecH">Word of the day</p>
         <form id="wordForm">
           <div class="arow">
-            <div class="afield" style="flex:0 0 150px">
+            <div class="afield" style="flex:0 0 260px">
               <label for="wDay">Date</label>
-              <input type="date" id="wDay">
+              <div class="dayrow">
+                <button type="button" class="daynudge" id="wDayBack"
+                        title="A day earlier">&#9664;</button>
+                <input type="date" id="wDay">
+                <button type="button" class="daynudge" id="wDayNext"
+                        title="A day later">&#9654;</button>
+              </div>
+              <span class="dayecho" id="wDayEcho"></span>
             </div>
             <div class="afield" style="flex:0 0 150px">
               <label for="wWord">Word</label>
@@ -1575,6 +1604,39 @@ document.getElementById("newUserForm").addEventListener("submit",function(e){
 });
 
 /* ---------- word of the day ---------- */
+function ymd(d){
+  return d.getFullYear() + "-" +
+         String(d.getMonth()+1).padStart(2,"0") + "-" +
+         String(d.getDate()).padStart(2,"0");
+}
+
+/* Says the date back in words. The whole fault was not being able to
+   tell what the box had actually taken. */
+function echoDay(){
+  var box = document.getElementById("wDay");
+  var out = document.getElementById("wDayEcho");
+  if(!box || !out) return;
+  if(!box.value){ out.textContent = "Pick a date"; out.className = "dayecho warn"; return; }
+  var d = new Date(box.value + "T12:00:00");
+  if(isNaN(d)){ out.textContent = "That is not a date"; out.className = "dayecho warn"; return; }
+  var said = d.toLocaleDateString("en-GB",
+    { weekday:"long", day:"numeric", month:"long" });
+  var todayStr = ymd(new Date());
+  out.className = "dayecho" + (box.value < todayStr ? " warn" : "");
+  out.textContent = box.value < todayStr ? said + " — that is in the past"
+                  : box.value === todayStr ? said + " (today)" : said;
+}
+
+/* Queueing a word is nearly always for tomorrow, so start there rather
+   than on an empty box. */
+function startDay(){
+  var box = document.getElementById("wDay");
+  if(!box) return;
+  var t = new Date(); t.setDate(t.getDate() + 1);
+  if(!box.value) box.value = ymd(t);
+  echoDay();
+}
+
 function loadWords(){
   call({ action:"words" }).then(function(d){
     var body = document.getElementById("wordRows");
@@ -1617,6 +1679,20 @@ function loadWords(){
   }).catch(function(e){ say("wordMsg", e.message, "err"); });
 }
 
+document.getElementById("wDay").addEventListener("input", echoDay);
+document.getElementById("wDay").addEventListener("change", echoDay);
+
+function nudgeDay(by){
+  var box = document.getElementById("wDay");
+  var from = box.value ? new Date(box.value + "T12:00:00") : new Date();
+  if(isNaN(from)) from = new Date();
+  from.setDate(from.getDate() + by);
+  box.value = ymd(from);
+  echoDay();
+}
+document.getElementById("wDayBack").addEventListener("click",function(){ nudgeDay(-1); });
+document.getElementById("wDayNext").addEventListener("click",function(){ nudgeDay(1); });
+
 document.getElementById("wordForm").addEventListener("submit",function(e){
   e.preventDefault();
   var btn = document.getElementById("wBtn");
@@ -1634,6 +1710,15 @@ document.getElementById("wordForm").addEventListener("submit",function(e){
     ["wWord","wPos","wDef","wEx"].forEach(function(id){
       document.getElementById(id).value = "";
     });
+    /* Step on a day. Filling a week in means seven words, not seven
+       words and seven fiddles with the date box. */
+    var box = document.getElementById("wDay");
+    if(box && box.value){
+      var nx = new Date(box.value + "T12:00:00");
+      nx.setDate(nx.getDate() + 1);
+      box.value = ymd(nx);
+      echoDay();
+    }
     loadWords();
   }).catch(function(err){
     say("wordMsg", err.message, "err");
@@ -2778,6 +2863,7 @@ applyTheme(recall(THEME_KEY,null));
         loadUsers();
         loadShared();
         loadWords();
+        startDay();
         cacheStats();
         loadSwitches();
         refreshAskAllowance();
