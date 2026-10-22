@@ -1160,6 +1160,23 @@ footer{
   padding:9px 22px;font-weight:800;font-family:var(--font-display);font-size:1rem;
   box-shadow:0 4px 0 rgba(0,0,0,.18);
 }
+/* In the dark it was the one thing on the page still at noon
+   brightness - a neon slab on a calm dark page. Same shape, same
+   place, impossible to miss still; just lit for the room it is in. */
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]) .playcard{
+    background:linear-gradient(110deg,#1e3a8a 0%,#3b2a8c 55%,#7a2456 100%);
+    box-shadow:0 10px 30px -14px rgba(0,0,0,.8);
+  }
+  :root:not([data-theme="light"]) .playcard::after{opacity:.3}
+  :root:not([data-theme="light"]) .playgo{background:#eef0f5;color:#2a2366}
+}
+:root[data-theme="dark"] .playcard{
+  background:linear-gradient(110deg,#1e3a8a 0%,#3b2a8c 55%,#7a2456 100%);
+  box-shadow:0 10px 30px -14px rgba(0,0,0,.8);
+}
+:root[data-theme="dark"] .playcard::after{opacity:.3}
+:root[data-theme="dark"] .playgo{background:#eef0f5;color:#2a2366}
 /* A tiny car, built from four boxes, that drives on the spot. */
 .playcar{position:relative;flex:0 0 auto;width:62px;height:34px;z-index:1}
 .pc-body{position:absolute;left:0;bottom:7px;width:62px;height:15px;border-radius:5px;background:#ff5a5f}
