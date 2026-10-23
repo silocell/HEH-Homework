@@ -106,6 +106,10 @@ select,input[type=number]{font:inherit;padding:8px 10px;border:1px solid var(--r
 @keyframes pop{0%{transform:scale(.6);opacity:0}70%{transform:scale(1.08)}100%{transform:scale(1);opacity:1}}
 .popin{animation:pop .45s ease both}
 @media (prefers-reduced-motion: reduce){ .popin{animation:none} }
+.xbtn{display:grid;place-items:center;width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.14);color:#fff;
+  font:700 22px/1 system-ui,sans-serif;text-decoration:none;border:2px solid rgba(255,255,255,.35);flex:none;margin-left:6px}
+.xbtn:hover{background:rgba(255,255,255,.26)}
+.xbtn:focus-visible{outline:3px solid #fde68a;outline-offset:2px}
 </style>
 </head>
 <body>
@@ -114,7 +118,7 @@ select,input[type=number]{font:inherit;padding:8px 10px;border:1px solid var(--r
   <div class="brand"><i>×</i>Times Table Tycoon</div>
   <div class="sp"></div>
   <span class="coins">🪙 <b id="coins">–</b></span>
-  <a href="./">Launchpad</a>
+  <a class="xbtn" href="./" title="Back to the Launchpad" aria-label="Close and go back to the Launchpad">✕</a>
 </div>
 <nav class="tabs" id="tabs" hidden>
   <button data-tab="play" aria-selected="true">Play</button>

@@ -154,6 +154,10 @@ h2{font-size:1rem;margin:0 0 10px;text-transform:uppercase;letter-spacing:.06em;
 @media (prefers-reduced-motion: reduce){ .pop{animation:none} .meter>span{transition:none} }
 .center{text-align:center;padding:60px 16px}
 canvas#confetti{position:fixed;inset:0;pointer-events:none;z-index:40}
+.xbtn{display:grid;place-items:center;width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.14);color:#fff;
+  font:700 22px/1 system-ui,sans-serif;text-decoration:none;border:2px solid rgba(255,255,255,.35);flex:none;margin-left:6px}
+.xbtn:hover{background:rgba(255,255,255,.26)}
+.xbtn:focus-visible{outline:3px solid #fde68a;outline-offset:2px}
 </style>
 </head>
 <body>
@@ -164,7 +168,7 @@ canvas#confetti{position:fixed;inset:0;pointer-events:none;z-index:40}
   <span class="chip pts" id="ptsChip">⭐ <b id="pts">–</b> pts</span>
   <span class="chip" id="streakChip" hidden>🔥 <span id="streak">0</span></span>
   <button class="ghost" id="shopBtn" style="color:#fff;border-color:rgba(255,255,255,.25);padding:6px 14px">Shop</button>
-  <a class="back" href="./">Launchpad</a>
+<a class="xbtn" href="./" title="Back to the Launchpad" aria-label="Close and go back to the Launchpad">✕</a>
 </div>
 <main id="main"><div class="center muted">Loading…</div></main>
 <canvas id="confetti"></canvas>
@@ -323,7 +327,7 @@ function taskBtn(key, num, name, sub, frac, done){
 
 /* ---------------- a question ---------------- */
 function play(task, dots){
-  if (sinceCheck >= 6 && mem.length >= 3 && Math.random() < 0.6) { sinceCheck = 0; return memoryCheck(function(){ play(task, dots); }); }
+  if (!auto && sinceCheck >= 6 && mem.length >= 3 && Math.random() < 0.6) { sinceCheck = 0; return memoryCheck(function(){ play(task, dots); }); }
   main.textContent = "";
   main.appendChild(h("div", "center muted", "Getting your next question…"));
   api({ action:"next", task:task }).then(function(q){ drawQ(task, q, dots); }).catch(showErr);

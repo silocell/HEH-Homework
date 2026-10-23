@@ -36,11 +36,15 @@ h2{font-size:.85rem;text-transform:uppercase;letter-spacing:.07em;color:var(--so
 @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .tag.live{background:#14532d;color:#bbf7d0} :root:not([data-theme="light"]) .tag.lab{background:#3b0764;color:#ddd6fe} }
 :root[data-theme="dark"] .tag.live{background:#14532d;color:#bbf7d0} :root[data-theme="dark"] .tag.lab{background:#3b0764;color:#ddd6fe}
 @media (prefers-reduced-motion: reduce){ .game{transition:none} .game:hover{transform:none} }
+.xbtn{display:grid;place-items:center;width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.14);color:#fff;
+  font:700 22px/1 system-ui,sans-serif;text-decoration:none;border:2px solid rgba(255,255,255,.35);flex:none;margin-left:6px}
+.xbtn:hover{background:rgba(255,255,255,.26)}
+.xbtn:focus-visible{outline:3px solid #fde68a;outline-offset:2px}
 </style>
 </head>
 <body>
 <div class="labbar">Lab — things here are being tried out and may break <a href="./">back to the Launchpad</a></div>
-<div class="top"><b>🎮 Games</b><div class="sp"></div><a href="./">Launchpad</a></div>
+<div class="top"><b>🎮 Games</b><div class="sp"></div><a class="xbtn" href="./" title="Back to the Launchpad" aria-label="Close and go back to the Launchpad">✕</a></div>
 <main>
   <h1>Games</h1>
   <p class="muted">Every game in one place. They're all about school work underneath - except the doodle games, which are just for fun.</p>
