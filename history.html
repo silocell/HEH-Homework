@@ -51,6 +51,15 @@ canvas{display:block;width:100%;aspect-ratio:16/9;height:auto}
 .why{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:12px} @media (max-width:700px){ .why{grid-template-columns:1fr} }
 .why div{border:1px solid var(--rule);border-radius:12px;padding:12px;background:var(--card)}
 .why b{font-family:system-ui,sans-serif}
+.clips{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.clipbtn{border:1px solid rgba(253,230,138,.5);background:rgba(253,230,138,.12);color:#fde68a;border-radius:999px;padding:7px 14px;font-size:.85rem}
+.clipbtn:hover{background:rgba(253,230,138,.22)}
+.veil{position:fixed;inset:0;background:rgba(0,0,0,.75);display:grid;place-items:center;padding:16px;z-index:20}
+.vbox{background:#111;border-radius:16px;width:min(900px,100%);overflow:hidden}
+.vtop,.vfoot{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 14px;color:#eee;font-family:system-ui,sans-serif;font-size:.85rem}
+.vtop .ghost{color:#eee;border-color:#444}
+.vfoot a{color:#fde68a}
+.vbox iframe{display:block;width:100%;aspect-ratio:16/9;border:0}
 </style>
 </head>
 <body>
@@ -80,6 +89,7 @@ var SCENES = [
     opts:["Harold Godwinson","William of Normandy","Harald Hardrada","Edward's son"], a:0,
     why:"Harold Godwinson was crowned the day after Edward died. Edward had no children, which is why there was a fight over the crown at all." },
   { title:"September 1066 - Stamford Bridge", view:"map", dur:9,
+    clips:[["m9NdbxQWdJ8", "1066: The Battle of Fulford"], ["qtW7H7yPZLg", "1066: The Battle of Stamford Bridge"]],
     text:"Harald Hardrada lands in the north with Harold's own brother Tostig, and beats the northern earls at Fulford on 20 September. Harold races north from London and surprises the Vikings at Stamford Bridge on 25 September. Hardrada and Tostig are both killed.",
     q:"Who did King Harold defeat at the Battle of Stamford Bridge?",
     opts:["Harald Hardrada and Tostig","William of Normandy","The Scots","The Danes at London"], a:0,
@@ -91,6 +101,7 @@ var SCENES = [
     why:"Harold's men had fought at Stamford Bridge, then marched back south in about two weeks. Some soldiers were left behind, and many who made it were exhausted.",
     note:"Historians still argue about whether Harold should have waited in London for more troops instead of rushing to Hastings." },
   { title:"14 October, morning - the shield wall", view:"field", dur:10, kind:"form",
+    clips:[["zigjVCFzZ38", "1066: The Battle of Hastings"]],
     text:"Harold places his army along the top of a hill, Senlac Ridge, near Hastings. His best soldiers, the housecarls, lock their shields together into a wall. Below them, William lines up archers at the front, foot soldiers behind, and knights on horseback at the back.",
     q:"Why did Harold put his army on top of the hill?",
     opts:["So the Normans had to attack uphill","So they could see the sea","Because the Normans were already at the bottom","To get away from the archers"], a:0,
@@ -348,7 +359,7 @@ var voiceOn = false;
 function say(text){ try { speechSynthesis.cancel(); var u = new SpeechSynthesisUtterance(text); u.lang = "en-GB"; u.rate = 1; speechSynthesis.speak(u); } catch (e) {} }
 
 /* ---------------- the page ---------------- */
-var capT, capX, qbox, prog;
+var capT, capX, capC, qbox, prog;
 function episodePage(){
   main.textContent = "";
   var best = read("hl.hist.best.hastings", null);
@@ -369,7 +380,7 @@ function episodePage(){
 function start(){
   main.textContent = ""; done = []; units = [];
   var stage = h("div", "stage"); var c = h("canvas"); stage.appendChild(c);
-  var cap = h("div", "caption"); capT = h("b"); capX = h("div"); cap.appendChild(capT); cap.appendChild(capX); stage.appendChild(cap);
+  var cap = h("div", "caption"); capT = h("b"); capX = h("div"); capC = h("div", "clips"); cap.appendChild(capT); cap.appendChild(capX); cap.appendChild(capC); stage.appendChild(cap);
   main.appendChild(stage); setupCanvas(c);
   var ctr = h("div", "controls");
   var replay = h("button", "ghost", "↺ Replay scene"); replay.onclick = function(){ qbox.hidden = true; playScene(idx); };
@@ -383,6 +394,8 @@ function start(){
 }
 function drawScene(){
   var sc = SCENES[idx]; capT.textContent = (idx + 1) + " / " + SCENES.length + " · " + sc.title; capX.textContent = sc.text;
+  capC.textContent = "";
+  (sc.clips || []).forEach(function(c){ var b = h("button", "clipbtn", "\u25b6 Watch the BBC clip: " + c[1]); b.onclick = function(){ watch(c[0], c[1]); }; capC.appendChild(b); });
   [].forEach.call(prog.children, function(el, i){ el.className = done[i] === true ? "ok" : done[i] === false ? "no" : i === idx ? "now" : ""; });
 }
 function showQuestion(){
@@ -409,6 +422,25 @@ function showQuestion(){
   qbox.appendChild(opts);
   qbox.scrollIntoView({ behavior: calm ? "auto" : "smooth", block: "nearest" });
 }
+/* BBC Teach clips, from the BBC's own YouTube channel (BBC Bitesize for
+   Teachers). Embedded, never copied: the video stays on YouTube. The
+   player only loads when someone presses the button, from YouTube's
+   privacy-enhanced address; "Open on YouTube" is there in case school
+   blocks embedded players. */
+function watch(id, title){
+  playing = false; cancelAnimationFrame(raf); try { speechSynthesis.cancel(); } catch (e) {}
+  var v = h("div", "veil"), s = h("div", "vbox");
+  var top = h("div", "vtop"); top.appendChild(h("b", null, title));
+  var x = h("button", "ghost", "Close"); x.onclick = function(){ v.remove(); }; top.appendChild(x);
+  var fr = document.createElement("iframe");
+  fr.src = "https://www.youtube-nocookie.com/embed/" + id + "?rel=0&modestbranding=1";
+  fr.title = title; fr.allow = "encrypted-media; picture-in-picture; fullscreen"; fr.referrerPolicy = "strict-origin-when-cross-origin";
+  var foot = h("div", "vfoot"); foot.appendChild(document.createTextNode("Video \u00a9 BBC \u00b7 BBC Bitesize for Teachers \u00b7 "));
+  var a = h("a", null, "Open on YouTube"); a.href = "https://www.youtube.com/watch?v=" + id; a.target = "_blank"; a.rel = "noopener"; foot.appendChild(a);
+  s.appendChild(top); s.appendChild(fr); s.appendChild(foot); v.appendChild(s); document.body.appendChild(v);
+  v.addEventListener("click", function(e){ if (e.target === v) v.remove(); });
+}
+
 function finish(){
   try { speechSynthesis.cancel(); } catch (e) {}
   var score = done.filter(Boolean).length, best = read("hl.hist.best.hastings", 0);

@@ -923,7 +923,9 @@
       a.appendChild(el("span", "x-gicon", x[0])); var w = el("span"); w.appendChild(el("b", null, x[1])); w.appendChild(el("small", null, x[2])); a.appendChild(w);
       grid.appendChild(a);
     });
-    p.appendChild(grid); left.appendChild(p);
+    p.appendChild(grid);
+    var all = el("a", null, "All games \u2192"); all.href = "games.html"; all.style.cssText = "display:inline-block;margin-top:10px;font-weight:600";
+    p.appendChild(all); left.appendChild(p);
   }
 
   /* ---------- styles ---------- */
@@ -1007,6 +1009,9 @@
     if (on.tycoon) tycoonCard();
     if (on.dragons) dragonsCard();
     if (on.games) gamesPanel();
+    /* From the Games page: ?play=snake opens that game straight away. */
+    var pm = location.search.match(/[?&]play=(snake|breakout|mole)\b/);
+    if (pm) setTimeout(function(){ openGame(pm[1]); }, 300);
     if (on.doodle) doodle();
     if (on.eggs) eggs();
     if (on.streak || on.cheer || on.plant) watchTicks(on);

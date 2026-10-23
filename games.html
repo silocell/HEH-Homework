@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Games</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Crect width=%2264%22 height=%2264%22 rx=%2216%22 fill=%22%234f46e5%22/%3E%3Crect x=%2214%22 y=%2224%22 width=%2236%22 height=%2220%22 rx=%2210%22 fill=%22%23fff%22/%3E%3Ccircle cx=%2242%22 cy=%2232%22 r=%223%22 fill=%22%234f46e5%22/%3E%3Cpath d=%22M22 30v8M18 34h8%22 stroke=%22%234f46e5%22 stroke-width=%223%22/%3E%3C/svg%3E">
+<script>
+try{ var t = JSON.parse(localStorage.getItem("hl.theme")); if(t === "dark" || t === "light") document.documentElement.setAttribute("data-theme", t); }catch(e){}
+if (/^\/HEH-(Homework|Launchpad)-Lab(\/|$)/i.test(location.pathname)) document.documentElement.classList.add("lab");
+</script>
+<style>
+/* Every game in one place. On the lab, the lab games are live; anything
+   not yet on the real site is marked so testers know what they're trying. */
+:root{ --bg:#f3f5fb; --card:#fff; --ink:#151a2d; --soft:#5b6380; --rule:#e2e6f2; --bar:#141a33; }
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#0e1120; --card:#171b2e; --ink:#e7eaf6; --soft:#9aa3c2; --rule:#272d47; --bar:#0a0d1a; } }
+:root[data-theme="dark"]{ --bg:#0e1120; --card:#171b2e; --ink:#e7eaf6; --soft:#9aa3c2; --rule:#272d47; --bar:#0a0d1a; }
+*{box-sizing:border-box} html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;min-height:100vh}
+.labbar{display:none;background:#7c3aed;color:#fff;font-size:.72rem;font-weight:700;letter-spacing:.06em;text-align:center;padding:5px 12px;text-transform:uppercase}
+.labbar a{color:#fff;text-transform:none;letter-spacing:0;margin-left:10px} html.lab .labbar{display:block}
+.top{background:var(--bar);color:#fff;display:flex;align-items:center;gap:12px;padding:12px 18px}
+.top b{font-size:1.15rem} .top .sp{flex:1} .top a{color:#c7cbe0;font-size:.85rem;text-decoration:none}
+main{max-width:1000px;margin:0 auto;padding:22px 16px 60px}
+h1{margin:0 0 4px} .muted{color:var(--soft)}
+h2{font-size:.85rem;text-transform:uppercase;letter-spacing:.07em;color:var(--soft);margin:26px 0 10px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+.game{display:flex;gap:14px;align-items:flex-start;background:var(--card);border:1px solid var(--rule);border-radius:16px;padding:16px;color:var(--ink);text-decoration:none;transition:transform .15s,border-color .15s}
+.game:hover{transform:translateY(-2px);border-color:#6366f1}
+.icon{width:56px;height:56px;border-radius:14px;display:grid;place-items:center;font-size:1.8rem;flex:none;color:#fff}
+.game b{display:block;font-size:1.08rem}
+.game p{margin:4px 0 6px;color:var(--soft);font-size:.9rem}
+.tags{display:flex;gap:6px;flex-wrap:wrap}
+.tag{font-size:.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;padding:2px 8px;border-radius:999px;background:var(--rule);color:var(--soft)}
+.tag.live{background:#dcfce7;color:#166534} .tag.lab{background:#ede9fe;color:#5b21b6}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .tag.live{background:#14532d;color:#bbf7d0} :root:not([data-theme="light"]) .tag.lab{background:#3b0764;color:#ddd6fe} }
+:root[data-theme="dark"] .tag.live{background:#14532d;color:#bbf7d0} :root[data-theme="dark"] .tag.lab{background:#3b0764;color:#ddd6fe}
+@media (prefers-reduced-motion: reduce){ .game{transition:none} .game:hover{transform:none} }
+</style>
+</head>
+<body>
+<div class="labbar">Lab — things here are being tried out and may break <a href="./">back to the Launchpad</a></div>
+<div class="top"><b>🎮 Games</b><div class="sp"></div><a href="./">Launchpad</a></div>
+<main>
+  <h1>Games</h1>
+  <p class="muted">Every game in one place. They're all about school work underneath - except the doodle games, which are just for fun.</p>
+  <div id="list"></div>
+</main>
+<script>
+(function(){
+var LAB = document.documentElement.classList.contains("lab");
+/* where: "live" = on the real site, "lab" = being tried on the lab. */
+var GAMES = [
+  { group:"Learn while you play", icon:"🏎️", bg:"linear-gradient(135deg,#1e1b4b,#f97316)", name:"Gate Run", url:"https://silocell.github.io/HEH-Launchpad-Game/",
+    says:"Drive at 50mph and steer through the gate with the right answer. Maths and English.", tags:["Maths","English"], where:"live" },
+  { group:"Learn while you play", icon:"🚀", bg:"linear-gradient(135deg,#4f46e5,#06b6d4)", name:"Level Up", url:"levelup.html",
+    says:"Practice that learns you: daily tasks that get harder each day, points and a shop.", tags:["Maths","English","Science"], where:"lab" },
+  { group:"Learn while you play", icon:"✖️", bg:"linear-gradient(135deg,#f59e0b,#ef4444)", name:"Times Table Tycoon", url:"tables.html",
+    says:"60-second times-table rounds that learn your slow facts. Collect all the Numlings and trade them.", tags:["Maths"], where:"lab" },
+  { group:"Learn while you play", icon:"🐉", bg:"linear-gradient(135deg,#059669,#0ea5e9)", name:"Word Dragons", url:"dragons.html",
+    says:"Hatch and grow dragons by doing English. Keep them healthy, then battle someone by email.", tags:["English"], where:"lab" },
+  { group:"Learn while you play", icon:"⚔️", bg:"linear-gradient(135deg,#b45309,#7c2d12)", name:"Battle Stories", url:"history.html",
+    says:"Watch a battle re-enacted, then explain why it happened. Episode 1: Hastings, 1066 - with BBC clips.", tags:["History"], where:"lab" },
+  { group:"Just for fun", icon:"🐍", bg:"#16a34a", name:"Snake", url:"./?play=snake", says:"Eat the apples, don't eat yourself.", tags:["Doodle"], where:"live" },
+  { group:"Just for fun", icon:"🧱", bg:"#dc2626", name:"Brick Breaker", url:"./?play=breakout", says:"Clear every brick.", tags:["Doodle"], where:"live" },
+  { group:"Just for fun", icon:"🔨", bg:"#92400e", name:"Whack-a-mole", url:"./?play=mole", says:"30 seconds. Tap them before they hide.", tags:["Doodle"], where:"live" }
+];
+var list = document.getElementById("list"), last = "";
+function h(t, c, x){ var e = document.createElement(t); if (c) e.className = c; if (x != null) e.textContent = x; return e; }
+var grid;
+GAMES.forEach(function(g){
+  if (!LAB && g.where === "lab") return;          // the real site only lists what's live there
+  if (g.group !== last) { list.appendChild(h("h2", null, g.group)); grid = h("div", "grid"); list.appendChild(grid); last = g.group; }
+  var a = h("a", "game"); a.href = g.url;
+  var i = h("span", "icon", g.icon); i.style.background = g.bg; a.appendChild(i);
+  var w = h("span"); w.appendChild(h("b", null, g.name)); w.appendChild(h("p", null, g.says));
+  var tags = h("span", "tags"); g.tags.forEach(function(t){ tags.appendChild(h("span", "tag", t)); });
+  if (LAB) tags.appendChild(h("span", "tag " + g.where, g.where === "live" ? "On the real site" : "Lab only"));
+  w.appendChild(tags); a.appendChild(w); grid.appendChild(a);
+});
+})();
+</script>
+</body>
+</html>
