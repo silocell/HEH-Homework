@@ -58,8 +58,6 @@
       says:"A card on the dashboard that opens Times Table Tycoon: 60-second times-table rounds that learn your slow facts, Numlings to collect, a shop, and trading between players. Needs the tables function on the lab server." },
     { key:"dragons", name:"Word Dragons",
       says:"A card on the dashboard that opens Word Dragons: hatch and grow dragons by doing English, keep them healthy, and battle by email - players only ever see each other's dragon. Needs the dragons function on the lab server." },
-    { key:"games", name:"Games panel",
-      says:"The Games panel from the real site, under the left column - but here the lab games are real links: Times Table Tycoon, Word Dragons and Battle Stories (Hastings 1066, an animated re-enactment with questions)." },
     { key:"doodle", name:"Doodle of the day",
       says:"Like a Google doodle: a little game on the dashboard that changes every day - Snake, Brick Breaker or Whack-a-mole. Nothing to do with homework, on purpose." }
   ];
@@ -1008,7 +1006,7 @@
     if (on.levelup) levelUpCard();
     if (on.tycoon) tycoonCard();
     if (on.dragons) dragonsCard();
-    if (on.games) gamesPanel();
+    gamesPanel();          // always on in the lab, like on the real site
     /* From the Games page: ?play=snake opens that game straight away. */
     var pm = location.search.match(/[?&]play=(snake|breakout|mole)\b/);
     if (pm) setTimeout(function(){ openGame(pm[1]); }, 300);
