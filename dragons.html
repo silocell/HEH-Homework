@@ -252,7 +252,7 @@ function lesson(d){
       autoLesson = false;
       s.textContent = ""; s.style.textAlign = "center";
       var me = S.dragons.filter(function(x){ return x.id === d.id; })[0] || d;
-      s.appendChild(art(me)); s.appendChild(h("h2", null, right + " out of " + L.questions.length));
+      var pic = art(me); pic.style.width = "180px"; pic.style.height = "auto"; s.appendChild(pic); s.appendChild(h("h2", null, right + " out of " + L.questions.length));
       s.appendChild(h("p", null, me.name + (me.stage === "Egg" ? " is " + me.hatch + "/5 of the way to hatching." : " is level " + me.level + " and " + me.health + "% healthy.")));
       var b = h("button", "btn", "Back to the nest"); b.onclick = function(){ v.remove(); drawNest(); }; s.appendChild(b);
     }

@@ -52,12 +52,6 @@
       says:"Make your own revision cards, flip them, shuffle them. Kept on this device." },
     { key:"eggs", name:"Search easter eggs",
       says:"Try typing these into the dashboard search: do a barrel roll, askew, flip a coin, roll a die, recursion, snake, brick breaker, whack a mole." },
-    { key:"levelup", name:"Level Up",
-      says:"A card on the dashboard that opens Level Up: practice that learns you, with daily tasks, XP and a shop. Claude Haiku writes the questions, Groq checks them. Needs the levelup function on the lab server." },
-    { key:"tycoon", name:"Times Table Tycoon",
-      says:"A card on the dashboard that opens Times Table Tycoon: 60-second times-table rounds that learn your slow facts, Numlings to collect, a shop, and trading between players. Needs the tables function on the lab server." },
-    { key:"dragons", name:"Word Dragons",
-      says:"A card on the dashboard that opens Word Dragons: hatch and grow dragons by doing English, keep them healthy, and battle by email - players only ever see each other's dragon. Needs the dragons function on the lab server." },
     { key:"doodle", name:"Doodle of the day",
       says:"Like a Google doodle: a little game on the dashboard that changes every day - Snake, Brick Breaker or Whack-a-mole. Nothing to do with homework, on purpose." }
   ];
@@ -868,43 +862,6 @@
     }, true);
   }
 
-  /* Level Up lives on its own page (levelup.html); this is the door. */
-  function levelUpCard(){
-    var col = document.querySelector("#todoList") && document.querySelector("#todoList").closest(".col");
-    var left = col && col.parentNode.querySelector(".col");
-    if (!left || document.getElementById("expLevelUp")) return;
-    var a = document.createElement("a");
-    a.id = "expLevelUp"; a.href = "levelup.html"; a.className = "panel exp-panel exp-lu-door";
-    a.innerHTML = '<span class="exp-lu-rocket">\ud83d\ude80</span><span><b>Level Up</b>' +
-                  '<small>Today\u2019s tasks are waiting \u2014 earn points, spend them in the shop</small></span><span class="exp-lu-go">\u203a</span>';
-    tag(a);
-    left.insertBefore(a, left.firstChild);
-  }
-
-  function tycoonCard(){
-    var col = document.querySelector("#todoList") && document.querySelector("#todoList").closest(".col");
-    var left = col && col.parentNode.querySelector(".col");
-    if (!left || document.getElementById("expTycoon")) return;
-    var a = document.createElement("a");
-    a.id = "expTycoon"; a.href = "tables.html"; a.className = "panel exp-panel exp-lu-door exp-tt-door";
-    a.innerHTML = '<span class="exp-lu-rocket">\u2716\ufe0f</span><span><b>Times Table Tycoon</b>' +
-                  '<small>60 seconds, as many as you can \u2014 collect all the Numlings</small></span><span class="exp-lu-go">\u203a</span>';
-    tag(a);
-    left.insertBefore(a, left.firstChild);
-  }
-
-  function dragonsCard(){
-    var col = document.querySelector("#todoList") && document.querySelector("#todoList").closest(".col");
-    var left = col && col.parentNode.querySelector(".col");
-    if (!left || document.getElementById("expDragons")) return;
-    var a = document.createElement("a");
-    a.id = "expDragons"; a.href = "dragons.html"; a.className = "panel exp-panel exp-lu-door exp-dr-door";
-    a.innerHTML = '<span class="exp-lu-rocket">\ud83d\udc09</span><span><b>Word Dragons</b>' +
-                  '<small>Your dragons grow when you do English \u2014 are they hungry?</small></span><span class="exp-lu-go">\u203a</span>';
-    tag(a);
-    left.insertBefore(a, left.firstChild);
-  }
-
   function gamesPanel(){
     var col = document.querySelector("#todoList") && document.querySelector("#todoList").closest(".col");
     var left = col && col.parentNode.querySelector(".col");
@@ -1003,9 +960,6 @@
     if (on.roulette) roulette();
     if (on.season) season();
     if (on.konami) konami();
-    if (on.levelup) levelUpCard();
-    if (on.tycoon) tycoonCard();
-    if (on.dragons) dragonsCard();
     gamesPanel();          // always on in the lab, like on the real site
     /* From the Games page: ?play=snake opens that game straight away. */
     var pm = location.search.match(/[?&]play=(snake|breakout|mole)\b/);
