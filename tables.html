@@ -290,6 +290,30 @@ function play(r){
   });
   ar.appendChild(tm); ar.appendChild(hud); ar.appendChild(q); ar.appendChild(typed); ar.appendChild(combo); ar.appendChild(pad);
   main.appendChild(ar);
+  var autoT = null;
+  if (S.tester) {
+    /* Lab test mode: types the right answer at a human pace (0.7-1.2s),
+       which the server accepts - faster than 0.25s it wouldn't. */
+    var tb = h("div", "row"); tb.style.justifyContent = "center"; tb.style.marginTop = "12px";
+    var go = h("button", "ghost", "🧪 Autoplay (all right)"), mix = h("button", "ghost", "🧪 Autoplay (some wrong)");
+    function autoplay(wrongs){
+      if (autoT) return;
+      (function step(){
+        if (ended) return;
+        autoT = setTimeout(function(){
+          if (ended || locked) return step();
+          var p = r.questions[i], ans = String(p[0] * p[1]);
+          if (wrongs && Math.random() < .15) ans = String(p[0] * p[1] + 1);
+          val = ""; ans.split("").forEach(function(ch){ press(ch); });
+          if (val) press("✓");
+          step();
+        }, 700 + Math.random() * 500);
+      })();
+      go.disabled = mix.disabled = true;
+    }
+    go.onclick = function(){ autoplay(false); }; mix.onclick = function(){ autoplay(true); };
+    tb.appendChild(go); tb.appendChild(mix); ar.appendChild(tb);
+  }
 
   var i = 0, val = "", answers = [], right = 0, streak = 0, shown = performance.now(), locked = false, ended = false;
   var t0 = performance.now(), dur = r.secs * 1000;
@@ -323,7 +347,7 @@ function play(r){
     if (left <= 0) finish();
   }, 100);
   function finish(){
-    if (ended) return; ended = true; clearInterval(tick); document.removeEventListener("keydown", key);
+    if (ended) return; ended = true; clearInterval(tick); clearTimeout(autoT); document.removeEventListener("keydown", key);
     main.textContent = ""; main.appendChild(h("div", "center muted", "Marking…"));
     var wait = Math.max(0, dur + 300 - (performance.now() - t0));     // the server checks a whole minute passed
     setTimeout(function(){

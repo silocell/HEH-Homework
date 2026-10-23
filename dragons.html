@@ -99,6 +99,7 @@ var sb = null;
 try { sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth:{ persistSession:true, autoRefreshToken:true } }); } catch (e) {}
 var main = document.getElementById("main"), S = null, tab = "nest";
 var COL = { fire:["#f97316","#fed7aa","#b91c1c"], stone:["#78716c","#e7e5e4","#44403c"], storm:["#6366f1","#c7d2fe","#3730a3"], ice:["#22d3ee","#e0f7fa","#0e7490"] };
+var autoLesson = false;
 var SKILL = { fire:"Spelling", stone:"Grammar", storm:"Vocabulary", ice:"Punctuation" };
 
 function h(t, c, x){ var e = document.createElement(t); if (c) e.className = c; if (x != null) e.textContent = x; return e; }
@@ -228,13 +229,23 @@ function lesson(d){
             var nx = h("button", "btn", i + 1 < L.questions.length ? "Next" : "Finish"); nx.style.marginTop = "12px";
             nx.onclick = function(){ i++; if (i < L.questions.length) show(); else done(); };
             s.appendChild(nx); nx.focus();
+            if (autoLesson) setTimeout(function(){ if (document.body.contains(nx)) nx.click(); }, 1000);
           }).catch(function(e){ toast(e.message); bs.forEach(function(x){ x.disabled = false; }); });
         };
         opts.appendChild(b);
       });
       s.appendChild(opts);
+      if (q.answer != null) {
+        var tb = h("div", "row"); tb.style.justifyContent = "flex-start";
+        var r1 = h("button", "ghost", "🧪 Answer right"), r2 = h("button", "ghost", "🧪 Whole lesson right");
+        r1.onclick = function(){ bs.filter(function(x){ return x.textContent === q.answer; })[0].click(); };
+        r2.onclick = function(){ autoLesson = true; r1.click(); };
+        tb.appendChild(r1); tb.appendChild(r2); s.appendChild(tb);
+        if (autoLesson) setTimeout(function(){ if (document.body.contains(r1)) r1.click(); }, 1200);
+      }
     }
     function done(){
+      autoLesson = false;
       s.textContent = ""; s.style.textAlign = "center";
       var me = S.dragons.filter(function(x){ return x.id === d.id; })[0] || d;
       s.appendChild(art(me)); s.appendChild(h("h2", null, right + " out of " + L.questions.length));
@@ -315,7 +326,15 @@ function fight(r, second){
       opts.appendChild(b);
     });
     s.appendChild(opts);
+    if (q.answer != null) {
+      var tb = h("div", "row"); tb.style.justifyContent = "flex-start";
+      var a1 = h("button", "ghost", "🧪 Autoplay battle (all right)"); a1.onclick = function(){ autoBattle = true; tick(); };
+      tb.appendChild(a1); s.appendChild(tb);
+      if (autoBattle) tick();
+    }
+    function tick(){ setTimeout(function(){ var b = [].filter.call(opts.children, function(x){ return x.textContent === q.answer; })[0]; if (b && document.body.contains(b)) b.click(); }, 900 + Math.random() * 600); }
   }
+  var autoBattle = false;
   function send(){
     clearInterval(iv);
     s.textContent = ""; s.appendChild(h("p", "muted", "Marking…"));

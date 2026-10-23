@@ -191,6 +191,7 @@ var SUBJ_ICON = { maths:"🔢", english:"📖", science:"🧪" };
 var KIND_NAME = { title:"Titles", theme:"Colours", badge:"Badges" };
 var THEME_SWATCH = { "c-classic":"#4f46e5", "c-ocean":"#0369a1", "c-sunset":"#ea580c", "c-forest":"#15803d", "c-galaxy":"#7c3aed" };
 var S = null;          // last summary from the server
+var auto = null;       // lab test mode: "right" or "mixed" while autoplaying
 var mem = [];          // this visit's answers, for memory checks
 var sinceCheck = 0;
 
@@ -288,6 +289,18 @@ function drawHome(){
   lc.appendChild(sj);
   lc.appendChild(h("p", "who-ai", "Questions written by " + S.ai.writer + ", checked by " + S.ai.checker + ". Spotted a wrong one? Report it."));
   right.appendChild(lc);
+  if (S.tester) {
+    /* Lab test mode (only for accounts on the lab's tester list). */
+    var tc2 = h("div", "card"); tc2.style.marginTop = "18px";
+    tc2.appendChild(h("h2", null, "🧪 Test mode"));
+    tc2.appendChild(h("p", "muted", "Autoplays the next task at a human pace (about 4 seconds a question), so three strikes doesn't trip."));
+    var row2 = h("div", "subjects");
+    function nextTask(){ var t = S.tasks.filter(function(x){ return x.done < x.of; })[0]; return t ? t.key : "free"; }
+    [["Autoplay: perfect task", "right"], ["Autoplay: mixed", "mixed"]].forEach(function(x){
+      var b = h("button", "subj", x[0]); b.type = "button"; b.onclick = function(){ auto = x[1]; play(nextTask(), []); }; row2.appendChild(b);
+    });
+    tc2.appendChild(row2); right.appendChild(tc2);
+  }
 
   grid.appendChild(left); grid.appendChild(right);
   main.appendChild(grid);
@@ -350,6 +363,19 @@ function drawQ(task, q, dots){
   wrap.appendChild(card);
   main.appendChild(wrap);
   var started = performance.now();
+  if (q.answer != null) {
+    var tb = h("div", "qbar"); tb.style.borderTop = "1px dashed var(--rule)"; tb.style.paddingTop = "10px";
+    tb.appendChild(h("span", "muted", "🧪 Test:"));
+    function testPick(rightOne){
+      var b = btns.filter(function(x){ return (x.lastChild.textContent === String(q.answer)) === rightOne; })[0];
+      if (b) { b.click(); submit.click(); }
+    }
+    var tr = h("button", "ghost", "✓ Answer right"); tr.type = "button"; tr.onclick = function(){ testPick(true); };
+    var tw = h("button", "ghost", "✗ Answer wrong"); tw.type = "button"; tw.onclick = function(){ testPick(false); };
+    var ts = h("button", "ghost", auto ? "■ Stop autoplay" : ""); ts.type = "button"; ts.hidden = !auto; ts.onclick = function(){ auto = null; ts.hidden = true; };
+    tb.appendChild(tr); tb.appendChild(tw); tb.appendChild(ts); card.appendChild(tb);
+    if (auto) setTimeout(function(){ if (auto && document.body.contains(tr)) testPick(auto === "right" || Math.random() < .7); }, 2200);
+  }
 
   hintB.onclick = function(){
     hintB.disabled = true;
@@ -402,6 +428,7 @@ function drawQ(task, q, dots){
       card.appendChild(fb); card.appendChild(foot);
       bar.remove();
       next.focus();
+      if (auto) setTimeout(function(){ if (auto && document.body.contains(next)) next.click(); }, 1500);
       document.addEventListener("keydown", function go(e){ if (e.key === "Enter") { document.removeEventListener("keydown", go); if (document.body.contains(next)) { e.preventDefault(); next.click(); } } });
       if (r.right && (r.moved || r.streak % 5 === 0)) confetti();
     }).catch(function(e){
@@ -413,6 +440,7 @@ function pickOf(a){ return a[Math.floor(Math.random() * a.length)]; }
 function homeNow(){ home(); }
 
 function taskParty(name, bonus, dots){
+  auto = null;
   confetti();
   var right = dots.filter(function(x){ return x === 1; }).length;
   var v = h("div", "veil"), s = h("div", "sheet party");
