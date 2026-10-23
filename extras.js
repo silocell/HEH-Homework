@@ -15,6 +15,7 @@
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", run); else run();
   function run(){
   if (!document.getElementById("todoList")) return;   // dashboard only
+  if (document.documentElement.classList.contains("lab")) return;   // the lab runs experiments.js instead
   var calmer = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
   var started = false;
 
