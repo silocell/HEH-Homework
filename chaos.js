@@ -15,7 +15,9 @@
 (function(){
   if (!document.documentElement.classList.contains("lab")) return;
 
-  var HOST = "lkyfpvlrqgezgitfmpqo.supabase.co";
+  /* Whichever server this copy talks to: the lab one, through the
+     tunnel or not, or the real one if the lab is ever pointed back. */
+  var HOSTS = /lkyfpvlrqgezgitfmpqo\.supabase\.co|79\.72\.79\.18\.sslip\.io|localhost:8000/;
   var FAULTS = [
     { key:"slow",     name:"Everything slow",     says:"Every request to the server takes four seconds." },
     { key:"ai_down",  name:"AI down",             says:"The explainer and the chat checks fail with a server error." },
@@ -49,7 +51,7 @@
   var real = window.fetch.bind(window);
   window.fetch = async function(input, init){
     var url = typeof input === "string" ? input : (input && input.url) || "";
-    if (url.indexOf(HOST) < 0) return real(input, init);
+    if (!HOSTS.test(url)) return real(input, init);
     var f = on();
     var isAI = /\/functions\/v1\/(explain|chat)\b/.test(url);
     if (f.slow) await wait(4000);
@@ -82,6 +84,18 @@
     txt.querySelector("b").textContent = f.name; txt.querySelector("small").textContent = f.says;
     row.appendChild(box); row.appendChild(txt); panel.appendChild(row);
   });
+  /* Not a fault: which road to the lab's server. Shiv's home broadband
+     blocks the lab's address, so he goes through his SSH tunnel. */
+  var tun = document.createElement("label"); tun.className = "chaos-row";
+  var tbox = document.createElement("input"); tbox.type = "checkbox";
+  try { tbox.checked = localStorage.getItem("hl.labapi") === "tunnel"; } catch (e) {}
+  tbox.addEventListener("change", function(){
+    try { if (tbox.checked) localStorage.setItem("hl.labapi", "tunnel"); else localStorage.removeItem("hl.labapi"); } catch (e) {}
+    location.reload();
+  });
+  var ttxt = document.createElement("span");
+  ttxt.innerHTML = "<b>Through my SSH tunnel</b><small>Talk to the lab server at localhost:8000. Only works while your ssh -L window is open.</small>";
+  tun.appendChild(tbox); tun.appendChild(ttxt); panel.appendChild(tun);
   var clear = document.createElement("button"); clear.type = "button"; clear.className = "chaos-clear";
   clear.textContent = "Fix everything";
   clear.addEventListener("click", function(){ save({}); });

@@ -1232,7 +1232,7 @@ html.lab body{padding-top:26px}
 <div class="labbar" aria-label="Lab copy">Lab — things here are being tried out and may break
   <a href="https://silocell.github.io/HEH-Homework/">go to the real site</a></div>
 <script>
-  if (/^\/HEH-Homework-Lab(\/|$)/i.test(location.pathname)) document.documentElement.classList.add("lab");
+  if (/^\/HEH-(Homework|Launchpad)-Lab(\/|$)/i.test(location.pathname)) document.documentElement.classList.add("lab");
 </script>
 <script src="chaos.js"></script>
 
@@ -1598,6 +1598,22 @@ var ACCOUNTS = [];
    ================================================================== */
 var SUPABASE_URL = "https://lkyfpvlrqgezgitfmpqo.supabase.co";
 var SUPABASE_KEY = "sb_publishable_BTzbP_oOZnfvCgs4UBJYXA_WCTyT88M";
+
+/* The lab copy talks to the lab's own Supabase, on Shiv's Oracle
+   machine, with made-up pupils - never to the real one. Decided by the
+   address the page is served from, like the purple bar, so merging the
+   lab into the real site can never point the real site at the lab.
+   The anon key is the public one, the same kind as the real site's.
+
+   "Through my tunnel": Shiv's home broadband blocks the lab's address,
+   so he can reach it through his SSH tunnel instead - set from the
+   Break things panel, kept per browser. */
+if (document.documentElement.classList.contains("lab")) {
+  var LAB_TUNNEL = false;
+  try { LAB_TUNNEL = localStorage.getItem("hl.labapi") === "tunnel"; } catch (e) {}
+  SUPABASE_URL = LAB_TUNNEL ? "http://localhost:8000" : "https://79.72.79.18.sslip.io";
+  SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzkyNzY3ODczLCJleHAiOjIxMDgxMjc4NzN9.xZhr7IJ858RriVRW-IJIQL4IqhRKWmk3_KPuhgGqg50";
+}
 
 var sb = null;
 try{
