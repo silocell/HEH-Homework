@@ -32,6 +32,10 @@ branch), `silocell/HEH-Launchpad-Game`.
 - `notes.html` – the admin panel. Opens only for Shiv's own account; the
   server checks the signed-in account, so editing the page changes nothing.
 - `levelup.html` – Level Up (lab only so far).
+- `tables.html` – Times Table Tycoon (lab): 60-second rounds, Numling cards, trading. Function `tables`; tables `tt_progress`, `tt_rounds`, `tt_cards`, `tt_offers`; the swap is `tt_accept()` in the database, all-or-nothing.
+- `dragons.html` – Word Dragons (lab): dragons grow on English lessons, battles by email with no names shown. Function `dragons`; tables `dr_players`, `dr_dragons`, `dr_lessons`, `dr_battles`. Questions share `levelup_bank`.
+- `history.html` – Battle Stories: Hastings 1066, animated scenes + questions. Runs entirely in the browser - no server part, nothing to install.
+- `games.html` – every game in one place; the dashboard's Games panel links to it.
 - `experiments.js` – lab only: the experiments and the admin Experiments and
   Ask Claude sections.
 - `extras.js` – real site only: the experiments that were kept.
@@ -124,6 +128,25 @@ per-topic levels, shop items).
   levels 1–5.
 - `check: kept 2 of 4` in the logs is normal now and then. `kept 0 of 4`
   every time means the checker is failing.
+
+### Groq models are picked, not hard-coded
+Groq retires models (llama-3.3-70b-versatile died this way and broke the
+dragons). The functions now ask Groq hourly which models the account has
+and pick a writer + a DIFFERENT checker from a preference list. A
+`model_not_found` 404 in the logs should no longer happen; if it does,
+the preference lists in the functions need new names.
+
+### Test mode (lab only)
+Accounts listed in `LAB_TEST_EMAILS` (set with `set-testers.sh`) get the
+right answer sent with each question, so 🧪 buttons appear: answer
+right/wrong and autoplay at a human pace. The real site can never turn
+this on - the function checks it isn't running on the hosted project.
+If the 🧪 buttons don't show: is the email on the list, did the
+functions restart, is the pupil signed in with that exact email?
+
+### Updating the game functions
+`update-games.sh` copies `levelup-lab.ts`, `tables-lab.ts` and
+`dragons-lab.ts` into place and restarts; 401 from each function = good.
 
 ### AI keys and limits
 On the lab server: `ANTHROPIC_API_KEY` (Claude), optional

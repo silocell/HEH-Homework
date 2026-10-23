@@ -36,6 +36,20 @@ HEH-Launchpad-Lab checkout (`git archive lab <files> | tar -x`) and push its
   admin panel. Keys `hl.exp.*`.
 - `chaos.js` (lab): fault switch ("Break things"), including an SSH tunnel mode.
 - `levelup.html` (lab): Level Up, adaptive practice. See below.
+- `tables.html` (lab): Times Table Tycoon - 60s rounds, Numling cards, lab-only
+  trading (`tt_accept()` swaps atomically in the database).
+- `dragons.html` (lab): Word Dragons - English lessons grow dragons; battles by
+  email, only dragons ever shown. Shares `levelup_bank` for questions.
+- `history.html`: Battle Stories (Hastings 1066), client-only - facts checked by
+  hand, never AI-written; BBC clips embedded from the BBC's own YouTube.
+- `games.html`: all games in one place. The dashboard Games panel (always on in
+  the lab via experiments.js, `gamesHub()` in extras.js on main) links here.
+  Every game page has a big round ✕ back to the dashboard.
+- Groq models are never hard-coded: the functions ask Groq what the account has
+  (hourly) and pick a writer plus a different checker. Groq retires models.
+- Lab test mode: `LAB_TEST_EMAILS` on the lab server sends answers with
+  questions for listed testers (🧪 autoplay buttons). Impossible on the real
+  site: the functions refuse it off the self-hosted machine.
 - Server code (edge functions, SQL, install scripts) is NOT in this repo: it's kept closed source, on the server and Shiv's laptop only. Never commit it here.
 
 ## Level Up (lab, not on main yet)
