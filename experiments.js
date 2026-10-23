@@ -39,7 +39,11 @@
     { key:"konami", name:"Secret code",
       says:"Type up up down down left right left right B A on the dashboard and see what happens." },
     { key:"cards", name:"Flashcards",
-      says:"Make your own revision cards, flip them, shuffle them. Kept on this device." }
+      says:"Make your own revision cards, flip them, shuffle them. Kept on this device." },
+    { key:"eggs", name:"Search easter eggs",
+      says:"Try typing these into the dashboard search: do a barrel roll, askew, flip a coin, roll a die, recursion, snake, brick breaker, whack a mole." },
+    { key:"doodle", name:"Doodle of the day",
+      says:"Like a Google doodle: a little game on the dashboard that changes every day - Snake, Brick Breaker or Whack-a-mole. Nothing to do with homework, on purpose." }
   ];
   window.LAB_EXPERIMENTS = CAT;
 
@@ -566,6 +570,235 @@
     paint();
   }
 
+
+  /* ====================================================================
+     Doodles and easter eggs. Three small 2d games in one overlay, plus
+     Google-style search eggs. Nothing here touches the server: scores
+     are kept on this device only.
+     ==================================================================== */
+  var GAMES = {
+    snake:     { name:"Snake",       how:"Arrow keys or WASD - or swipe. Eat the apples, don't eat yourself." },
+    breakout:  { name:"Brick Breaker",    how:"Move with the arrow keys, the mouse, or your finger. Clear every brick." },
+    mole:      { name:"Whack-a-mole",how:"Click or tap the moles before they hide. 30 seconds." }
+  };
+  var overlay = null;
+
+  function openGame(which){
+    if (overlay) overlay.close();
+    var g = GAMES[which]; if (!g) return;
+    var wrap = el("div", "exp-game"); wrap.setAttribute("role", "dialog"); wrap.setAttribute("aria-label", g.name);
+    var box = el("div", "exp-game-box");
+    var head = el("div", "exp-game-head");
+    var title = el("b", null, g.name), score = el("span", "exp-game-score", "Score 0");
+    var close = el("button", "ghost-btn", "Close"); close.type = "button";
+    head.appendChild(title); head.appendChild(score); head.appendChild(close);
+    var cv = el("canvas", "exp-game-cv"); cv.width = 400; cv.height = 400; cv.tabIndex = 0;
+    var foot = el("p", "exp-note", g.how);
+    box.appendChild(head); box.appendChild(cv); box.appendChild(foot);
+    wrap.appendChild(box); document.body.appendChild(wrap);
+    var ctx2 = cv.getContext("2d");
+    var bestKey = "hl.exp.best." + which, best = read(bestKey, 0);
+    var stopFn = null, alive = true;
+    function setScore(n){ score.textContent = "Score " + n + (best ? " - best " + best : ""); }
+    function finish(n, line){
+      if (n > best){ best = n; store(bestKey, n); line = "New best! " + line; }
+      setScore(n); foot.textContent = line + " Press Space or tap the board to play again.";
+    }
+    function onEsc(e){ if (e.key === "Escape") api.close(); }
+    document.addEventListener("keydown", onEsc);
+    var api = overlay = {
+      close: function(){
+        alive = false; if (stopFn) stopFn();
+        document.removeEventListener("keydown", onEsc);
+        wrap.remove(); overlay = null;
+      }
+    };
+    close.addEventListener("click", api.close);
+    wrap.addEventListener("click", function(e){ if (e.target === wrap) api.close(); });
+    function colour(name){ return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || "#888"; }
+    function start(){
+      if (!alive) return;
+      if (stopFn) stopFn();
+      foot.textContent = g.how; setScore(0);
+      stopFn = (which === "snake" ? snake : which === "breakout" ? breakout : mole)(cv, ctx2, setScore, finish, colour);
+    }
+    cv.addEventListener("keydown", function(e){ if (e.key === " " && foot.textContent.indexOf("play again") > 0){ e.preventDefault(); start(); } });
+    cv.addEventListener("click", function(){ if (foot.textContent.indexOf("play again") > 0) start(); });
+    setTimeout(function(){ cv.focus(); start(); }, 30);
+  }
+
+  /* Swipes for phones, shared by Snake and Breakout. */
+  function swipes(cv, cb){
+    var sx = 0, sy = 0;
+    function s(e){ var t = e.touches[0]; sx = t.clientX; sy = t.clientY; }
+    function m(e){ e.preventDefault(); cb(e.touches[0].clientX, e.touches[0].clientY, sx, sy); }
+    cv.addEventListener("touchstart", s, { passive:true });
+    cv.addEventListener("touchmove", m, { passive:false });
+    return function(){ cv.removeEventListener("touchstart", s); cv.removeEventListener("touchmove", m); };
+  }
+
+  function snake(cv, g, setScore, finish, colour){
+    var N = 20, S = cv.width / N, body = [{x:9,y:10},{x:8,y:10},{x:7,y:10}], dir = {x:1,y:0}, want = dir;
+    var apple = drop(), score = 0, timer = null;
+    function drop(){ var a; do { a = { x:Math.floor(Math.random()*N), y:Math.floor(Math.random()*N) }; }
+      while (body.some(function(b){ return b.x === a.x && b.y === a.y; })); return a; }
+    function turn(x, y){ if (x !== -dir.x || y !== -dir.y) want = { x:x, y:y }; }
+    function key(e){
+      var k = e.key.toLowerCase(), m = { arrowup:[0,-1], w:[0,-1], arrowdown:[0,1], s:[0,1], arrowleft:[-1,0], a:[-1,0], arrowright:[1,0], d:[1,0] }[k];
+      if (m){ e.preventDefault(); turn(m[0], m[1]); }
+    }
+    cv.addEventListener("keydown", key);
+    var unswipe = swipes(cv, function(x, y, sx, sy){
+      var dx = x - sx, dy = y - sy;
+      if (Math.abs(dx) + Math.abs(dy) < 24) return;
+      if (Math.abs(dx) > Math.abs(dy)) turn(dx > 0 ? 1 : -1, 0); else turn(0, dy > 0 ? 1 : -1);
+    });
+    function draw(){
+      g.fillStyle = colour("--paper"); g.fillRect(0, 0, cv.width, cv.height);
+      g.fillStyle = "#e03131"; g.beginPath(); g.arc(apple.x*S + S/2, apple.y*S + S/2, S*0.4, 0, Math.PI*2); g.fill();
+      body.forEach(function(b, i){ g.fillStyle = i ? "#2f9e44" : "#1b7a31"; g.fillRect(b.x*S + 1, b.y*S + 1, S - 2, S - 2); });
+    }
+    function step(){
+      dir = want;
+      var h = { x: body[0].x + dir.x, y: body[0].y + dir.y };
+      if (h.x < 0 || h.y < 0 || h.x >= N || h.y >= N || body.some(function(b){ return b.x === h.x && b.y === h.y; })){
+        clearInterval(timer); timer = null; draw(); finish(score, "Game over - " + score + (score === 1 ? " apple." : " apples.")); return;
+      }
+      body.unshift(h);
+      if (h.x === apple.x && h.y === apple.y){ score++; setScore(score); apple = drop(); } else body.pop();
+      draw();
+    }
+    draw(); timer = setInterval(step, 120);
+    return function(){ if (timer) clearInterval(timer); cv.removeEventListener("keydown", key); unswipe(); };
+  }
+
+  function breakout(cv, g, setScore, finish, colour){
+    var W = cv.width, H = cv.height, padW = 70, px = W/2 - padW/2, ball = { x:W/2, y:H-60, vx:3, vy:-3.4 };
+    var rows = 5, cols = 8, bw = W/cols, bh = 18, bricks = [], score = 0, keys = {}, raf = 0, lives = 3;
+    for (var r = 0; r < rows; r++) for (var c = 0; c < cols; c++) bricks.push({ x:c*bw, y:40 + r*bh, on:true, r:r });
+    var hues = ["#e03131","#f08c00","#f2c200","#2f9e44","#1c7ed6"];
+    function kd(e){ keys[e.key] = true; if (/Arrow/.test(e.key)) e.preventDefault(); }
+    function ku(e){ keys[e.key] = false; }
+    function mm(e){ var r = cv.getBoundingClientRect(); px = (e.clientX - r.left) * W / r.width - padW/2; }
+    cv.addEventListener("keydown", kd); cv.addEventListener("keyup", ku); cv.addEventListener("mousemove", mm);
+    var unswipe = swipes(cv, function(x){ var r = cv.getBoundingClientRect(); px = (x - r.left) * W / r.width - padW/2; });
+    function frame(){
+      if (keys.ArrowLeft || keys.a) px -= 6; if (keys.ArrowRight || keys.d) px += 6;
+      px = Math.max(0, Math.min(W - padW, px));
+      ball.x += ball.vx; ball.y += ball.vy;
+      if (ball.x < 6 || ball.x > W - 6) ball.vx *= -1;
+      if (ball.y < 6) ball.vy *= -1;
+      if (ball.y > H - 30 && ball.y < H - 18 && ball.x > px && ball.x < px + padW && ball.vy > 0){
+        ball.vy *= -1; ball.vx = ((ball.x - (px + padW/2)) / (padW/2)) * 4.2;
+      }
+      bricks.forEach(function(b){
+        if (b.on && ball.x > b.x && ball.x < b.x + bw && ball.y > b.y && ball.y < b.y + bh){
+          b.on = false; ball.vy *= -1; score += 5 - b.r; setScore(score);
+        }
+      });
+      if (ball.y > H){
+        if (--lives <= 0){ draw(); finish(score, "Out of balls - " + score + " points."); return; }
+        ball = { x:W/2, y:H-60, vx:3, vy:-3.4 };
+      }
+      if (!bricks.some(function(b){ return b.on; })){ draw(); finish(score, "Cleared it! " + score + " points."); return; }
+      draw(); raf = requestAnimationFrame(frame);
+    }
+    function draw(){
+      g.fillStyle = colour("--paper"); g.fillRect(0, 0, W, H);
+      bricks.forEach(function(b){ if (b.on){ g.fillStyle = hues[b.r]; g.fillRect(b.x + 2, b.y + 2, bw - 4, bh - 4); } });
+      g.fillStyle = colour("--ink"); g.fillRect(px, H - 24, padW, 8);
+      g.beginPath(); g.arc(ball.x, ball.y, 6, 0, Math.PI*2); g.fill();
+      g.font = "12px sans-serif"; g.fillText("Balls: " + lives, 8, 20);
+    }
+    raf = requestAnimationFrame(frame);
+    return function(){ cancelAnimationFrame(raf); cv.removeEventListener("keydown", kd); cv.removeEventListener("keyup", ku); cv.removeEventListener("mousemove", mm); unswipe(); };
+  }
+
+  function mole(cv, g, setScore, finish, colour){
+    var W = cv.width, holes = [], score = 0, ends = performance.now() + 30000, raf = 0, nextPop = 0;
+    for (var r = 0; r < 3; r++) for (var c = 0; c < 3; c++) holes.push({ x:70 + c*130, y:90 + r*120, up:0, hit:0 });
+    function click(e){
+      var rc = cv.getBoundingClientRect(), x = (e.clientX - rc.left) * W / rc.width, y = (e.clientY - rc.top) * W / rc.height;
+      var now = performance.now();
+      holes.forEach(function(h){
+        if (h.up > now && !h.hit && Math.hypot(x - h.x, y - (h.y - 18)) < 38){ h.hit = now; h.up = now + 250; score++; setScore(score); }
+      });
+    }
+    cv.addEventListener("pointerdown", click);
+    function frame(now){
+      if (now > ends){ draw(now); finish(score, "Time! " + score + " moles whacked."); return; }
+      if (now > nextPop){
+        var free = holes.filter(function(h){ return h.up < now; });
+        if (free.length){ var h = free[Math.floor(Math.random()*free.length)]; h.up = now + 700 + Math.random()*600; h.hit = 0; }
+        nextPop = now + 380 + Math.random()*420 - Math.min(250, score*6);
+      }
+      draw(now); raf = requestAnimationFrame(frame);
+    }
+    function draw(now){
+      g.fillStyle = "#8fd46a"; g.fillRect(0, 0, W, W);
+      g.fillStyle = "#1b2430"; g.font = "bold 14px sans-serif";
+      g.fillText("Time " + Math.max(0, Math.ceil((ends - now)/1000)) + "s", 10, 22);
+      holes.forEach(function(h){
+        g.fillStyle = "#5b3a1e"; g.beginPath(); g.ellipse(h.x, h.y + 10, 46, 16, 0, 0, Math.PI*2); g.fill();
+        if (h.up > now){
+          g.fillStyle = h.hit ? "#c9a27e" : "#8a5a3b";
+          g.beginPath(); g.arc(h.x, h.y - 14, 30, Math.PI, 0); g.rect(h.x - 30, h.y - 14, 60, 22); g.fill();
+          g.fillStyle = "#1b2430"; g.fillRect(h.x - 12, h.y - 22, 5, 5); g.fillRect(h.x + 7, h.y - 22, 5, 5);
+          g.fillStyle = "#f783ac"; g.beginPath(); g.arc(h.x, h.y - 10, 5, 0, Math.PI*2); g.fill();
+          if (h.hit){ g.fillStyle = "#1b2430"; g.font = "bold 18px sans-serif"; g.fillText("BONK", h.x - 24, h.y - 52); g.font = "bold 14px sans-serif"; }
+        }
+      });
+    }
+    raf = requestAnimationFrame(frame);
+    return function(){ cancelAnimationFrame(raf); cv.removeEventListener("pointerdown", click); };
+  }
+
+  /* ---------- Doodle of the day ---------- */
+  function doodle(){
+    var cols = document.querySelector(".columns");
+    if (!cols) return;
+    var keys = ["snake", "breakout", "mole"];
+    var d = new Date(), n = Math.floor((d.getTime() - d.getTimezoneOffset()*60000) / 86400000);
+    var which = keys[n % keys.length], g = GAMES[which];
+    var bar = el("button", "exp-doodle"); bar.type = "button";
+    bar.innerHTML = '<span class="exp-doodle-k">Today’s doodle</span><b></b><span class="exp-doodle-go">Play</span>';
+    bar.querySelector("b").textContent = g.name;
+    bar.addEventListener("click", function(){ openGame(which); });
+    cols.parentNode.insertBefore(bar, cols);
+  }
+
+  /* ---------- Search easter eggs ---------- */
+  function eggs(){
+    var form = document.getElementById("searchForm"), box = document.getElementById("searchInput");
+    if (!form || !box) return;
+    function toast(text){
+      var t = el("div", "exp-found", text); document.body.appendChild(t);
+      setTimeout(function(){ t.remove(); }, 2600);
+    }
+    form.addEventListener("submit", function(e){
+      var q = box.value.trim().toLowerCase().replace(/[?!.]+$/, "").replace(/\s+/g, " ");
+      var hit = true;
+      if (q === "do a barrel roll" || q === "z or r twice"){
+        if (calmer) toast("Barrel roll! (Skipped - your device asked for less motion.)");
+        else { document.body.classList.remove("exp-roll"); void document.body.offsetWidth; document.body.classList.add("exp-roll"); }
+      } else if (q === "askew" || q === "tilt"){
+        document.body.classList.toggle("exp-askew");
+      } else if (q === "flip a coin" || q === "coin flip"){
+        toast(Math.random() < 0.5 ? "Heads" : "Tails");
+      } else if (q === "roll a die" || q === "roll a dice" || q === "roll dice"){
+        toast("You rolled a " + (1 + Math.floor(Math.random()*6)));
+      } else if (q === "recursion"){
+        toast("Did you mean: recursion");
+      } else if (q === "the answer to life the universe and everything" || q === "answer to life the universe and everything"){
+        toast("42");
+      } else if (q === "snake" || q === "play snake"){ openGame("snake");
+      } else if (q === "brick breaker" || q === "breakout"){ openGame("breakout");
+      } else if (q === "whack a mole" || q === "whack-a-mole"){ openGame("mole");
+      } else hit = false;
+      if (hit){ e.preventDefault(); e.stopImmediatePropagation(); box.value = ""; }
+    }, true);
+  }
+
   /* ---------- styles ---------- */
   var css = el("style");
   css.textContent =
@@ -608,7 +841,23 @@
     ".exp-card.exp-flipped{background:rgba(124,58,237,.08);border-color:#7c3aed}" +
     ".exp-cardform{display:grid;grid-template-columns:1fr 1fr auto;gap:6px;margin-top:12px}" +
     ".exp-cardform input{font:inherit;font-size:.85rem;padding:8px 10px;border:1px solid var(--rule);border-radius:8px;background:var(--paper);color:var(--ink);min-width:0}" +
-    "@media (max-width:560px){.exp-cardform{grid-template-columns:1fr}}";
+    "@media (max-width:560px){.exp-cardform{grid-template-columns:1fr}}" +
+    ".exp-game{position:fixed;inset:0;z-index:9990;background:rgba(10,12,20,.6);display:grid;place-items:center;padding:16px}" +
+    ".exp-game-box{background:var(--card,#fff);color:var(--ink);border-radius:16px;padding:14px;width:min(440px,100%);" +
+    "box-shadow:0 30px 70px -20px rgba(0,0,0,.7)}" +
+    ".exp-game-head{display:flex;align-items:center;gap:10px;margin-bottom:10px}" +
+    ".exp-game-head b{font-size:1.1rem}.exp-game-score{margin-left:auto;font-size:.82rem;color:var(--ink-soft)}" +
+    ".exp-game-cv{display:block;width:100%;height:auto;aspect-ratio:1;border-radius:10px;border:1px solid var(--rule);touch-action:none;outline:none}" +
+    ".exp-game-cv:focus-visible{outline:2px solid #7c3aed}" +
+    ".exp-doodle{display:flex;align-items:center;gap:12px;width:100%;margin:0 0 18px;padding:12px 16px;border:0;cursor:pointer;" +
+    "border-radius:14px;font:inherit;color:#fff;text-align:left;" +
+    "background:linear-gradient(100deg,#f08c00,#e8590c 40%,#c2255c);box-shadow:0 8px 24px -12px rgba(232,89,12,.8)}" +
+    ".exp-doodle-k{font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;opacity:.85}" +
+    ".exp-doodle b{font-size:1.15rem}" +
+    ".exp-doodle-go{margin-left:auto;background:#fff;color:#c2255c;border-radius:999px;padding:6px 16px;font-weight:800}" +
+    "body.exp-roll{animation:exproll 1.4s ease-in-out}" +
+    "@keyframes exproll{to{transform:rotate(360deg)}}" +
+    "body.exp-askew{transform:rotate(2deg);transform-origin:center top}";
   document.head.appendChild(css);
 
   /* ---------- switch on whatever is on ---------- */
@@ -622,6 +871,8 @@
     if (on.roulette) roulette();
     if (on.season) season();
     if (on.konami) konami();
+    if (on.doodle) doodle();
+    if (on.eggs) eggs();
     if (on.streak || on.cheer || on.plant) watchTicks(on);
     if (on.streak) paintStreak();
   }
