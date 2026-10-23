@@ -14,6 +14,16 @@
    An idea that graduates is moved into the real site's own code
    properly - not by loading this file there.
    ==================================================================== */
+/* Remember the last few errors on this page, for "Ask Claude" on the
+   admin page. Error text and where it happened only. */
+(function(){
+  if (!/^\/HEH-(Homework|Launchpad)-Lab(\/|$)/i.test(location.pathname)) return;
+  var errs = window.__labErrs = [];
+  function keep(t){ errs.push(new Date().toTimeString().slice(0, 8) + " " + String(t).slice(0, 300)); if (errs.length > 30) errs.shift(); }
+  window.addEventListener("error", function(e){ keep((e.message || "error") + (e.filename ? " @ " + e.filename.split("/").pop() + ":" + e.lineno : "")); });
+  window.addEventListener("unhandledrejection", function(e){ keep("promise: " + (e.reason && e.reason.message || e.reason)); });
+})();
+
 (function(){
   if (!document.documentElement.classList.contains("lab")) return;
 
@@ -42,6 +52,8 @@
       says:"Make your own revision cards, flip them, shuffle them. Kept on this device." },
     { key:"eggs", name:"Search easter eggs",
       says:"Try typing these into the dashboard search: do a barrel roll, askew, flip a coin, roll a die, recursion, snake, brick breaker, whack a mole." },
+    { key:"levelup", name:"Level Up",
+      says:"A card on the dashboard that opens Level Up: practice that learns you, with daily tasks, XP and a shop. Claude Haiku writes the questions, Groq checks them. Needs the levelup function on the lab server." },
     { key:"doodle", name:"Doodle of the day",
       says:"Like a Google doodle: a little game on the dashboard that changes every day - Snake, Brick Breaker or Whack-a-mole. Nothing to do with homework, on purpose." }
   ];
@@ -93,6 +105,59 @@
       "border:1px solid var(--rule);border-radius:8px;background:var(--paper);color:var(--ink)}";
     document.head.appendChild(css);
     load();
+    askClaude(main, sec);
+  }
+
+  /* ---------- Ask Claude ----------
+     Describe what's wrong; the server adds a snapshot of the lab (counts
+     and switches only - never what pupils wrote) and asks Claude through
+     the API key on the server. It is a fresh Claude each time: it can
+     explain and suggest, not change code. Browser errors seen on this
+     page are sent along too, because they're usually the clue. */
+  function askClaude(main, after){
+    var sec = document.createElement("div"); sec.className = "sec"; sec.id = "askSec";
+    sec.innerHTML =
+      '<p class="sec-h">Ask Claude</p>' +
+      '<p class="amsg" id="askMsg">Say what\u2019s wrong in your own words. Claude gets that plus a snapshot of the lab ' +
+      '(numbers and switches \u2014 never pupils\u2019 messages) and suggests what to check. Up to 25 a day.</p>' +
+      '<textarea id="askQ" rows="4" placeholder="e.g. Level Up says \u2018Couldn\u2019t get a question\u2019 every time"></textarea>' +
+      '<div class="ask-row"><label><input type="checkbox" id="askErrs" checked> Include errors from this browser</label>' +
+      '<button class="btn" id="askGo" type="button">Ask Claude</button></div>' +
+      '<div id="askOut"></div><details id="askOld"><summary>Earlier answers</summary><div id="askLog"></div></details>';
+    after.parentNode.insertBefore(sec, after);
+    var css = document.createElement("style");
+    css.textContent =
+      "#askQ{width:100%;font:inherit;padding:10px;border:1px solid var(--rule);border-radius:10px;background:var(--paper);color:var(--ink);resize:vertical}" +
+      ".ask-row{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:8px 0;flex-wrap:wrap;font-size:.86rem}" +
+      ".ask-ans{white-space:pre-wrap;padding:14px;border:1px solid var(--rule);border-radius:10px;margin-top:8px;line-height:1.5}" +
+      "#askOld{margin-top:10px}#askOld summary{cursor:pointer;color:var(--ink-soft)}" +
+      ".ask-q{font-weight:600;margin-top:12px}.ask-when{font-size:.75rem;color:var(--ink-soft)}";
+    document.head.appendChild(css);
+    var go = sec.querySelector("#askGo"), q = sec.querySelector("#askQ"), out = sec.querySelector("#askOut"), m = sec.querySelector("#askMsg");
+    go.addEventListener("click", function(){
+      var text = q.value.trim();
+      if (text.length < 5){ m.textContent = "Say what's wrong first."; return; }
+      go.disabled = true; go.textContent = "Asking\u2026"; out.textContent = "";
+      var ctx = sec.querySelector("#askErrs").checked ? (window.__labErrs || []).slice(-15).join("\n") : "";
+      window.call({ action:"askclaude", question:text, context:ctx }).then(function(d){
+        var a = document.createElement("div"); a.className = "ask-ans"; a.textContent = d.answer || "(no answer)";
+        out.appendChild(a); m.textContent = "Claude\u2019s answer is below. It can\u2019t see the code - if it needs changing, bring this back to the chat.";
+        loadLog();
+      }).catch(function(e){ m.textContent = e.message; }).then(function(){ go.disabled = false; go.textContent = "Ask Claude"; });
+    });
+    function loadLog(){
+      window.call({ action:"askclaudelog" }).then(function(d){
+        var box = sec.querySelector("#askLog"); box.textContent = "";
+        (d.log || []).forEach(function(r){
+          var w = document.createElement("div");
+          var t = document.createElement("div"); t.className = "ask-when"; t.textContent = new Date(r.at).toLocaleString("en-GB");
+          var qq = document.createElement("div"); qq.className = "ask-q"; qq.textContent = r.question;
+          var aa = document.createElement("div"); aa.className = "ask-ans"; aa.textContent = r.answer || "";
+          w.appendChild(t); w.appendChild(qq); w.appendChild(aa); box.appendChild(w);
+        });
+      }).catch(function(){});
+    }
+    loadLog();
   }
 
   function msg(t, bad){
@@ -799,6 +864,19 @@
     }, true);
   }
 
+  /* Level Up lives on its own page (levelup.html); this is the door. */
+  function levelUpCard(){
+    var col = document.querySelector("#todoList") && document.querySelector("#todoList").closest(".col");
+    var left = col && col.parentNode.querySelector(".col");
+    if (!left || document.getElementById("expLevelUp")) return;
+    var a = document.createElement("a");
+    a.id = "expLevelUp"; a.href = "levelup.html"; a.className = "panel exp-panel exp-lu-door";
+    a.innerHTML = '<span class="exp-lu-rocket">\ud83d\ude80</span><span><b>Level Up</b>' +
+                  '<small>Today\u2019s tasks are waiting \u2014 earn points, spend them in the shop</small></span><span class="exp-lu-go">\u203a</span>';
+    tag(a);
+    left.insertBefore(a, left.firstChild);
+  }
+
   /* ---------- styles ---------- */
   var css = el("style");
   css.textContent =
@@ -857,7 +935,8 @@
     ".exp-doodle-go{margin-left:auto;background:#fff;color:#c2255c;border-radius:999px;padding:6px 16px;font-weight:800}" +
     "body.exp-roll{animation:exproll 1.4s ease-in-out}" +
     "@keyframes exproll{to{transform:rotate(360deg)}}" +
-    "body.exp-askew{transform:rotate(2deg);transform-origin:center top}";
+    "body.exp-askew{transform:rotate(2deg);transform-origin:center top}" +
+    ".exp-lu-door{display:flex;align-items:center;gap:14px;text-decoration:none;color:#fff;border:0;background:linear-gradient(120deg,#4f46e5,#06b6d4)}.exp-lu-door small{display:block;opacity:.9;font-weight:400}.exp-lu-door b{font-size:1.1rem}.exp-lu-rocket{font-size:2rem}.exp-lu-go{margin-left:auto;font-size:1.6rem}.exp-lu-door:hover{filter:brightness(1.07)}";
   document.head.appendChild(css);
 
   /* ---------- switch on whatever is on ---------- */
@@ -871,6 +950,7 @@
     if (on.roulette) roulette();
     if (on.season) season();
     if (on.konami) konami();
+    if (on.levelup) levelUpCard();
     if (on.doodle) doodle();
     if (on.eggs) eggs();
     if (on.streak || on.cheer || on.plant) watchTicks(on);
