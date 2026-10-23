@@ -119,7 +119,7 @@
     sec.innerHTML =
       '<p class="sec-h">Ask Claude</p>' +
       '<p class="amsg" id="askMsg">Say what\u2019s wrong in your own words. Claude gets that plus a snapshot of the lab ' +
-      '(numbers and switches \u2014 never pupils\u2019 messages) and suggests what to check. Up to 25 a day.</p>' +
+      '(numbers and switches \u2014 never pupils\u2019 messages) and suggests what to check. Up to 10 a day.</p>' +
       '<textarea id="askQ" rows="4" placeholder="e.g. Level Up says \u2018Couldn\u2019t get a question\u2019 every time"></textarea>' +
       '<div class="ask-row"><label><input type="checkbox" id="askErrs" checked> Include errors from this browser</label>' +
       '<button class="btn" id="askGo" type="button">Ask Claude</button></div>' +
