@@ -676,6 +676,13 @@
   var css = el("style");
   css.textContent =
     ".exp-panel{position:relative}" +
+    ".x-ggrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px}" +
+    ".x-gtile{display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--rule);border-radius:12px;background:transparent;" +
+    "color:var(--ink);text-decoration:none;text-align:left;font:inherit;cursor:pointer;transition:transform .15s,border-color .15s}" +
+    ".x-gtile:hover:not(:disabled){border-color:var(--accent);transform:translateY(-1px)}" +
+    ".x-gtile b{display:block}.x-gtile small{display:block;color:var(--ink-soft);font-size:.78rem}" +
+    ".x-gicon{font-size:1.6rem;width:42px;height:42px;display:grid;place-items:center;border-radius:10px;background:var(--rule);flex:none}" +
+    ".x-gtile.soon{opacity:.6;cursor:default}.x-gtile.soon small{font-style:italic}" +
     ".exp-tag{position:absolute;top:12px;right:14px;font-size:.62rem;font-weight:700;letter-spacing:.08em;" +
     "text-transform:uppercase;color:#7c3aed;background:rgba(124,58,237,.12);padding:3px 8px;border-radius:999px}" +
     ".exp-clock{font-family:var(--font-mono,monospace);font-size:2.6rem;font-weight:600;letter-spacing:.02em;margin:4px 0 0}" +
@@ -734,10 +741,39 @@
     ".exp-lu-door{display:flex;align-items:center;gap:14px;text-decoration:none;color:#fff;border:0;background:linear-gradient(120deg,#4f46e5,#06b6d4)}.exp-lu-door small{display:block;opacity:.9;font-weight:400}.exp-lu-door b{font-size:1.1rem}.exp-lu-rocket{font-size:2rem}.exp-lu-go{margin-left:auto;font-size:1.6rem}.exp-lu-door:hover{filter:brightness(1.07)}";
   document.head.appendChild(css);
 
+
+  /* ---------- Games: fills the space under the left column ----------
+     Everything here is already safe on the real site. Games still on the
+     lab show as "coming soon" and become links when they graduate. */
+  function gamesHub(){
+    var col = document.querySelector("#todoList") && document.querySelector("#todoList").closest(".col");
+    var left = col && col.parentNode.querySelector(".col");
+    if (!left || document.getElementById("xGames")) return;
+    var p = el("div", "panel x-games"); p.id = "xGames";
+    p.appendChild(el("p", "panel-title", "Games"));
+    var grid = el("div", "x-ggrid");
+    function tile(icon, name, sub, go, soon){
+      var t = el(typeof go === "string" ? "a" : "button", "x-gtile" + (soon ? " soon" : ""));
+      if (typeof go === "string") { t.href = go; } else { t.type = "button"; if (go) t.addEventListener("click", go); else t.disabled = true; }
+      var i = el("span", "x-gicon", icon), w = el("span");
+      w.appendChild(el("b", null, name)); w.appendChild(el("small", null, sub));
+      t.appendChild(i); t.appendChild(w); grid.appendChild(t);
+    }
+    tile("🏎️", "Gate Run", "Steer through the right answer", "https://silocell.github.io/HEH-Launchpad-Game/");
+    tile("🐍", "Snake", "Eat the apples", function(){ openGame("snake"); });
+    tile("🧱", "Brick Breaker", "Clear every brick", function(){ openGame("breakout"); });
+    tile("🔨", "Whack-a-mole", "30 seconds", function(){ openGame("mole"); });
+    tile("✖️", "Times Table Tycoon", "Coming soon", null, true);
+    tile("🐉", "Word Dragons", "Coming soon", null, true);
+    tile("⚔️", "Battle Stories", "Coming soon", null, true);
+    p.appendChild(grid);
+    left.appendChild(p);
+  }
+
   function start(){
     if (started) return; started = true;
     var on = { sounds:1, warmup:1, plant:1, cards:1, season:1, konami:1, doodle:1, eggs:1, streak:1, cheer:1 };
-    sounds(); warmup(); plant(); flashcards(); season(); konami(); doodle(); eggs();
+    sounds(); warmup(); plant(); flashcards(); season(); konami(); doodle(); eggs(); gamesHub();
     watchTicks(on);
     paintStreak();
   }
