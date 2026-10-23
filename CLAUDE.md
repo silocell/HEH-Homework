@@ -36,7 +36,7 @@ HEH-Launchpad-Lab checkout (`git archive lab <files> | tar -x`) and push its
   admin panel. Keys `hl.exp.*`.
 - `chaos.js` (lab): fault switch ("Break things"), including an SSH tunnel mode.
 - `levelup.html` (lab): Level Up, adaptive practice. See below.
-- `lab-server/`: lab server SQL, the Level Up function and install scripts.
+- Server code (edge functions, SQL, install scripts) is NOT in this repo: it's kept closed source, on the server and Shiv's laptop only. Never commit it here.
 
 ## Level Up (lab, not on main yet)
 
@@ -45,7 +45,7 @@ weakest, Challenge = a level up), then Free practice. 25 topics across maths,
 English and science, each with its own level 1–5. Points/XP and a shop
 (titles, colour themes, badges) — no real money.
 
-- Edge function `levelup` (`lab-server/levelup-lab.ts`).
+- Edge function `levelup` (server code, not in this repo).
 - Claude Haiku (`claude-haiku-5-5`) writes questions in batches of 4.
 - Groq (`openai/gpt-oss-120b`) answers them blind; only questions both agree on are kept.
 - Groq writes "Explain it to me", which is saved on the question.
