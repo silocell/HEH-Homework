@@ -347,6 +347,17 @@ body.demo #wordSec button{
 
 /* Look-only account: everything visible, only Diagnostics alive. */
 body.demo #mainPanel .sec.off{ opacity:.42; pointer-events:none; user-select:none; filter:grayscale(.6) }
+#labFrameWrap:fullscreen{background:var(--paper);padding:0}
+#labFrameWrap:fullscreen #labFrame{height:100vh !important;border:0 !important;border-radius:0 !important}
+#labFrameWrap:-webkit-full-screen #labFrame{height:100vh !important;border:0 !important;border-radius:0 !important}
+.fs-exit{display:none}
+:fullscreen > .fs-exit, :-webkit-full-screen > .fs-exit{
+  display:block;position:absolute;top:12px;right:12px;z-index:20;
+  font:inherit;font-size:.8rem;font-weight:600;cursor:pointer;
+  padding:7px 14px;border-radius:999px;border:1px solid rgba(255,255,255,.35);
+  background:rgba(17,20,27,.78);color:#fff;backdrop-filter:blur(6px);
+}
+:fullscreen{position:relative}
 </style>
 <link rel="stylesheet" href="polish.css?b=20261021194235">
 
@@ -545,11 +556,12 @@ body.demo #mainPanel .sec.off{ opacity:.42; pointer-events:none; user-select:non
         <div class="arow" style="align-items:center">
           <button type="button" class="abtn quiet" id="labCheck">Check the lab</button>
           <button type="button" class="abtn" id="labOpen">Open the lab panel here</button>
+          <button type="button" class="abtn quiet" id="labFull" hidden>Full screen</button>
           <a class="abtn quiet" id="labSite" href="/HEH-Launchpad-Lab/" target="_blank" rel="noopener">Lab site</a>
         </div>
         <p class="amsg" id="labMsg"></p>
         <div id="labFrameWrap" hidden>
-          <iframe id="labFrame" title="Lab admin panel" style="width:100%;height:80vh;border:1px solid var(--rule);border-radius:10px;background:var(--paper)"></iframe>
+          <iframe id="labFrame" title="Lab admin panel" allowfullscreen style="width:100%;height:80vh;border:1px solid var(--rule);border-radius:10px;background:var(--paper)"></iframe>
         </div>
       </div>
 
@@ -1666,6 +1678,40 @@ function checkLab(){
 if(document.documentElement.classList.contains("lab")){
   var ls = document.getElementById("labSec"); if(ls) ls.remove();
 }else{
+/* Full screen for whatever is in the box - a revision site, a video, the
+   lab. The box goes full screen rather than the page, so the site fills
+   the screen and Esc (or the button) brings everything back. */
+function fsToggle(el, btn){
+  var d = document, on = d.fullscreenElement || d.webkitFullscreenElement;
+  if(on){ (d.exitFullscreen || d.webkitExitFullscreen).call(d); return; }
+  var go = el.requestFullscreen || el.webkitRequestFullscreen;
+  if(!go){ if(btn) btn.hidden = true; return; }   /* no full screen here (older iPhones) */
+  var p = go.call(el); if(p && p.catch) p.catch(function(){});
+}
+function fsWatch(el, btn, onLabel, offLabel){
+  function paint(){
+    var cur = document.fullscreenElement || document.webkitFullscreenElement;
+    btn.textContent = cur === el ? offLabel : onLabel;
+  }
+  document.addEventListener("fullscreenchange", paint);
+  document.addEventListener("webkitfullscreenchange", paint);
+  /* The button that started it is outside the box, so once the box
+     fills the screen it can't be seen - Esc was the only way out, which
+     is no way out on a touchscreen. A second one lives inside the box
+     and only shows while it is full screen. */
+  var out = document.createElement("button");
+  out.type = "button"; out.className = "fs-exit"; out.textContent = "Exit full screen";
+  out.addEventListener("click", function(){ fsToggle(el, btn); });
+  el.appendChild(out);
+  if(!(el.requestFullscreen || el.webkitRequestFullscreen)) btn.hidden = true;
+}
+
+(function(){
+  var wrap = document.getElementById("labFrameWrap"), btn = document.getElementById("labFull");
+  btn.addEventListener("click", function(){ fsToggle(wrap, btn); });
+  fsWatch(wrap, btn, "Full screen", "Exit full screen");
+  btn.hidden = true;   /* shown once the panel is open */
+})();
 document.getElementById("labCheck").addEventListener("click", checkLab);
 document.getElementById("labOpen").addEventListener("click", function(){
   var wrap = document.getElementById("labFrameWrap");
@@ -1673,6 +1719,7 @@ document.getElementById("labOpen").addEventListener("click", function(){
   var open = wrap.hidden;
   if(open && !frame.getAttribute("src")) frame.setAttribute("src", "/HEH-Launchpad-Lab/notes");
   wrap.hidden = !open;
+  document.getElementById("labFull").hidden = !open;
   this.textContent = open ? "Close the lab panel" : "Open the lab panel here";
   if(open) checkLab();
 });
