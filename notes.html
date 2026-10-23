@@ -2811,6 +2811,26 @@ function loadWatch(){
       });
 
       var acts = document.createElement("div"); acts.className = "wacts";
+
+      /* A live timeout for going too fast can be lifted early. The item's
+         name is timeout:<who>:<feature>:<when>, and the server checks
+         both again - this button is a shortcut, not the permission. */
+      var tm = /^timeout:([0-9a-f-]{36}):(explain|chat):/i.exec(it.key || "");
+      if(tm && / \(until midnight\)$/.test(it.why || "")){
+        var lift = document.createElement("button");
+        lift.type = "button";
+        lift.className = "abtn wtick";
+        lift.textContent = "Let back in";
+        lift.addEventListener("click", function(){
+          lift.disabled = true;
+          call({ action:"letback", userId: tm[1], fn: tm[2] }).then(function(){
+            return loadWatch();
+          }).then(function(){
+            say("watchMsg", "Let back in. Their strikes are cleared too, so the next hurried minute starts from one.", "ok");
+          }).catch(function(e){ lift.disabled = false; say("watchMsg", e.message, "err"); });
+        });
+        acts.appendChild(lift);
+      }
       acts.appendChild(tick);
 
       row.appendChild(body); row.appendChild(acts);
