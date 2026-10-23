@@ -58,6 +58,8 @@
       says:"A card on the dashboard that opens Times Table Tycoon: 60-second times-table rounds that learn your slow facts, Numlings to collect, a shop, and trading between players. Needs the tables function on the lab server." },
     { key:"dragons", name:"Word Dragons",
       says:"A card on the dashboard that opens Word Dragons: hatch and grow dragons by doing English, keep them healthy, and battle by email - players only ever see each other's dragon. Needs the dragons function on the lab server." },
+    { key:"games", name:"Games panel",
+      says:"The Games panel from the real site, under the left column - but here the lab games are real links: Times Table Tycoon, Word Dragons and Battle Stories (Hastings 1066, an animated re-enactment with questions)." },
     { key:"doodle", name:"Doodle of the day",
       says:"Like a Google doodle: a little game on the dashboard that changes every day - Snake, Brick Breaker or Whack-a-mole. Nothing to do with homework, on purpose." }
   ];
@@ -905,10 +907,33 @@
     left.insertBefore(a, left.firstChild);
   }
 
+  function gamesPanel(){
+    var col = document.querySelector("#todoList") && document.querySelector("#todoList").closest(".col");
+    var left = col && col.parentNode.querySelector(".col");
+    if (!left || document.getElementById("expGames")) return;
+    var p = el("div", "panel exp-panel"); p.id = "expGames"; tag(p);
+    p.appendChild(el("p", "panel-title", "Games"));
+    var grid = el("div", "x-ggrid");
+    [["\ud83c\udfce\ufe0f", "Gate Run", "Steer through the right answer", "https://silocell.github.io/HEH-Launchpad-Game/"],
+     ["\u2716\ufe0f", "Times Table Tycoon", "60 seconds - collect Numlings", "tables.html"],
+     ["\ud83d\udc09", "Word Dragons", "Grow dragons with English", "dragons.html"],
+     ["\u2694\ufe0f", "Battle Stories", "Hastings, 1066", "history.html"],
+     ["\ud83d\ude80", "Level Up", "Practice that learns you", "levelup.html"]].forEach(function(x){
+      var a = el("a", "x-gtile"); a.href = x[3];
+      a.appendChild(el("span", "x-gicon", x[0])); var w = el("span"); w.appendChild(el("b", null, x[1])); w.appendChild(el("small", null, x[2])); a.appendChild(w);
+      grid.appendChild(a);
+    });
+    p.appendChild(grid); left.appendChild(p);
+  }
+
   /* ---------- styles ---------- */
   var css = el("style");
   css.textContent =
     ".exp-panel{position:relative}" +
+    ".x-ggrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px}" +
+    ".x-gtile{display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--rule);border-radius:12px;color:var(--ink);text-decoration:none}" +
+    ".x-gtile:hover{border-color:var(--accent)}.x-gtile b{display:block}.x-gtile small{display:block;color:var(--ink-soft);font-size:.78rem}" +
+    ".x-gicon{font-size:1.6rem;width:42px;height:42px;display:grid;place-items:center;border-radius:10px;background:var(--rule);flex:none}" +
     ".exp-tag{position:absolute;top:12px;right:14px;font-size:.62rem;font-weight:700;letter-spacing:.08em;" +
     "text-transform:uppercase;color:#7c3aed;background:rgba(124,58,237,.12);padding:3px 8px;border-radius:999px}" +
     ".exp-clock{font-family:var(--font-mono,monospace);font-size:2.6rem;font-weight:600;letter-spacing:.02em;margin:4px 0 0}" +
@@ -981,6 +1006,7 @@
     if (on.levelup) levelUpCard();
     if (on.tycoon) tycoonCard();
     if (on.dragons) dragonsCard();
+    if (on.games) gamesPanel();
     if (on.doodle) doodle();
     if (on.eggs) eggs();
     if (on.streak || on.cheer || on.plant) watchTicks(on);
