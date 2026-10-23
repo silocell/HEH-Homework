@@ -358,8 +358,22 @@ body.demo #mainPanel .sec.off{ opacity:.42; pointer-events:none; user-select:non
   background:rgba(17,20,27,.78);color:#fff;backdrop-filter:blur(6px);
 }
 :fullscreen{position:relative}
+
+/* The lab copy announces itself - only when served from the lab address. */
+.labbar{display:none;position:fixed;left:0;right:0;top:0;z-index:50;text-align:center;
+  background:#7c3aed;color:#fff;font-size:.74rem;font-weight:700;letter-spacing:.06em;
+  padding:5px 12px;text-transform:uppercase}
+.labbar a{color:#fff;font-weight:600;text-transform:none;letter-spacing:0;margin-left:10px;opacity:.9}
+html.lab .labbar{display:block}
+html.lab .shell{padding-top:26px}
 </style>
 <link rel="stylesheet" href="polish.css?b=20261021194235">
+
+<div class="labbar" aria-label="Lab copy">Lab — things here are being tried out and may break
+  <a href="https://silocell.github.io/HEH-Homework/notes">go to the real admin panel</a></div>
+<script>
+  if (/^\/HEH-Homework-Lab(\/|$)/i.test(location.pathname)) document.documentElement.classList.add("lab");
+</script>
 
 <div class="shell">
 
