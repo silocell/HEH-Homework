@@ -388,7 +388,7 @@ function start(){
   main.appendChild(stage); setupCanvas(c);
   var ctr = h("div", "controls");
   var replay = h("button", "ghost", "↺ Replay scene"); replay.onclick = function(){ qbox.hidden = true; playScene(idx); };
-  var skip = h("button", "ghost", "Skip to question"); skip.onclick = function(){ if (playing) { playing = false; cancelAnimationFrame(raf); sceneStart = performance.now() - SCENES[idx].dur * 1000; requestAnimationFrame(frame); } };
+  var skip = h("button", "ghost", "Skip to question"); skip.onclick = function(){ if (playing) { try { speechSynthesis.cancel(); } catch (e) {} playing = false; cancelAnimationFrame(raf); sceneStart = performance.now() - SCENES[idx].dur * 1000; requestAnimationFrame(frame); } };
   var voice = h("button", "ghost", "🔈 Read aloud: off"); voice.onclick = function(){ voiceOn = !voiceOn; voice.textContent = voiceOn ? "🔊 Read aloud: on" : "🔈 Read aloud: off"; if (voiceOn) say(SCENES[idx].text); else try { speechSynthesis.cancel(); } catch (e) {} };
   prog = h("div", "progress"); SCENES.forEach(function(){ prog.appendChild(h("i")); });
   ctr.appendChild(replay); ctr.appendChild(skip); ctr.appendChild(voice); ctr.appendChild(prog);
@@ -403,7 +403,8 @@ function drawScene(){
   [].forEach.call(prog.children, function(el, i){ el.className = done[i] === true ? "ok" : done[i] === false ? "no" : i === idx ? "now" : ""; });
 }
 function showQuestion(){
-  var sc = SCENES[idx]; if (done[idx] !== undefined) return;
+  var sc = SCENES[idx];
+  if (done[idx] !== undefined) { qbox.hidden = false; return; }   /* replaying an answered scene used to hide its question for ever */
   qbox.hidden = false; qbox.textContent = "";
   qbox.appendChild(h("div", "kicker", "Question " + (idx + 1)));
   qbox.appendChild(h("div", "qtext", sc.q));

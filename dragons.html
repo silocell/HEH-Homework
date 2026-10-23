@@ -209,12 +209,17 @@ function drawNest(){
 }
 
 function lesson(d){
+  autoLesson = false;
   var v = h("div", "veil"), s = h("div", "sheet"); v.appendChild(s); document.body.appendChild(v);
+  var quit = h("button", "ghost", "✕ Stop here"); quit.type = "button";
+  quit.style.cssText = "position:absolute;top:10px;right:10px";
+  quit.onclick = function(){ autoLesson = false; v.remove(); load(); };
+  v.style.position = "fixed"; s.style.position = "relative"; s.appendChild(quit);
   s.appendChild(h("p", "muted", "Getting " + d.name + "'s lesson…"));
   api({ action:"lesson", dragon:d.id }).then(function(L){
     var i = 0, right = 0;
     function show(){
-      s.textContent = "";
+      s.textContent = ""; s.appendChild(quit);
       var top = h("div", "lbl"); top.appendChild(h("span", null, d.name + " · " + SKILL[d.element])); top.appendChild(h("span", null, (i + 1) + " / " + L.questions.length)); s.appendChild(top);
       var q = L.questions[i]; s.appendChild(h("div", "qtext", q.q));
       var opts = h("div", "opts"), bs = [];
@@ -234,7 +239,7 @@ function lesson(d){
             nx.onclick = function(){ i++; if (i < L.questions.length) show(); else done(); };
             s.appendChild(nx); nx.focus();
             if (autoLesson) setTimeout(function(){ if (document.body.contains(nx)) nx.click(); }, 1000);
-          }).catch(function(e){ toast(e.message); bs.forEach(function(x){ x.disabled = false; }); });
+          }).catch(function(e){ autoLesson = false; toast(e.message); bs.forEach(function(x){ x.disabled = false; }); });
         };
         opts.appendChild(b);
       });
@@ -250,7 +255,7 @@ function lesson(d){
     }
     function done(){
       autoLesson = false;
-      s.textContent = ""; s.style.textAlign = "center";
+      s.textContent = ""; s.appendChild(quit); s.style.textAlign = "center";
       var me = S.dragons.filter(function(x){ return x.id === d.id; })[0] || d;
       var pic = art(me); pic.style.width = "180px"; pic.style.height = "auto"; s.appendChild(pic); s.appendChild(h("h2", null, right + " out of " + L.questions.length));
       s.appendChild(h("p", null, me.name + (me.stage === "Egg" ? " is " + me.hatch + "/5 of the way to hatching." : " is level " + me.level + " and " + me.health + "% healthy.")));
@@ -302,10 +307,23 @@ function drawBattles(){
         blk.onclick = function(){ api({ action:"block", battle:b.id }).then(function(){ toast("Blocked. They can't challenge you again."); drawBattles(); }); };
         rr.appendChild(a); rr.appendChild(dcl); rr.appendChild(blk); w.appendChild(rr);
       } else {
-        var label = b.result ? b.result : b.status === "waiting" ? "waiting for them" : b.status;
+        var unfinished = !b.me && (b.status === "playing" || b.status === "accepted");
+        var label = b.result ? b.result : unfinished ? "unfinished" : b.status === "waiting" ? "waiting for them" : b.status;
         w.appendChild(h("div", "res " + (b.result || "wait"), label));
         w.appendChild(h("div", null, (b.myDragon ? b.myDragon.name : "You") + " vs " + (foe ? foe.name : "a dragon")));
         if (b.me) w.appendChild(h("small", "muted", "You: " + b.me.right + "/8 in " + (b.me.time / 1000).toFixed(1) + "s" + (b.them ? " · Them: " + b.them.right + "/8 in " + (b.them.time / 1000).toFixed(1) + "s" : "")));
+        if (unfinished) {
+          /* A battle left half-way (tab closed, page reloaded) can be
+             picked up again - it used to be stuck for ever. */
+          var carry = h("button", "btn", "Carry on"); carry.type = "button"; carry.style.marginTop = "8px";
+          carry.onclick = function(){
+            carry.disabled = true;
+            api(b.incoming ? { action:"accept", battle:b.id } : { action:"resume", battle:b.id })
+              .then(function(x){ fight(x, b.incoming); })
+              .catch(function(e){ toast(e.message); carry.disabled = false; });
+          };
+          w.appendChild(carry);
+        }
       }
       row.appendChild(w); box.appendChild(row);
     });
@@ -316,7 +334,7 @@ function drawBattles(){
 /* The battle itself: same questions for both, no answers shown until the end. */
 function fight(r, second){
   var v = h("div", "veil"), s = h("div", "sheet"); v.appendChild(s); document.body.appendChild(v);
-  var i = 0, picks = [], ms = [], shown = performance.now(), t0 = performance.now();
+  var i = 0, picks = [], ms = [], shown = performance.now(), t0 = performance.now(), lastPick = 0, sent = false;
   var clock = h("span", "clock", "0.0s");
   var iv = setInterval(function(){ clock.textContent = ((performance.now() - t0) / 1000).toFixed(1) + "s"; }, 100);
   function show(){
@@ -326,10 +344,19 @@ function fight(r, second){
     var opts = h("div", "opts");
     q.options.forEach(function(o){
       var b = h("button", "opt", o);
-      b.onclick = function(){ picks.push(o); ms.push(Math.round(performance.now() - shown)); i++; if (i < r.questions.length) { shown = performance.now(); show(); } else send(); };
+      b.onclick = function(){
+        var nw = performance.now();
+        if (nw - lastPick < 250) return;          /* a double-click answered two questions */
+        lastPick = nw;
+        picks.push(o); ms.push(Math.round(nw - shown)); i++;
+        if (i < r.questions.length) { shown = performance.now(); show(); } else send();
+      };
       opts.appendChild(b);
     });
     s.appendChild(opts);
+    var gu = h("button", "linkish", "Give up (keeps what you've answered)"); gu.type = "button"; gu.style.cssText = "margin-top:12px;background:none;border:0;color:var(--soft);text-decoration:underline;cursor:pointer;font-size:.85rem";
+    gu.onclick = function(){ if (gu.textContent.indexOf("Really") < 0) { gu.textContent = "Really give up? The rest count as wrong."; return; } send(); };
+    s.appendChild(gu);
     if (q.answer != null) {
       var tb = h("div", "row"); tb.style.justifyContent = "flex-start";
       var a1 = h("button", "ghost", "🧪 Autoplay battle (all right)"); a1.onclick = function(){ autoBattle = true; tick(); };
@@ -340,6 +367,7 @@ function fight(r, second){
   }
   var autoBattle = false;
   function send(){
+    if (sent) return; sent = true;
     clearInterval(iv);
     s.textContent = ""; s.appendChild(h("p", "muted", "Marking…"));
     api({ action:"submit", battle:r.battle, picks:picks, ms:ms }).then(function(x){

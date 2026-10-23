@@ -146,6 +146,10 @@ try { sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth:{ per
 
 var main = document.getElementById("main");
 var S = null, tab = "play", focus = "mixed";
+/* The running round's off-switch. Changing tab mid-round used to leave
+   the timer and key handler running on dead elements, and a minute
+   later the results screen stomped whatever tab you were on. */
+var abortRound = null;
 var COLOURS = { 2:"#60a5fa",3:"#34d399",4:"#f472b6",5:"#fbbf24",6:"#a78bfa",7:"#f87171",8:"#22d3ee",9:"#fb923c",10:"#4ade80",11:"#e879f9",12:"#facc15" };
 
 function h(tag, cls, text){ var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
@@ -215,6 +219,7 @@ document.querySelectorAll("#tabs button").forEach(function(b){
   b.onclick = function(){ tab = b.dataset.tab; document.querySelectorAll("#tabs button").forEach(function(x){ x.setAttribute("aria-selected", x === b ? "true" : "false"); }); draw(); };
 });
 function draw(){
+  if (abortRound) abortRound();
   document.getElementById("tabs").hidden = false;
   document.querySelector('#tabs [data-tab="trade"]').hidden = !(LAB && S && S.trading);
   if (tab === "play") drawPlay(); else if (tab === "collection") drawCollection(); else if (tab === "shop") drawShop(); else drawTrade();
@@ -277,7 +282,8 @@ function startRound(){
 }
 function countdown(then){
   var n = 3; main.textContent = ""; var big = h("div", "center"); var num = h("div", "qbig", "3"); big.appendChild(num); main.appendChild(big);
-  var iv = setInterval(function(){ n--; if (n <= 0) { clearInterval(iv); then(); } else num.textContent = n; }, 700);
+  var iv = setInterval(function(){ n--; if (n <= 0) { clearInterval(iv); abortRound = null; then(); } else num.textContent = n; }, 700);
+  abortRound = function(){ clearInterval(iv); abortRound = null; };
 }
 
 function play(r){
@@ -321,6 +327,7 @@ function play(r){
 
   var i = 0, val = "", answers = [], right = 0, streak = 0, shown = performance.now(), locked = false, ended = false;
   var t0 = performance.now(), dur = r.secs * 1000;
+  abortRound = function(){ ended = true; clearInterval(tick); clearTimeout(autoT); document.removeEventListener("keydown", key); abortRound = null; };
   function showQ(){ var p = r.questions[i]; q.textContent = p[0] + " × " + p[1]; val = ""; typed.textContent = ""; typed.className = "typed"; shown = performance.now(); }
   function press(k){
     if (locked || ended) return;
@@ -351,7 +358,7 @@ function play(r){
     if (left <= 0) finish();
   }, 100);
   function finish(){
-    if (ended) return; ended = true; clearInterval(tick); clearTimeout(autoT); document.removeEventListener("keydown", key);
+    if (ended) return; ended = true; abortRound = null; clearInterval(tick); clearTimeout(autoT); document.removeEventListener("keydown", key);
     main.textContent = ""; main.appendChild(h("div", "center muted", "Marking…"));
     var wait = Math.max(0, dur + 300 - (performance.now() - t0));     // the server checks a whole minute passed
     setTimeout(function(){
@@ -438,10 +445,13 @@ function drawTrade(){
     if (!r.players.length) { body.appendChild(h("p", "muted", "Nobody else has played yet.")); return; }
     r.players.forEach(function(p){ who.appendChild(new Option(p.name, p.id)); });
   }).catch(function(e){ toast(e.message); });
+  var tradeSeq = 0;
   who.onchange = function(){
     body.textContent = ""; if (!who.value) return;
     var give = {}, want = {};
+    var rq = ++tradeSeq;        /* a slower, older fetch must not paint over a newer pick */
     api({ action:"collection", user:who.value }).then(function(r){
+      if (rq !== tradeSeq) return;
       body.appendChild(h("h2", null, "You give")).style.marginTop = "14px";
       var mine = h("div", "cards");
       S.cards.forEach(function(cd){ var e = cardEl(cd.kind, { shiny:cd.shiny }); e.onclick = function(){ if (give[cd.id]) delete give[cd.id]; else if (Object.keys(give).length < 5) give[cd.id] = 1; e.classList.toggle("sel", !!give[cd.id]); }; mine.appendChild(e); });

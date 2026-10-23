@@ -197,6 +197,11 @@ var THEME_SWATCH = { "c-classic":"#4f46e5", "c-ocean":"#0369a1", "c-sunset":"#ea
 var S = null;          // last summary from the server
 var auto = null;       // lab test mode: "right" or "mixed" while autoplaying
 var mem = [];          // this visit's answers, for memory checks
+/* Key handlers are swapped per question. Without this, every question
+   left by the Home button (or an error) left its handler behind, and a
+   later Enter or A-D press on the home screen fired at a dead question. */
+var offKeys = null, offEnter = null;
+function dropKeyHandlers(){ if (offKeys) offKeys(); if (offEnter) offEnter(); }
 var sinceCheck = 0;
 
 function h(tag, cls, text){ var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
@@ -334,6 +339,7 @@ function play(task, dots){
 }
 
 function drawQ(task, q, dots){
+  dropKeyHandlers();
   main.textContent = "";
   var wrap = h("div", "qwrap");
   var head = h("div", "qhead");
@@ -394,12 +400,13 @@ function drawQ(task, q, dots){
     if (e.key === "Enter" && !submit.disabled && !submit.hidden) submit.click();
   }
   document.addEventListener("keydown", keys);
+  offKeys = function(){ document.removeEventListener("keydown", keys); offKeys = null; };
 
   submit.onclick = function(){
     submit.disabled = true; hintB.disabled = true;
     btns.forEach(function(b){ b.disabled = true; });
     api({ action:"answer", id:q.id, pick:chosen, ms:Math.round(performance.now() - started) }).then(function(r){
-      document.removeEventListener("keydown", keys);
+      if (offKeys) offKeys();
       S = Object.assign(S || {}, r); setTop(); bump("ptsChip");
       btns.forEach(function(b){
         var t = b.lastChild.textContent;
@@ -433,17 +440,23 @@ function drawQ(task, q, dots){
       bar.remove();
       next.focus();
       if (auto) setTimeout(function(){ if (auto && document.body.contains(next)) next.click(); }, 1500);
-      document.addEventListener("keydown", function go(e){ if (e.key === "Enter") { document.removeEventListener("keydown", go); if (document.body.contains(next)) { e.preventDefault(); next.click(); } } });
+      function go(e){ if (e.key === "Enter") { if (offEnter) offEnter(); if (document.body.contains(next)) { e.preventDefault(); next.click(); } } }
+      document.addEventListener("keydown", go);
+      offEnter = function(){ document.removeEventListener("keydown", go); offEnter = null; };
       if (r.right && (r.moved || r.streak % 5 === 0)) confetti();
     }).catch(function(e){
-      toast(e.message); submit.disabled = false; btns.forEach(function(b){ b.disabled = false; });
+      auto = null;
+      toast(e.message); submit.disabled = false;
+      btns.forEach(function(b){ b.disabled = false; });
+      if (!card.querySelector(".hint")) hintB.disabled = false;
     });
   };
 }
 function pickOf(a){ return a[Math.floor(Math.random() * a.length)]; }
-function homeNow(){ home(); }
+function homeNow(){ dropKeyHandlers(); home(); }
 
 function taskParty(name, bonus, dots){
+  dropKeyHandlers();
   auto = null;
   confetti();
   var right = dots.filter(function(x){ return x === 1; }).length;
@@ -512,6 +525,10 @@ document.getElementById("shopBtn").onclick = function(){
       s.appendChild(g);
     });
   }
+  function esc(e){ if (e.key === "Escape") { document.removeEventListener("keydown", esc); v.remove(); drawHomeIfHome(); } }
+  document.addEventListener("keydown", esc);
+  var oldRemove = v.remove.bind(v);
+  v.remove = function(){ document.removeEventListener("keydown", esc); oldRemove(); };
   paint(); v.appendChild(s); document.body.appendChild(v);
 };
 function drawHomeIfHome(){ if (main.querySelector(".hello")) drawHome(); }
@@ -535,6 +552,7 @@ function confetti(){
 
 /* ---------------- start ---------------- */
 function showErr(e){
+  dropKeyHandlers(); auto = null;
   main.textContent = "";
   var box = h("div", "card center");
   box.appendChild(h("p", null, e && e.message || "Something went wrong."));
