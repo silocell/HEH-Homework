@@ -515,7 +515,9 @@
     var apple = drop(), score = 0, timer = null;
     function drop(){ var a; do { a = { x:Math.floor(Math.random()*N), y:Math.floor(Math.random()*N) }; }
       while (body.some(function(b){ return b.x === a.x && b.y === a.y; })); return a; }
-    function turn(x, y){ if (x !== -dir.x || y !== -dir.y) want = { x:x, y:y }; }
+    /* Checked against the QUEUED direction: two quick turns inside one
+       tick used to let you reverse into your own neck and die unfairly. */
+    function turn(x, y){ if (x !== -want.x || y !== -want.y) want = { x:x, y:y }; }
     function key(e){
       var k = e.key.toLowerCase(), m = { arrowup:[0,-1], w:[0,-1], arrowdown:[0,1], s:[0,1], arrowleft:[-1,0], a:[-1,0], arrowright:[1,0], d:[1,0] }[k];
       if (m){ e.preventDefault(); turn(m[0], m[1]); }
