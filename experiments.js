@@ -56,6 +56,8 @@
       says:"A card on the dashboard that opens Level Up: practice that learns you, with daily tasks, XP and a shop. Claude Haiku writes the questions, Groq checks them. Needs the levelup function on the lab server." },
     { key:"tycoon", name:"Times Table Tycoon",
       says:"A card on the dashboard that opens Times Table Tycoon: 60-second times-table rounds that learn your slow facts, Numlings to collect, a shop, and trading between players. Needs the tables function on the lab server." },
+    { key:"dragons", name:"Word Dragons",
+      says:"A card on the dashboard that opens Word Dragons: hatch and grow dragons by doing English, keep them healthy, and battle by email - players only ever see each other's dragon. Needs the dragons function on the lab server." },
     { key:"doodle", name:"Doodle of the day",
       says:"Like a Google doodle: a little game on the dashboard that changes every day - Snake, Brick Breaker or Whack-a-mole. Nothing to do with homework, on purpose." }
   ];
@@ -891,6 +893,18 @@
     left.insertBefore(a, left.firstChild);
   }
 
+  function dragonsCard(){
+    var col = document.querySelector("#todoList") && document.querySelector("#todoList").closest(".col");
+    var left = col && col.parentNode.querySelector(".col");
+    if (!left || document.getElementById("expDragons")) return;
+    var a = document.createElement("a");
+    a.id = "expDragons"; a.href = "dragons.html"; a.className = "panel exp-panel exp-lu-door exp-dr-door";
+    a.innerHTML = '<span class="exp-lu-rocket">\ud83d\udc09</span><span><b>Word Dragons</b>' +
+                  '<small>Your dragons grow when you do English \u2014 are they hungry?</small></span><span class="exp-lu-go">\u203a</span>';
+    tag(a);
+    left.insertBefore(a, left.firstChild);
+  }
+
   /* ---------- styles ---------- */
   var css = el("style");
   css.textContent =
@@ -950,7 +964,7 @@
     "body.exp-roll{animation:exproll 1.4s ease-in-out}" +
     "@keyframes exproll{to{transform:rotate(360deg)}}" +
     "body.exp-askew{transform:rotate(2deg);transform-origin:center top}" +
-    ".exp-lu-door{display:flex;align-items:center;gap:14px;text-decoration:none;color:#fff;border:0;background:linear-gradient(120deg,#4f46e5,#06b6d4)}.exp-lu-door small{display:block;opacity:.9;font-weight:400}.exp-lu-door b{font-size:1.1rem}.exp-lu-rocket{font-size:2rem}.exp-lu-go{margin-left:auto;font-size:1.6rem}.exp-lu-door:hover{filter:brightness(1.07)}.exp-tt-door{background:linear-gradient(120deg,#f59e0b,#ef4444)}";
+    ".exp-lu-door{display:flex;align-items:center;gap:14px;text-decoration:none;color:#fff;border:0;background:linear-gradient(120deg,#4f46e5,#06b6d4)}.exp-lu-door small{display:block;opacity:.9;font-weight:400}.exp-lu-door b{font-size:1.1rem}.exp-lu-rocket{font-size:2rem}.exp-lu-go{margin-left:auto;font-size:1.6rem}.exp-lu-door:hover{filter:brightness(1.07)}.exp-dr-door{background:linear-gradient(120deg,#059669,#0ea5e9)}.exp-tt-door{background:linear-gradient(120deg,#f59e0b,#ef4444)}";
   document.head.appendChild(css);
 
   /* ---------- switch on whatever is on ---------- */
@@ -966,6 +980,7 @@
     if (on.konami) konami();
     if (on.levelup) levelUpCard();
     if (on.tycoon) tycoonCard();
+    if (on.dragons) dragonsCard();
     if (on.doodle) doodle();
     if (on.eggs) eggs();
     if (on.streak || on.cheer || on.plant) watchTicks(on);
