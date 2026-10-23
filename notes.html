@@ -652,7 +652,6 @@ var SUPABASE_KEY = "sb_publishable_BTzbP_oOZnfvCgs4UBJYXA_WCTyT88M";
 
 /* The page only decides what to SHOW. Every button below asks the server,
    which checks the signed-in account before doing anything. */
-var OWNER_EMAIL = "shivkforindia@gmail.com";
 
 /* An account for showing the panel on somebody else's laptop, so Shiv's
    own is never signed in on a teacher's machine. It is not a second
@@ -2015,14 +2014,14 @@ function paintRooms(rooms, members){
     row.className = "arow";
     var box = document.createElement("input");
     box.type = "text";
-    box.placeholder = "26kush";
+    box.placeholder = "26abcd";
     box.setAttribute("aria-label", "Email to add to " + r.name);
     var add = document.createElement("button");
     add.type = "button";
     add.className = "abtn";
     add.textContent = "Add";
     add.addEventListener("click", function(){
-      /* "26kush" is what you would say out loud, so take it. No @ means a
+      /* "26abcd" is what you would say out loud, so take it. No @ means a
          school username and gets the school's domain; anything with one is
          used as typed, which keeps your own Gmail working. The server still
          checks the address belongs to a real account - this only saves the
@@ -2042,13 +2041,15 @@ function paintRooms(rooms, members){
 
     /* In a row with spacing, like every other set of buttons on this
        page. Appended straight onto the card they sat flush against each
-       other - "Take Aarav outTake Shlok out" - which is what Shiv meant
+       other - "Take A outTake B out" - which is what Shiv meant
        by joined buttons. Quieter too: taking someone out is the rarer
        action, and it should not be dressed the same as Add. */
     var outs = document.createElement("div");
     outs.className = "acct-acts";
     (members[r.id] || []).forEach(function(m){
-      if(m.email === OWNER_EMAIL) return;        /* you cannot remove yourself */
+      /* You cannot remove yourself. Compared with whoever is signed in,
+         not with an address written into this public page. */
+      if(currentUser && m.email && m.email.toLowerCase() === String(currentUser.email||"").toLowerCase()) return;
       var out = document.createElement("button");
       out.type = "button";
       out.className = "abtn quiet";

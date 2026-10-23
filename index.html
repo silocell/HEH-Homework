@@ -1549,10 +1549,10 @@ footer{
    Only used to work out what to call someone in the greeting. There
    are no passwords in this file: signing in goes through Supabase.
    ================================================================== */
-var ACCOUNTS = [
-  { name:"Shiv",  email:"26kush@hatchend.harrow.sch.uk" },
-  { name:"Shlok", email:"" }
-];
+/* Empty on purpose. It used to list people by name and school login,
+   in a page anyone can read. Names now come from the profile set in the
+   admin panel, which beats anything guessed from an address. */
+var ACCOUNTS = [];
 
 /* ==================================================================
    SUPABASE — the account and sync service
@@ -1562,8 +1562,8 @@ var ACCOUNTS = [
 
    TO ADD SOMEONE: Supabase dashboard -> Authentication -> Users ->
    Add user -> Create new user, with "Auto Confirm User" ticked.
-   Then add their email and display name to ACCOUNTS above so the
-   greeting knows what to call them.
+   Then set their display name in the admin panel, so the greeting
+   knows what to call them.
    ================================================================== */
 var SUPABASE_URL = "https://lkyfpvlrqgezgitfmpqo.supabase.co";
 var SUPABASE_KEY = "sb_publishable_BTzbP_oOZnfvCgs4UBJYXA_WCTyT88M";
@@ -2066,10 +2066,46 @@ var currentUser = null;   /* { name, email, uid, offline } */
 
 var SESSION_HINT = "hl.lastuser";
 
+/* ---------- the owner, without writing the owner's address down ----------
+   This page is public, on GitHub and to anyone who presses Ctrl+U, and it
+   used to carry Shiv's personal address in four places and his school
+   login in a fifth. None of them was a lock - the server decides who may
+   do what - so none of them needs to be readable. What is kept is a
+   SHA-256 fingerprint of the owner's address: the page can tell "this is
+   the owner" when the owner signs in, but nobody reading it can tell who
+   that is. Worked out here rather than with crypto.subtle because every
+   place that asks is synchronous. */
+var OWNER_HASH = "747e511bdf6129b4347b4d4e0292c64db92d3e7ab2f41da57de0968becb8d0a9";
+function sha256hex(str){
+  function r(v,n){ return (v>>>n)|(v<<(32-n)); }
+  var K=[0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];
+  var H=[0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19];
+  var b=unescape(encodeURIComponent(str)), n=b.length, words=[], i;
+  for(i=0;i<n;i++) words[i>>2] |= b.charCodeAt(i) << (24-(i%4)*8);
+  words[n>>2] |= 0x80 << (24-(n%4)*8);
+  var len=((n+8)>>6)*16+16; for(i=words.length;i<len;i++) words[i]=words[i]|0;
+  words[len-1]=n*8;
+  var w=new Array(64);
+  for(var j=0;j<len;j+=16){
+    var a=H[0],bb=H[1],c=H[2],d=H[3],e=H[4],f=H[5],g=H[6],h=H[7];
+    for(i=0;i<64;i++){
+      if(i<16) w[i]=words[j+i]|0;
+      else w[i]=(((r(w[i-2],17)^r(w[i-2],19)^(w[i-2]>>>10))+w[i-7]+(r(w[i-15],7)^r(w[i-15],18)^(w[i-15]>>>3))+w[i-16])|0);
+      var t1=(h+(r(e,6)^r(e,11)^r(e,25))+((e&f)^(~e&g))+K[i]+w[i])|0;
+      var t2=((r(a,2)^r(a,13)^r(a,22))+((a&bb)^(a&c)^(bb&c)))|0;
+      h=g; g=f; f=e; e=(d+t1)|0; d=c; c=bb; bb=a; a=(t1+t2)|0;
+    }
+    H[0]=(H[0]+a)|0; H[1]=(H[1]+bb)|0; H[2]=(H[2]+c)|0; H[3]=(H[3]+d)|0;
+    H[4]=(H[4]+e)|0; H[5]=(H[5]+f)|0; H[6]=(H[6]+g)|0; H[7]=(H[7]+h)|0;
+  }
+  var out=""; for(i=0;i<8;i++) out+=("00000000"+(H[i]>>>0).toString(16)).slice(-8);
+  return out;
+}
+function isOwnerEmail(e){ return !!e && sha256hex(String(e).trim().toLowerCase()) === OWNER_HASH; }
+
 /* Who may create an account. The database enforces this for real;
    this copy exists only so the page can say so politely. */
 var ALLOWED_DOMAIN = "@hatchend.harrow.sch.uk";
-var ALLOWED_EXTRA  = ["shivkforindia@gmail.com"];
 
 /* The same rule the database enforces, checked here first only so the
    message is clear before anything is sent. The database is the real
@@ -2078,9 +2114,7 @@ var YEAR7 = /^26[a-z]{4}@hatchend\.harrow\.sch\.uk$/;
 
 function emailAllowed(e){
   e = String(e||"").trim().toLowerCase();
-  if(YEAR7.test(e)) return true;
-  for(var i=0;i<ALLOWED_EXTRA.length;i++){ if(e === ALLOWED_EXTRA[i]) return true; }
-  return false;
+  return YEAR7.test(e) || isOwnerEmail(e);
 }
 
 /* Says which part is wrong rather than one message for everything. */
@@ -2440,16 +2474,9 @@ function doneSigningIn(){
    list, but it is an ordinary pupil account now - so when the site is
    closed it sees the maintenance notice like everybody else. Sign in with
    the Google option to get in while it is shut. */
-var LET_IN_WHEN_CLOSED = ["shivkforindia@gmail.com"];
 var siteOpen = true;
 
-function letInWhenClosed(email){
-  var e = String(email || "").toLowerCase();
-  for(var i = 0; i < LET_IN_WHEN_CLOSED.length; i++){
-    if(e === LET_IN_WHEN_CLOSED[i]) return true;
-  }
-  return false;
-}
+function letInWhenClosed(email){ return isOwnerEmail(email); }
 
 /* If this can't be read - connection dropped, Supabase having a moment -
    the site stays OPEN. A closed sign shown by accident is worse than a
@@ -4637,11 +4664,8 @@ if(wikiForm) wikiForm.addEventListener("submit", function(e){
    Decides only whether to show the link. The page behind it checks the
    account on the server, so this is convenience, not a lock.
    ------------------------------------------------------------- */
-var OWNER_EMAIL = "shivkforindia@gmail.com";
-
 function isOwner(){
-  return !!(currentUser && !currentUser.offline &&
-            String(currentUser.email||"").toLowerCase() === OWNER_EMAIL);
+  return !!(currentUser && !currentUser.offline && isOwnerEmail(currentUser.email));
 }
 
 /* The Admin panel link shows for Shiv straight away, and for a look-only
