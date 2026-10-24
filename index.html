@@ -2283,10 +2283,15 @@ if(msBtn) msBtn.addEventListener("click", function(){
   if(desc.indexOf("year 7") > -1 || desc.indexOf("sign-ups are limited") > -1 ||
      desc.indexOf("database error saving new user") > -1){
     msg = "That account can't be used here \u2014 sign-ins are limited to Year 7 Hatch End addresses.";
+  }else if(desc.indexOf("signups not allowed") > -1 || desc.indexOf("signup") > -1){
+    msg = "That Microsoft account's email doesn't have an account here yet. Ask Shiv to add it, or use your email and password.";
   }else if(code === "access_denied"){
     msg = "Sign-in was cancelled.";
   }else{
-    msg = "That sign-in didn't work. Try your email and password instead.";
+    /* Show the server's own reason in small print too, so whoever is
+       fixing it isn't left guessing. It never holds a password or key. */
+    msg = "That sign-in didn't work. Try your email and password instead." +
+          (desc ? " (Reason: " + desc.slice(0, 160) + ")" : "");
   }
 
   var err = document.getElementById("gateError");
