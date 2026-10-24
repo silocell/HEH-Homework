@@ -156,42 +156,139 @@ function ease(t){ t = Math.max(0, Math.min(1, t)); return t < .5 ? 2*t*t : 1 - M
 function seg(t, a, b){ return ease((t - a) / (b - a)); }
 
 function drawMap(t, sc){
+  /* The map used to be a hand-plotted blob that did not look much like
+     Britain, with labels running off the bottom of the frame behind the
+     caption. It is now drawn from real coastline positions - latitude
+     and longitude, projected - so the shape is recognisable and every
+     place sits where it actually is. Everything is kept above the
+     caption bar, which covers the lowest part of the canvas. */
+  var LAT0 = 48.9, LAT1 = 59.0, LON0 = -6.6, LON1 = 2.6;
+  var TOP = 14, BOT = 424, CX = 430;
+  /* One scale for both directions, or the country comes out squashed.
+     Degrees of longitude are shorter than degrees of latitude - by the
+     cosine of the latitude - so the east-west scale is reduced to match
+     instead of being stretched to fill the frame. */
+  var YS = (BOT - TOP) / (LAT1 - LAT0);
+  var XS = YS * Math.cos((LAT0 + LAT1) / 2 * Math.PI / 180);
+  var MIDLON = (LON0 + LON1) / 2;
+  function P(lat, lon){
+    return [CX + (lon - MIDLON) * XS, BOT - (lat - LAT0) * YS];
+  }
+  /* Great Britain, headland by headland, going clockwise from Land's End. */
+  var BRITAIN = [
+    [50.07,-5.72],[49.96,-5.20],[50.20,-4.78],[50.37,-4.14],[50.58,-3.46],[50.52,-2.45],
+    [50.72,-1.88],[50.73,-0.80],[50.74,0.24],[51.13,1.33],[51.38,1.44],[51.60,0.95],
+    [52.00,1.08],[52.48,1.75],[52.93,1.30],[52.92,0.15],[53.30,0.10],[53.58,0.11],
+    [54.12,-0.08],[54.49,-0.61],[54.63,-1.15],[55.01,-1.42],[55.45,-1.60],[55.77,-2.00],
+    [56.06,-2.60],[56.37,-2.80],[56.70,-2.46],[57.15,-2.09],[57.69,-2.00],[57.60,-3.90],
+    [57.85,-4.00],[58.44,-3.09],[58.64,-3.07],[58.55,-4.40],[58.62,-5.00],[58.10,-5.35],
+    [57.90,-5.16],[57.30,-5.70],[56.82,-5.10],[56.40,-5.90],[55.80,-5.70],[55.31,-5.80],
+    [55.60,-4.90],[55.46,-4.63],[54.90,-4.95],[54.63,-4.86],[54.85,-3.60],[54.40,-3.40],
+    [54.10,-3.23],[53.70,-3.05],[53.45,-3.02],[53.33,-3.83],[53.30,-4.60],[52.90,-4.50],
+    [52.80,-4.75],[52.40,-4.10],[52.10,-4.60],[51.88,-5.31],[51.70,-4.90],[51.60,-3.95],
+    [51.48,-3.18],[51.21,-3.47],[51.08,-4.20],[50.99,-4.53],[50.60,-4.90],[50.42,-5.08]
+  ];
+  /* The northern coast of France, west to east. */
+  var FRANCE = [
+    [48.60,-4.60],[48.63,-1.51],[49.30,-1.60],[49.64,-1.62],[49.40,-1.10],[49.35,-0.30],
+    [49.49,0.11],[49.75,0.60],[49.92,1.08],[50.30,1.55],[50.95,1.85],[51.20,2.55],
+    [48.60,2.55],[48.60,-4.60]
+  ];
+  function land(pts, close){
+    g.beginPath();
+    pts.forEach(function(p, i){ var q = P(p[0], p[1]); i ? g.lineTo(q[0], q[1]) : g.moveTo(q[0], q[1]); });
+    if (close !== false) g.closePath();
+    g.fill(); g.stroke();
+  }
   g.fillStyle = "#7fb3d5"; g.fillRect(0, 0, W, H);
-  // a simplified England (and the edge of Normandy) - a diagram, not a survey
   g.fillStyle = "#a8c686"; g.strokeStyle = "#5c7a45"; g.lineWidth = 2;
-  g.beginPath();
-  [[430,30],[500,40],[520,110],[560,170],[600,190],[640,260],[680,300],[700,360],[690,410],[640,440],[560,450],[480,455],[420,460],[360,470],[330,445],[360,410],[340,360],[380,320],[360,270],[400,220],[380,160],[420,110],[400,60]].forEach(function(p, i){ i ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1]); });
-  g.closePath(); g.fill(); g.stroke();
-  g.beginPath(); [[520,540],[560,505],[700,500],[820,520],[900,540]].forEach(function(p, i){ i ? g.lineTo(p[0], p[1]) : g.moveTo(p[0], p[1]); }); g.lineTo(960,540); g.closePath(); g.fill(); g.stroke();
-  function place(x, y, name, colour, left){ g.fillStyle = colour || "#3b2a1a"; g.beginPath(); g.arc(x, y, 6, 0, 7); g.fill(); g.font = "bold 16px system-ui";
-    g.fillText(name, left ? x - 10 - g.measureText(name).width : x + 10, y + 5); }
-  place(560, 200, "York"); place(600, 400, "London"); place(590, 440, "Hastings", null, true); place(632, 436, "Pevensey", "#1e40af");
-  g.fillStyle = "#3b2a1a"; g.font = "italic 15px Georgia"; g.fillText("Normandy", 700, 530); g.fillText("The Channel", 620, 485); g.fillText("North Sea", 680, 120);
+  land(BRITAIN); land(FRANCE);
+
+  /* Sea names, well clear of the coast. */
+  g.fillStyle = "#2b4a63"; g.font = "italic 15px Georgia";
+  var nsea = P(56.4, 1.9); g.fillText("North Sea", nsea[0], nsea[1]);
+  var chan = P(50.0, -2.2); g.fillText("The Channel", chan[0] - 42, chan[1]);
+  var norm = P(49.15, 0.5); g.fillText("Normandy", norm[0], norm[1]);
+
+  /* A town: a dot, with its name on whichever side has room. */
+  function town(lat, lon, name, colour, left, dy){
+    var q = P(lat, lon); q[1] += (dy || 0);
+    g.fillStyle = colour || "#3b2a1a";
+    g.beginPath(); g.arc(q[0], q[1], 5, 0, 7); g.fill();
+    g.font = "bold 15px system-ui";
+    var w = g.measureText(name).width;
+    g.strokeStyle = "rgba(255,255,255,.85)"; g.lineWidth = 3;
+    var tx = left ? q[0] - 9 - w : q[0] + 9;
+    g.strokeText(name, tx, q[1] + 5); g.fillText(name, tx, q[1] + 5);
+    if (dy) { /* keep the dot on the real spot even when the name moved */
+      var real = P(lat, lon);
+      g.beginPath(); g.arc(real[0], real[1], 5, 0, 7); g.fill();
+    }
+    g.lineWidth = 2; g.strokeStyle = "#5c7a45";
+  }
+  town(53.96, -1.08, "York", null, true);
+  town(51.51, -0.13, "London");
+  town(50.86, 0.57, "Hastings", null, false, -9);
+  town(50.82, 0.33, "Pevensey", "#1e40af", true, 11);
+
   function route(pts, p, colour, dash){
+    var px = pts.map(function(c){ return P(c[0], c[1]); });
     g.save(); g.strokeStyle = colour; g.lineWidth = 5; g.setLineDash(dash ? [12, 8] : []); g.lineCap = "round";
-    var total = 0, L = []; for (var i = 1; i < pts.length; i++) { var d = Math.hypot(pts[i][0]-pts[i-1][0], pts[i][1]-pts[i-1][1]); L.push(d); total += d; }
-    var want = total * p; g.beginPath(); g.moveTo(pts[0][0], pts[0][1]);
-    for (var j = 1; j < pts.length && want > 0; j++) { var f = Math.min(1, want / L[j-1]); g.lineTo(pts[j-1][0] + (pts[j][0]-pts[j-1][0]) * f, pts[j-1][1] + (pts[j][1]-pts[j-1][1]) * f); want -= L[j-1]; }
+    var total = 0, L = [];
+    for (var i = 1; i < px.length; i++) { var d = Math.hypot(px[i][0]-px[i-1][0], px[i][1]-px[i-1][1]); L.push(d); total += d; }
+    var want = total * p; g.beginPath(); g.moveTo(px[0][0], px[0][1]);
+    for (var j = 1; j < px.length && want > 0; j++) {
+      var f = Math.min(1, want / L[j-1]);
+      g.lineTo(px[j-1][0] + (px[j][0]-px[j-1][0]) * f, px[j-1][1] + (px[j][1]-px[j-1][1]) * f);
+      want -= L[j-1];
+    }
     g.stroke(); g.restore();
   }
-  function crown(x, y, label, colour, a){
+  /* A claimant: a crown with the name under it, nudged so the name
+     always fits inside the picture rather than sliding off the edge. */
+  function crown(lat, lon, label, colour, a){
+    if (a <= 0) return;
+    var q = P(lat, lon), x = q[0], y = q[1];
     g.globalAlpha = a; g.fillStyle = colour;
-    g.beginPath(); g.moveTo(x-22, y+10); g.lineTo(x-22, y-10); g.lineTo(x-11, y); g.lineTo(x, y-16); g.lineTo(x+11, y); g.lineTo(x+22, y-10); g.lineTo(x+22, y+10); g.closePath(); g.fill();
-    g.fillStyle = "#fff"; g.strokeStyle = "rgba(0,0,0,.5)"; g.lineWidth = 3; g.font = "bold 17px system-ui"; g.strokeText(label, x - g.measureText(label).width/2, y + 34); g.fillText(label, x - g.measureText(label).width/2, y + 34);
-    g.globalAlpha = 1;
+    g.beginPath(); g.moveTo(x-20, y+9); g.lineTo(x-20, y-9); g.lineTo(x-10, y);
+    g.lineTo(x, y-15); g.lineTo(x+10, y); g.lineTo(x+20, y-9); g.lineTo(x+20, y+9);
+    g.closePath(); g.fill();
+    g.font = "bold 16px system-ui";
+    var w = g.measureText(label).width;
+    var tx = Math.max(6, Math.min(W - w - 6, x - w / 2));
+    var ty = Math.min(BOT + 6, y + 32);
+    g.fillStyle = "#fff"; g.strokeStyle = "rgba(0,0,0,.55)"; g.lineWidth = 3;
+    g.strokeText(label, tx, ty); g.fillText(label, tx, ty);
+    g.globalAlpha = 1; g.lineWidth = 2; g.strokeStyle = "#5c7a45";
   }
+  function note(lat, lon, words){
+    var q = P(lat, lon);
+    g.font = "bold 15px system-ui";
+    var w = g.measureText(words).width;
+    var x = Math.max(6, Math.min(W - w - 6, q[0] - w / 2));
+    g.fillStyle = "#fff"; g.strokeStyle = "rgba(0,0,0,.55)"; g.lineWidth = 3;
+    g.strokeText(words, x, q[1]); g.fillText(words, x, q[1]);
+    g.lineWidth = 2; g.strokeStyle = "#5c7a45";
+  }
+
   if (sc === 0) {
-    crown(600, 330, "Harold (England)", "#b91c1c", seg(t, .5, 2));
-    crown(780, 490, "William (Normandy)", "#1d4ed8", seg(t, 2.5, 4));
-    crown(820, 60, "Harald Hardrada (Norway)", "#4b5563", seg(t, 4.5, 6));
+    crown(53.0, -3.4, "Harold (England)", "#b91c1c", seg(t, .5, 2));
+    crown(49.45, -0.8, "William (Normandy)", "#1d4ed8", seg(t, 2.5, 4));
+    crown(58.0, 2.3, "Harald Hardrada (Norway)", "#4b5563", seg(t, 4.5, 6));
   } else if (sc === 1) {
-    route([[900,40],[700,120],[580,190]], seg(t, .5, 3), "#4b5563", false);
-    route([[600,400],[590,300],[565,205]], seg(t, 3.5, 6.5), "#b91c1c", true);
-    if (t > 6.5) { var r = 10 + 30 * Math.min(1, (t - 6.5) / .8); g.strokeStyle = "#facc15"; g.lineWidth = 4; g.beginPath(); g.arc(575, 192, r, 0, 7); g.stroke(); g.fillStyle = "#111"; g.font = "bold 16px system-ui"; g.fillText("Stamford Bridge, 25 Sept", 470, 160); }
+    route([[58.6,2.2],[56.0,0.6],[54.1,-0.6],[53.96,-1.0]], seg(t, .5, 3), "#4b5563", false);
+    route([[51.51,-0.13],[52.6,-1.0],[53.70,-1.10],[53.99,-0.92]], seg(t, 3.5, 6.5), "#b91c1c", true);
+    if (t > 6.5) {
+      var q = P(53.99, -0.92), r = 10 + 26 * Math.min(1, (t - 6.5) / .8);
+      g.strokeStyle = "#facc15"; g.lineWidth = 4;
+      g.beginPath(); g.arc(q[0], q[1], r, 0, 7); g.stroke();
+      note(54.6, -0.9, "Stamford Bridge, 25 Sept");
+      g.lineWidth = 2; g.strokeStyle = "#5c7a45";
+    }
   } else if (sc === 2) {
-    route([[760,520],[700,470],[632,436]], seg(t, .5, 3), "#1d4ed8", false);
-    route([[565,205],[595,300],[600,400],[592,438]], seg(t, 3, 7.5), "#b91c1c", true);
-    g.fillStyle = "#111"; g.font = "bold 16px system-ui"; if (t > 3) g.fillText("28 Sept: William lands", 650, 410);
+    route([[49.5,-0.2],[50.2,0.1],[50.82,0.33]], seg(t, .5, 3), "#1d4ed8", false);
+    route([[53.99,-0.92],[52.8,-1.0],[51.51,-0.13],[50.86,0.57]], seg(t, 3, 7.5), "#b91c1c", true);
+    if (t > 3) note(50.3, 1.5, "28 Sept: William lands");
   }
 }
 
@@ -361,7 +458,74 @@ function playScene(i){
   if (voiceOn) say(sc.text);
 }
 var voiceOn = false;
-function say(text){ try { speechSynthesis.cancel(); var u = new SpeechSynthesisUtterance(text); u.lang = "en-GB"; u.rate = 1; speechSynthesis.speak(u); } catch (e) {} }
+/* ---------- reading it aloud ----------
+   The browser's voice reads what it is given letter by letter, and it
+   gets the names in this story badly wrong - "Senlac" as sen-LACK,
+   "fyrd" as "ferd", "Gyrth" as "girth", "Pevensey" as peven-SAY. Those
+   are the words the lesson is actually about, so being wrong matters.
+
+   There is no reliable way to give a browser a pronunciation (the SSML
+   phoneme tag is ignored almost everywhere), so each awkward name is
+   respelt the way it sounds and ONLY the spoken copy is changed. What
+   is on the screen stays spelt properly. */
+var SAY_AS = [
+  [/\bSenlac\b/g,        "Sen-lack"],
+  [/\bHardrada\b/g,      "Har-drah-da"],
+  [/\bHarald\b/g,        "Ha-rald"],
+  [/\bGodwinson\b/g,     "God-win-son"],
+  [/\bTostig\b/g,        "Toss-tig"],
+  [/\bhousecarls\b/gi,   "house-carls"],
+  [/\bfyrd\b/gi,         "feerd"],
+  [/\bGyrth\b/g,         "Girth"],
+  [/\bLeofwine\b/g,      "Lay-off-win-a"],
+  [/\bPevensey\b/g,      "Pevvensee"],
+  [/\bFulford\b/g,       "Full-ford"],
+  [/\bBretons\b/g,       "Brettons"],
+  [/\bBrittany\b/g,      "Brittanny"],
+  [/\bchroniclers\b/gi,  "cronnic-lers"],
+  [/\bNormandy\b/g,      "Nor-mandy"],
+  [/\bWestminster\b/g,   "West-minster"],
+  [/\bEaldred\b/g,       "Al-dred"],
+  [/\bWitan\b/g,         "Wittan"],
+  [/\bthegns?\b/gi,      "thanes"],
+  /* Dates and numbers the voice otherwise reads as digits. */
+  [/\b1066\b/g,          "ten sixty-six"],
+  [/\b1415\b/g,          "fourteen fifteen"],
+  [/\b1485\b/g,          "fourteen eighty-five"],
+  [/\b1588\b/g,          "fifteen eighty-eight"]
+];
+function forSpeaking(text){
+  var out = text;
+  SAY_AS.forEach(function(r){ out = out.replace(r[0], r[1]); });
+  /* A semicolon run-on is read as one long breathless list, so give the
+     voice somewhere to breathe. */
+  return out.replace(/;/g, ",");
+}
+/* The list of voices arrives asynchronously, so the first thing said can
+   miss the British one and come out American. Pick it once it is there. */
+var chosenVoice = null;
+function pickVoice(){
+  try {
+    var vs = speechSynthesis.getVoices() || [];
+    chosenVoice =
+      vs.filter(function(v){ return /en[-_]GB/i.test(v.lang) && /female|libby|sonia|hazel|serena/i.test(v.name); })[0] ||
+      vs.filter(function(v){ return /en[-_]GB/i.test(v.lang); })[0] ||
+      vs.filter(function(v){ return /^en/i.test(v.lang); })[0] || null;
+  } catch (e) {}
+}
+try { pickVoice(); speechSynthesis.addEventListener("voiceschanged", pickVoice); } catch (e) {}
+function say(text){
+  try {
+    speechSynthesis.cancel();
+    if (!chosenVoice) pickVoice();
+    var u = new SpeechSynthesisUtterance(forSpeaking(text));
+    u.lang = "en-GB";
+    if (chosenVoice) u.voice = chosenVoice;
+    u.rate = 0.95;            /* a storyteller's pace, not a news reader's */
+    u.pitch = 1;
+    speechSynthesis.speak(u);
+  } catch (e) {}
+}
 
 /* ---------------- the page ---------------- */
 var capT, capX, capC, qbox, prog;
