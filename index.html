@@ -1599,8 +1599,10 @@ var ACCOUNTS = [];
    Then set their display name in the admin panel, so the greeting
    knows what to call them.
    ================================================================== */
-var SUPABASE_URL = "https://lkyfpvlrqgezgitfmpqo.supabase.co";
-var SUPABASE_KEY = "sb_publishable_BTzbP_oOZnfvCgs4UBJYXA_WCTyT88M";
+/* The real site's own server (HEH-Live, since 24 Oct 2026). The lab
+   swaps these for the lab server further down. */
+var SUPABASE_URL = "https://hehs-live.duckdns.org";
+var SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzkyODMyMjkwLCJleHAiOjIxMDgxOTIyOTB9.7gFhQa5RBwVtiOPLO7Qf2-aVEbkd5xgpLiN1J06Gybo";
 
 /* The lab copy talks to the lab's own Supabase, on Shiv's Oracle
    machine, with made-up pupils - never to the real one. Decided by the
