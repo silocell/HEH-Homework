@@ -1,3 +1,17 @@
+ PRIVATE & PROPRIETARY PROPERTY
+
+Copyright © 2026 Shiv (silocell). All Rights Reserved.
+
+By viewing this repository, you agree to the following terms:
+* **NO COPYING:** You are strictly prohibited from copying, duplicating, or using any part of this code.
+* **NO HOSTING:** You may not host your own copy, fork, or live version of this dashboard.
+* **NO PLAGIARISM:** You may not present this work or any derivative of it as your own.
+
+Viewing this code is permitted for educational inspection only. Unauthorized use, replication, or distribution will result in an immediate DMCA copyright takedown notice. See [LICENSE](LICENSE) for full legal terms.
+
+
+
+
 # Homework Launchpad
 
 A homework dashboard for Year 7 at my school. I'm in Year 7 too — I built
