@@ -366,6 +366,7 @@ body.demo #mainPanel .sec.off{ opacity:.42; pointer-events:none; user-select:non
 .labbar a{color:#fff;font-weight:600;text-transform:none;letter-spacing:0;margin-left:10px;opacity:.9}
 html.lab .labbar{display:block}
 html.lab .shell{padding-top:26px}
+.gstate{font-size:.72rem;font-weight:700;padding:2px 8px;border-radius:999px;margin-left:auto}.gstate.on{background:#dcfce7;color:#166534}.gstate.off{background:#fee2e2;color:#991b1b}.gstate.out{background:#fef3c7;color:#92400e}.gwhy{flex:1;min-width:0}.gmeta{margin:4px 0 6px;font-size:.78rem;color:var(--ink-soft)}
 </style>
 <link rel="stylesheet" href="polish.css?b=20261021194235">
 
@@ -456,6 +457,15 @@ html.lab .shell{padding-top:26px}
           <button type="button" class="abtn" id="siteToggle" disabled>—</button>
         </div>
         <p class="amsg" id="siteMsg">Closing it shows everyone a maintenance notice. You and your school account can still sign in. Remember to open it again &mdash; a closed site on Wednesday morning would be a bad surprise.</p>
+      </div>
+
+      <div class="sec" id="gamesSec">
+        <p class="sec-h">Games</p>
+        <div class="arow">
+          <button type="button" class="abtn quiet" id="gamesLoad">Show who can play</button>
+        </div>
+        <div id="gamesRows"></div>
+        <p class="amsg" id="gamesMsg">Who can play the games (Tycoon, Dragons, Battle Stories, the Arcade, Gate Run and the doodles). New accounts start with games off until you switch them on. Three strikes also takes games away until midnight. Learning &mdash; Level Up and the dashboard &mdash; is never switched off here.</p>
       </div>
 
       <div class="sec" id="switchSec" hidden>
@@ -2598,6 +2608,44 @@ function loadPeople(){
 }
 
 document.getElementById("helperRefresh").addEventListener("click", loadPeople);
+/* ---------- games access ----------
+   One row per person: games on or off, and why. Turning games off asks
+   for a reason, which the pupil sees ("Games are switched off for your
+   account: ..."), so keep it kind and short. The server decides; this
+   only asks it. */
+function loadGames(){
+  var host = document.getElementById("gamesRows");
+  say("gamesMsg", "Loading…");
+  return call({ action:"gamesaccess" }).then(function(d){
+    host.textContent = "";
+    (d.people || []).forEach(function(u){
+      var card = document.createElement("div"); card.className = "acct";
+      var top = document.createElement("div"); top.className = "acct-top";
+      var nm = document.createElement("span"); nm.className = "acct-name"; nm.textContent = u.name;
+      var st = document.createElement("span"); st.className = "gstate " + (u.timedOut ? "out" : u.allowed ? "on" : "off");
+      st.textContent = u.timedOut ? "Timed out today" : u.allowed ? "Games on" : (u.set ? "Games off" : "New - games off");
+      top.appendChild(nm); top.appendChild(st);
+      var why = document.createElement("input"); why.type = "text"; why.maxLength = 200; why.className = "gwhy";
+      why.placeholder = u.allowed ? "Reason (they'll see it), e.g. silly in chat" : "Note (optional)";
+      why.value = u.allowed ? "" : (u.reason || ""); why.setAttribute("aria-label", "Reason for " + u.name);
+      var b = document.createElement("button"); b.type = "button"; b.className = "abtn" + (u.allowed ? " quiet" : "");
+      b.textContent = u.allowed ? "Turn games off" : "Turn games on";
+      b.addEventListener("click", function(){
+        b.disabled = true;
+        call({ action:"gamesset", id:u.id, allowed:!u.allowed, reason: why.value.trim() })
+          .then(loadGames).catch(function(e){ b.disabled = false; say("gamesMsg", e.message, "err"); });
+      });
+      var row = document.createElement("div"); row.className = "arow"; row.appendChild(why); row.appendChild(b);
+      var meta = document.createElement("p"); meta.className = "gmeta";
+      meta.textContent = u.email + (u.reason && u.allowed ? " - " + u.reason : "");
+      card.appendChild(top); card.appendChild(meta); card.appendChild(row); host.appendChild(card);
+    });
+    var on = (d.people || []).filter(function(u){ return u.allowed && !u.timedOut; }).length;
+    say("gamesMsg", on + " of " + (d.people || []).length + " can play right now.");
+  }).catch(function(e){ say("gamesMsg", e.message, "err"); });
+}
+document.getElementById("gamesLoad").addEventListener("click", loadGames);
+
 
 /* ---------- is anything waiting? ----------
    Nothing is fetched until the button is pressed, which was the ask -

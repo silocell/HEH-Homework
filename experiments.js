@@ -690,7 +690,25 @@
   };
   var overlay = null;
 
+  /* Games access (the server decides; see games-gate.js). Asked once
+     when the dashboard starts; until the answer comes, games work as
+     before. A "no" locks the doodles and the Games panel. */
+  var gamesNo = null;
+  function askGames(then){
+    if (!window.sb || !window.sb.rpc) return then && then();
+    window.sb.rpc("my_games").then(function(r){
+      if (!r.error && r.data && r.data.allowed === false) gamesNo = r.data.why || "Games are switched off for your account.";
+      if (then) then();
+    }, function(){ if (then) then(); });
+  }
+  function lockedNote(){
+    var t = el("div", "panel exp-panel");
+    t.style.cssText = "position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:99999;max-width:420px;text-align:center";
+    t.appendChild(el("p", null, "\ud83d\udd12 " + gamesNo)); document.body.appendChild(t);
+    setTimeout(function(){ t.remove(); }, 4000);
+  }
   function openGame(which){
+    if (gamesNo) { lockedNote(); return; }
     if (overlay) overlay.close();
     var g = GAMES[which]; if (!g) return;
     var wrap = el("div", "exp-game"); wrap.setAttribute("role", "dialog"); wrap.setAttribute("aria-label", g.name);
@@ -928,6 +946,9 @@
     p.appendChild(grid);
     var all = el("a", null, "All games \u2192"); all.href = "games.html"; all.style.cssText = "display:inline-block;margin-top:10px;font-weight:600;color:var(--accent,#2f6bff)";
     p.appendChild(all); left.appendChild(p);
+    askGames(function(){ if (!gamesNo) return;
+      grid.textContent = ""; all.remove(); p.appendChild(el("p", "exp-note", "\ud83d\udd12 " + gamesNo));
+      var bar = document.querySelector(".exp-doodle"); if (bar) bar.remove(); });
   }
 
   /* ---------- styles ---------- */
