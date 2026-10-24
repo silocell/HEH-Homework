@@ -55,6 +55,8 @@
     { key:"doodle", name:"Doodle of the day",
       says:"Like a Google doodle: a little game on the dashboard that changes every day - Snake, Brick Breaker or Whack-a-mole. Nothing to do with homework, on purpose." }
   ];
+  /* The fun experiments live in fun.js, which loads first. */
+  if (window.LabFun) CAT = CAT.concat(window.LabFun.CAT);
   window.LAB_EXPERIMENTS = CAT;
 
   /* This file loads at the top of the page, before the dashboard or the
@@ -913,11 +915,12 @@
     var p = el("div", "panel exp-panel"); p.id = "expGames"; tag(p);
     p.appendChild(el("p", "panel-title", "Games"));
     var grid = el("div", "x-ggrid");
-    [["\ud83c\udfce\ufe0f", "Gate Run", "Steer through the right answer", "https://silocell.github.io/HEH-Launchpad-Game/"],
+    [["\ud83c\udfce\ufe0f", "Gate Run", "Race your ghost through the right answer", "https://silocell.github.io/HEH-Launchpad-Game/?ghost=1"],
      ["\u2716\ufe0f", "Times Table Tycoon", "60 seconds - collect Numlings", "tables.html"],
      ["\ud83d\udc09", "Word Dragons", "Grow dragons with English", "dragons.html"],
      ["\u2694\ufe0f", "Battle Stories", "Hastings, 1066", "history.html"],
-     ["\ud83d\ude80", "Level Up", "Practice that learns you", "levelup.html"]].forEach(function(x){
+     ["\ud83d\ude80", "Level Up", "Practice that learns you", "levelup.html"],
+     ["\ud83d\udd79\ufe0f", "Arcade", "Just for fun", "arcade.html"]].forEach(function(x){
       var a = el("a", "x-gtile"); a.href = x[3];
       a.appendChild(el("span", "x-gicon", x[0])); var w = el("span"); w.appendChild(el("b", null, x[1])); w.appendChild(el("small", null, x[2])); a.appendChild(w);
       grid.appendChild(a);
@@ -1013,6 +1016,7 @@
     if (on.eggs) eggs();
     if (on.streak || on.cheer || on.plant) watchTicks(on);
     if (on.streak) paintStreak();
+    if (window.LabFun) window.LabFun.start(on);
   }
 
   /* Wait for the page to have its server connection and a signed-in

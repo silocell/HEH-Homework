@@ -345,7 +345,98 @@ var cata = { id:"catapult", name:"Catapult Castle", icon:"🏰", bg:"#b45309", s
   }
 };
 
-var GAMES = [robin, cata, plane, drop, dbl, rocks];
+/* ===================== Paper Toss =====================
+   Flick a scrunched-up ball of paper into the bin. A fan blows it off
+   course - read the wind before you throw. */
+var toss = { id:"toss", name:"Paper Toss", icon:"🗑️", bg:"#64748b", sub:"Flick the paper in the bin",
+  help:"Drag from the paper ball towards the bin and let go. Watch the fan - it blows the ball sideways.",
+  start:function(){ this.streak = 0; setScore(0); this.newWind(); this.reset(); },
+  newWind:function(){ this.wind = Math.round((Math.random() * 2 - 1) * Math.min(6, 1 + score) * 10) / 10; },
+  reset:function(){ this.ball = { x: W/2, y: H - 70, z: 0, vx: 0, vy: 0, fly: false }; this.msg = ""; this.msgT = 0; this.drag = null; },
+  press:function(p){ if (!this.ball.fly && Math.hypot(p.x - this.ball.x, p.y - this.ball.y) < 60) this.drag = { x0: p.x, y0: p.y, x: p.x, y: p.y, t: performance.now() }; },
+  move:function(p){ if (this.drag) { this.drag.x = p.x; this.drag.y = p.y; } },
+  release:function(){ var d = this.drag; this.drag = null; if (!d) return;
+    var dx = d.x - d.x0, dy = d.y - d.y0; if (dy > -30) return;          // has to be a flick upwards
+    var b = this.ball; b.fly = true; b.t = 0; b.vx = dx * 0.06; b.power = Math.min(1.4, -dy / 220); },
+  step:function(){
+    var s = this, b = s.ball, binX = W/2, binY = 170, binW = 70;
+    if (b.fly) { b.t++; var f = Math.min(1, b.t / 60);                    // one second in the air
+      /* How far it goes depends on how hard you flicked; it lands when
+         the second is up. The fan pushes it sideways the whole way. */
+      b.x += b.vx + s.wind * 0.06;
+      b.y = (H - 70) - (H - 70 - binY) * b.power * f - Math.sin(f * Math.PI) * 70;
+      b.z = f;
+      if (f >= 1) { b.fly = false;
+        var inBin = Math.abs(b.x - binX) < binW / 2 - 6 && Math.abs(b.y - binY) < 36;
+        if (inBin) { s.streak++; setScore(score + s.streak); s.msg = s.streak > 1 ? "In! " + s.streak + " in a row" : "In!"; s.newWind(); }
+        else { s.streak = 0; s.msg = b.y < binY - 36 ? "Too hard!" : b.y > binY + 36 ? "Too soft!" : "Missed!"; }
+        s.msgT = 60; } }
+    else if (s.msgT && --s.msgT === 0) s.reset();
+    // office floor
+    g.fillStyle = "#e7e5e4"; g.fillRect(0, 0, W, H); g.fillStyle = "#d6d3d1"; g.fillRect(0, 120, W, H - 120);
+    // fan + wind
+    g.fillStyle = "#334155"; g.font = "700 15px system-ui"; g.textAlign = "center";
+    g.fillText("Wind " + (s.wind === 0 ? "none" : (s.wind > 0 ? "→ " : "← ") + Math.abs(s.wind)), W/2, 40);
+    var fx = s.wind >= 0 ? 40 : W - 40; g.font = "34px system-ui"; g.fillText("🌀", fx, 90);
+    // the bin
+    g.fillStyle = "#475569"; g.beginPath(); g.moveTo(binX - binW/2, binY - 30); g.lineTo(binX + binW/2, binY - 30); g.lineTo(binX + binW/2 - 10, binY + 40); g.lineTo(binX - binW/2 + 10, binY + 40); g.closePath(); g.fill();
+    g.fillStyle = "#1e293b"; g.beginPath(); g.ellipse(binX, binY - 30, binW/2, 10, 0, 0, Math.PI * 2); g.fill();
+    // ball (smaller as it flies away)
+    var r = 16 - b.z * 8; g.fillStyle = "#f8fafc"; g.strokeStyle = "#94a3b8"; g.lineWidth = 2; g.beginPath(); g.arc(b.x, b.y, r, 0, Math.PI * 2); g.fill(); g.stroke();
+    g.beginPath(); g.moveTo(b.x - r/2, b.y - r/3); g.lineTo(b.x + r/3, b.y + r/4); g.stroke();
+    if (s.drag) { g.strokeStyle = "rgba(15,23,42,.5)"; g.setLineDash([6, 6]); g.beginPath(); g.moveTo(s.drag.x0, s.drag.y0); g.lineTo(s.drag.x, s.drag.y); g.stroke(); g.setLineDash([]); }
+    if (s.msg) text(s.msg, H/2, 34, "#0f172a");
+    else if (!b.fly && !score && !s.streak) text("Flick the ball up at the bin", H/2, 20, "#334155");
+  }
+};
+
+/* ===================== Penalty Shootout =====================
+   Pick a corner and shoot. The keeper remembers where you usually go,
+   so mix it up. Five shots a round. */
+var pen = { id:"penalty", name:"Penalty Shootout", icon:"⚽", bg:"#15803d", sub:"The keeper learns your favourite corner",
+  help:"Click or tap where you want to shoot - or press 1 to 6 (top row 1-3, bottom row 4-6). 5 shots a round.",
+  start:function(){ this.counts = [0,0,0,0,0,0]; this.shots = 0; this.goals = 0; this.anim = null; setScore(0); },
+  shoot:function(spot){ if (this.anim) return; if (this.shots >= 5) { this.start(); return; }
+    // the keeper dives where you've shot most, but not every time
+    var c = this.counts, total = c.reduce(function(a, b){ return a + b; }, 0), guess;
+    if (total < 2 || Math.random() < 0.3) guess = Math.floor(Math.random() * 6);
+    else { var r = Math.random() * total; guess = 0; while (r >= c[guess]) { r -= c[guess]; guess++; } }
+    var col = spot % 3, gcol = guess % 3, row = Math.floor(spot / 3), grow = Math.floor(guess / 3);
+    var saved = col === gcol && (row === grow || col === 1);
+    this.counts[spot]++; this.shots++; if (!saved) { this.goals++; setScore(this.goals); }
+    this.anim = { spot: spot, guess: guess, saved: saved, t: 0 }; },
+  spotAt:function(p){ var gx = 60, gy = 110, gw = 360, gh = 180; if (p.x < gx || p.x > gx + gw || p.y < gy || p.y > gy + gh) return -1;
+    return Math.min(2, Math.floor((p.x - gx) / (gw / 3))) + 3 * Math.min(1, Math.floor((p.y - gy) / (gh / 2))); },
+  press:function(p){ if (this.shots >= 5 && !this.anim) { this.start(); return; } var s = this.spotAt(p); if (s >= 0) this.shoot(s); },
+  key:function(k){ if (k >= "1" && k <= "6") { this.shoot(Number(k) - 1); return true; } if (k === " " && this.shots >= 5) { this.start(); return true; } },
+  step:function(){
+    var s = this, gx = 60, gy = 110, gw = 360, gh = 180, a = s.anim;
+    g.fillStyle = "#16a34a"; g.fillRect(0, 0, W, H);
+    for (var i = 0; i < 8; i++) { g.fillStyle = i % 2 ? "#15803d" : "#16a34a"; g.fillRect(0, 300 + i * 34, W, 34); }
+    g.fillStyle = "#e2e8f0"; g.fillRect(gx - 8, gy - 8, gw + 16, 8); g.fillRect(gx - 8, gy - 8, 8, gh + 8); g.fillRect(gx + gw, gy - 8, 8, gh + 8);
+    g.strokeStyle = "rgba(255,255,255,.35)"; g.lineWidth = 1;
+    for (var x = gx; x <= gx + gw; x += 20) { g.beginPath(); g.moveTo(x, gy); g.lineTo(x, gy + gh); g.stroke(); }
+    for (var y = gy; y <= gy + gh; y += 20) { g.beginPath(); g.moveTo(gx, y); g.lineTo(gx + gw, y); g.stroke(); }
+    if (!a && s.shots < 5) { g.fillStyle = "rgba(255,255,255,.18)"; for (var k = 0; k < 6; k++) g.fillRect(gx + (k % 3) * gw/3 + 6, gy + Math.floor(k / 3) * gh/2 + 6, gw/3 - 12, gh/2 - 12);
+      g.fillStyle = "rgba(255,255,255,.7)"; g.font = "700 18px system-ui"; g.textAlign = "center";
+      for (k = 0; k < 6; k++) g.fillText(k + 1, gx + (k % 3 + .5) * gw/3, gy + (Math.floor(k / 3) + .5) * gh/2 + 6); }
+    // keeper
+    var kx = gx + gw/2, ky = gy + gh - 50, f = a ? Math.min(1, a.t / 25) : 0;
+    if (a) { var tx = gx + (a.guess % 3 + .5) * gw/3, ty = gy + (Math.floor(a.guess / 3) + .5) * gh/2 - 20; kx += (tx - kx) * f; ky += (ty - ky) * f; }
+    g.fillStyle = "#f59e0b"; g.fillRect(kx - 22, ky, 44, 50); g.fillStyle = "#fde68a"; g.beginPath(); g.arc(kx, ky - 12, 13, 0, Math.PI * 2); g.fill();
+    g.fillStyle = "#f59e0b"; g.fillRect(kx - 40, ky + 4, 18, 10); g.fillRect(kx + 22, ky + 4, 18, 10);
+    // ball
+    var bx = W/2, by = H - 90, br = 16;
+    if (a) { var sx = gx + (a.spot % 3 + .5) * gw/3, sy = gy + (Math.floor(a.spot / 3) + .5) * gh/2; bx += (sx - bx) * f; by += (sy - by) * f; br = 16 - 6 * f; a.t++; }
+    g.fillStyle = "#fff"; g.beginPath(); g.arc(bx, by, br, 0, Math.PI * 2); g.fill(); g.fillStyle = "#111"; g.beginPath(); g.arc(bx, by, br * .35, 0, Math.PI * 2); g.fill();
+    g.fillStyle = "#fff"; g.font = "700 16px system-ui"; g.textAlign = "left"; g.fillText("Shot " + Math.min(5, s.shots + (a ? 0 : 1)) + " of 5   Goals " + s.goals, 12, 26);
+    if (a && a.t > 25) text(a.saved ? "Saved!" : "GOAL!", H - 30, 34, a.saved ? "#fde68a" : "#fff");
+    if (a && a.t > 70) s.anim = null;
+    if (!a && s.shots >= 5) overlay([s.goals + " out of 5" + (s.goals === 5 ? " - perfect!" : ""), "Tap or press Space for another round"]);
+  }
+};
+
+var GAMES = [robin, cata, toss, pen, plane, drop, dbl, rocks];
 
 /* ---------- menu ---------- */
 var picks = document.getElementById("picks");
@@ -393,11 +484,12 @@ document.addEventListener("keyup", function(e){ keys[e.key] = false; });
 function pos(e){ var r = cv.getBoundingClientRect(), t = e.touches ? e.touches[0] || e.changedTouches[0] : e; return { x: (t.clientX - r.left) * W / r.width, y: (t.clientY - r.top) * H / r.height }; }
 var sx = 0, sy = 0;
 cv.addEventListener("pointerdown", function(e){ var p = pos(e); sx = p.x; sy = p.y;
-  if (cur === plane || cur === robin) cur.flap(); else if (cur === cata) { cata.press(p); try { cv.setPointerCapture(e.pointerId); } catch(err){} } else if (cur === rocks) rocks.touch(p.x, "start"); else if (cur === drop && drop.dead) drop.start(); });
-cv.addEventListener("pointermove", function(e){ if (cur === rocks && e.buttons) rocks.touch(pos(e).x, "move"); if (cur === cata) cata.drag(pos(e)); });
+  if (cur === plane || cur === robin) cur.flap(); else if (cur === toss) { toss.press(p); try { cv.setPointerCapture(e.pointerId); } catch(err){} } else if (cur === pen) pen.press(p); else if (cur === cata) { cata.press(p); try { cv.setPointerCapture(e.pointerId); } catch(err){} } else if (cur === rocks) rocks.touch(p.x, "start"); else if (cur === drop && drop.dead) drop.start(); });
+cv.addEventListener("pointermove", function(e){ if (cur === rocks && e.buttons) rocks.touch(pos(e).x, "move"); if (cur === cata) cata.drag(pos(e)); if (cur === toss) toss.move(pos(e)); });
 cv.addEventListener("pointerup", function(e){ var p = pos(e), dx = p.x - sx, dy = p.y - sy;
   if (cur === rocks) rocks.touch(p.x, "end");
   if (cur === cata) cata.release();
+  if (cur === toss) toss.release();
   if (cur === dbl && Math.max(Math.abs(dx), Math.abs(dy)) > 30) dbl.swipe(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? "right" : "left") : (dy > 0 ? "down" : "up")); });
 
 /* Straight into a game from a link: arcade.html#drop */
