@@ -46,7 +46,11 @@ branch), `silocell/HEH-Launchpad-Game`.
 
 - Oracle Cloud free tier, ARM VM (2 OCPU, 12 GB), Oracle Linux 9, public IP
   79.72.79.18. Self-hosted Supabase in Docker, in `~/supabase`.
-- HTTPS by Caddy at `79.72.79.18.sslip.io`.
+- HTTPS by Caddy at **`hehs.duckdns.org`** (the address the pages use, since 24 Oct)
+  and the older `79.72.79.18.sslip.io` (still works; BT blocks it at home).
+  Caddy runs as a system service with NO reload action: after editing
+  `/etc/caddy/Caddyfile`, use `sudo systemctl restart caddy`. `caddy` isn't on
+  sudo's PATH, so don't rely on `sudo caddy validate`.
 - **Shiv's home broadband (BT) blocks that address.** At home he uses
   Cloudflare WARP, or an SSH tunnel (`ssh -L 8000:localhost:8000 …`), then the
   dashboard is at http://localhost:8000. If the lab "doesn't load" or sign-in
@@ -170,7 +174,7 @@ used only when key 1 returns 429). Changed with `add-keys.sh` or
 |---|---|---|
 | Override settings ignored | `.env` sets COMPOSE_FILE | add `:docker-compose.override.yml` to it |
 | Function 500 right after copying | SELinux label | `sudo chcon -Rt svirt_sandbox_file_t volumes/functions` |
-| Lab won't load at home | BT Parental Controls block sslip.io | WARP on, or SSH tunnel |
+| Lab won't load at home | BT blocks sslip.io (not duckdns) | pages use hehs.duckdns.org now; WARP only needed for the old address or Google/Microsoft sign-in |
 | Commands fail in odd ways | Pasted into Windows instead of the server, or split by the paste | scp a script, run with `ssh ... "bash ~/x.sh"` |
 | Level Up slow on every question | (fixed 23 Oct) writing on every request | now writes in the background |
 | Explanation points at the wrong option | (fixed 23 Oct) options are shuffled | writer told never to say "the first one" |

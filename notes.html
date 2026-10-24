@@ -707,7 +707,7 @@ var SUPABASE_KEY = "sb_publishable_BTzbP_oOZnfvCgs4UBJYXA_WCTyT88M";
 if (document.documentElement.classList.contains("lab")) {
   var LAB_TUNNEL = false;
   try { LAB_TUNNEL = localStorage.getItem("hl.labapi") === "tunnel"; } catch (e) {}
-  SUPABASE_URL = LAB_TUNNEL ? "http://localhost:8000" : "https://79.72.79.18.sslip.io";
+  SUPABASE_URL = LAB_TUNNEL ? "http://localhost:8000" : "https://hehs.duckdns.org";
   SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzkyNzcxNTQzLCJleHAiOjIxMDgxMzE1NDN9.MFpgmA0d-KISwuCicZMUhnaEpVHY-Sw_jFp3Muck6FM";
 }
 
@@ -1673,7 +1673,7 @@ document.getElementById("newUserForm").addEventListener("submit",function(e){
    Server-level things - restarting, the fake-AI switch - stay on SSH,
    on purpose: a web page that can run commands on a server is the one
    prize anybody who stole this login would want. */
-var LAB_API  = "https://79.72.79.18.sslip.io";
+var LAB_API  = "https://hehs.duckdns.org";
 var LAB_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzkyNzcxNTQzLCJleHAiOjIxMDgxMzE1NDN9.MFpgmA0d-KISwuCicZMUhnaEpVHY-Sw_jFp3Muck6FM";
 
 function labTimed(url, opts){

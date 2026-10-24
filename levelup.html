@@ -183,7 +183,7 @@ var LAB = document.documentElement.classList.contains("lab");
 if (LAB) {
   var TUNNEL = false;
   try { TUNNEL = localStorage.getItem("hl.labapi") === "tunnel"; } catch (e) {}
-  SUPABASE_URL = TUNNEL ? "http://localhost:8000" : "https://79.72.79.18.sslip.io";
+  SUPABASE_URL = TUNNEL ? "http://localhost:8000" : "https://hehs.duckdns.org";
   SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzkyNzcxNTQzLCJleHAiOjIxMDgxMzE1NDN9.MFpgmA0d-KISwuCicZMUhnaEpVHY-Sw_jFp3Muck6FM";
 }
 var sb = null;

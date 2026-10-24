@@ -11,7 +11,7 @@ GitHub Pages, with Supabase for accounts, data and edge functions.
 | Site | Repo / branch | Address | Database |
 |---|---|---|---|
 | Real site | `silocell/HEH-Homework`, `main` | silocell.github.io/HEH-Homework/ | Hosted Supabase (project `lkyfpvlrqgezgitfmpqo`) |
-| Lab (testing copy) | `HEH-Homework`, `lab` branch → published to `silocell/HEH-Launchpad-Lab` | silocell.github.io/HEH-Launchpad-Lab/ | Self-hosted Supabase on an Oracle Cloud ARM machine, `https://79.72.79.18.sslip.io` |
+| Lab (testing copy) | `HEH-Homework`, `lab` branch → published to `silocell/HEH-Launchpad-Lab` | silocell.github.io/HEH-Launchpad-Lab/ | Self-hosted Supabase on an Oracle Cloud ARM machine, `https://hehs.duckdns.org` (old: `79.72.79.18.sslip.io`, blocked by BT) |
 | Gate Run (game) | `silocell/HEH-Launchpad-Game` | silocell.github.io/HEH-Launchpad-Game/ | none |
 
 The same files serve both the real site and the lab. Lab mode is decided by

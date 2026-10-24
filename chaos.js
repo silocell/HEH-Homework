@@ -17,7 +17,7 @@
 
   /* Whichever server this copy talks to: the lab one, through the
      tunnel or not, or the real one if the lab is ever pointed back. */
-  var HOSTS = /lkyfpvlrqgezgitfmpqo\.supabase\.co|79\.72\.79\.18\.sslip\.io|localhost:8000/;
+  var HOSTS = /lkyfpvlrqgezgitfmpqo\.supabase\.co|79\.72\.79\.18\.sslip\.io|hehs\.duckdns\.org|localhost:8000/;
   var FAULTS = [
     { key:"slow",     name:"Everything slow",     says:"Every request to the server takes four seconds." },
     { key:"ai_down",  name:"AI down",             says:"The explainer and the chat checks fail with a server error." },
