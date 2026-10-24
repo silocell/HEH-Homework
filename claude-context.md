@@ -44,7 +44,7 @@ branch), `silocell/HEH-Launchpad-Game`.
 
 ## The lab server
 
-- Oracle Cloud free tier, ARM VM (2 OCPU, 12 GB), Oracle Linux 9, public IP
+- Oracle Cloud free tier, ARM VM (1 OCPU, 6 GB since 24 Oct; was 2 OCPU, 12 GB), Oracle Linux 9, public IP
   79.72.79.18. Self-hosted Supabase in Docker, in `~/supabase`.
 - HTTPS by Caddy at **`hehs.duckdns.org`** (the address the pages use, since 24 Oct)
   and the older `79.72.79.18.sslip.io` (still works; BT blocks it at home).
