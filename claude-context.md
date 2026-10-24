@@ -64,6 +64,10 @@ branch), `silocell/HEH-Launchpad-Game`.
   can't be read) then
   `sudo docker compose up -d --force-recreate functions`.
 - Signups are off (`DISABLE_SIGNUP=true`); accounts are made by Shiv.
+- Sign in with Microsoft is on (since 24 Oct, `add-microsoft.sh`, settings in
+  `docker-compose.azure.yml`). It only works for an email that already has a
+  lab account, because signups are off. "Signups not allowed" after the
+  Microsoft screen = that email has no lab account yet.
 
 ### How Shiv runs commands
 
