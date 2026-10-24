@@ -333,11 +333,40 @@ function taskBtn(key, num, name, sub, frac, done){
 }
 
 /* ---------------- a question ---------------- */
+/* Writing a question can take a few seconds when the bank hasn't got
+   one ready. The pupil spends those seconds reading the feedback on
+   the last one, so we start fetching the next one then - the same
+   single request, just begun earlier. By the time "Next question" is
+   clicked it is usually already here. */
+var waiting = null;                    // { task: ..., p: Promise }
+function prefetch(task){
+  if (waiting && waiting.task === task) return;
+  var p = api({ action:"next", task:task });
+  waiting = { task: task, p: p };
+  /* A failure must not become an unhandled rejection, and must not be
+     retried behind the pupil's back - we simply forget it and let the
+     click make an ordinary request. */
+  p.catch(function(){ if (waiting && waiting.p === p) waiting = null; });
+}
+function nextQuestion(task){
+  if (waiting && waiting.task === task){
+    var p = waiting.p; waiting = null;
+    return p;
+  }
+  waiting = null;
+  return api({ action:"next", task:task });
+}
 function play(task, dots){
   if (!auto && sinceCheck >= 6 && mem.length >= 3 && Math.random() < 0.6) { sinceCheck = 0; return memoryCheck(function(){ play(task, dots); }); }
-  main.textContent = "";
-  main.appendChild(h("div", "center muted", "Getting your next question…"));
-  api({ action:"next", task:task }).then(function(q){ drawQ(task, q, dots); }).catch(showErr);
+  var p = nextQuestion(task), arrived = false;
+  /* Only say we're waiting if we actually are. */
+  p.then(function(){ arrived = true; });
+  setTimeout(function(){
+    if (arrived) return;
+    main.textContent = "";
+    main.appendChild(h("div", "center muted", "Getting your next question\u2026"));
+  }, 120);
+  p.then(function(q){ drawQ(task, q, dots); }).catch(showErr);
 }
 
 function drawQ(task, q, dots){
@@ -435,6 +464,8 @@ function drawQ(task, q, dots){
       rep.onclick = function(){ api({ action:"report", id:q.id }).then(function(x){ rep.replaceWith(h("small", "muted", x.said || "Thanks.")); }); };
       var foot = h("div", "qbar"); foot.appendChild(rep); foot.appendChild(h("span", "sp"));
       var nd = dots.concat([r.right ? 1 : 0]);
+      /* Start the next one now, while this feedback is being read. */
+      if (!r.taskDone) prefetch(task);
       var next = h("button", "btn", r.taskDone ? "Finish task" : "Next question"); next.type = "button";
       next.onclick = function(){ r.taskDone ? taskParty(q.task, r.bonus, nd) : play(task, nd); };
       foot.appendChild(next);
@@ -455,7 +486,7 @@ function drawQ(task, q, dots){
   };
 }
 function pickOf(a){ return a[Math.floor(Math.random() * a.length)]; }
-function homeNow(){ dropKeyHandlers(); home(); }
+function homeNow(){ dropKeyHandlers(); waiting = null; home(); }
 
 function taskParty(name, bonus, dots){
   dropKeyHandlers();
