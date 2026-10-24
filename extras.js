@@ -812,6 +812,7 @@
     tile("✖️", "Times Table Tycoon", "60-second rounds", "tables.html");
     tile("🐉", "Word Dragons", "Grow dragons with English", "dragons.html");
     tile("⚔️", "Battle Stories", "Hastings, 1066", "history.html");
+    tile("🕹️", "Arcade", "Just for fun - 6 games", "arcade.html");
     p.appendChild(grid);
     var all = el("a", null, "All games \u2192"); all.href = "games.html"; all.style.cssText = "display:inline-block;margin-top:10px;font-weight:600";
     p.appendChild(all);
