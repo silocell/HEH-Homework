@@ -89,7 +89,13 @@ function h(t, c, x){ var e = document.createElement(t); if (c) e.className = c; 
 var grid;
 GAMES.forEach(function(g){
   if (!LAB && g.where === "lab") return;          // the real site only lists what's live there
-  if (g.group !== last) { list.appendChild(h("h2", null, g.group)); grid = h("div", "grid"); list.appendChild(grid); last = g.group; }
+  if (g.group !== last) {
+    var head = h("h2", null, g.group);
+    /* "Scratch games" -> id="scratch", so the dashboard button can
+       link straight to this group. */
+    head.id = g.group.toLowerCase().split(" ")[0];
+    list.appendChild(head); grid = h("div", "grid"); list.appendChild(grid); last = g.group;
+  }
   var a = h("a", "game"); a.href = g.url;
   /* Lab testers get Gate Run with the ghost race switched on. */
   if (LAB && g.name === "Gate Run") a.href = g.url + "?ghost=1";

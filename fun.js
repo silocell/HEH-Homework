@@ -18,9 +18,15 @@
   var reduce = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
   function cols(){ var col = document.querySelector("#todoList") && document.querySelector("#todoList").closest(".col");
     return { right: col, left: col && col.parentNode.querySelector(".col") }; }
+  /* These are the daft ones - a class pet, an excuse machine, a sticker
+     book. They say so on the panel, so nobody mistakes any of it for
+     school work. */
   function panel(id, title, where){ var c = cols(), host = where === "right" ? c.right : c.left; if (!host || document.getElementById(id)) return null;
-    var p = el("div", "panel exp-panel fun-panel"); p.id = id; var t = el("span", "exp-tag", "Lab experiment"); p.appendChild(t);
-    p.appendChild(el("p", "panel-title", title));
+    var p = el("div", "panel exp-panel fun-panel"); p.id = id;
+    p.appendChild(el("span", "exp-tag", "Lab experiment"));
+    var t = el("p", "panel-title", title);
+    t.appendChild(el("span", "fun-pill", "Just for fun"));
+    p.appendChild(t);
     if (where === "right-top") { var todo = document.querySelector("#todoList").closest(".panel"); c.right.insertBefore(p, todo); }
     else host.appendChild(p);
     return p; }
@@ -200,6 +206,8 @@
 
   var css = el("style");
   css.textContent =
+    ".fun-pill{display:inline-block;margin-left:8px;padding:2px 9px;border-radius:999px;font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;vertical-align:middle;background:rgba(219,39,119,.16);color:#db2777}" +
+    "html[data-theme='dark'] .fun-pill{background:rgba(244,114,182,.18);color:#f9a8d4}" +
     ".fun-big{font-weight:700;margin:6px 0}.fun-bar{height:14px;border-radius:999px;background:rgba(127,127,127,.2);overflow:hidden;margin:6px 0}" +
     ".fun-fill{height:100%;border-radius:999px;transition:width .6s}.fun-monster{font-size:46px;line-height:1}" +
     ".fun-pet{line-height:1.1;text-align:center}.fun-bounce{animation:funbounce 1.2s ease-in-out infinite}@keyframes funbounce{50%{transform:translateY(-8px)}}" +
