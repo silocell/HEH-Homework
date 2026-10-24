@@ -365,6 +365,15 @@
       if (done && done.day === today()) mark(done.pick);
     }
 
+    /* Signed in: one Level Up question a day at this pupil's level
+       (level-practice.js). Otherwise, or if that can't help, the old
+       Gate Run question below. */
+    if (window.LevelPractice && window.LevelPractice.signedIn()) {
+      window.LevelPractice.daily({ q: q, opts: opts, note: note }, oldQuiz);
+      return;
+    }
+    oldQuiz();
+    function oldQuiz(){
     var saved = read("hl.exp.warmup", null);
     if (saved && saved.day === today()) { show(saved.item); return; }
     var s = document.createElement("script");
@@ -378,6 +387,7 @@
     };
     s.onerror = function(){ q.textContent = "Couldn't load today's question."; };
     document.head.appendChild(s);
+    }
   }
 
 
@@ -600,34 +610,66 @@
     f1.placeholder = "Front - e.g. Capital of France"; f2.placeholder = "Back - e.g. Paris";
     f1.maxLength = f2.maxLength = 200; add.type = "submit";
     form.appendChild(f1); form.appendChild(f2); form.appendChild(add);
+    /* Decks: your own cards, plus Maths, English and History pitched at
+       your level (level-practice.js). */
+    var tabs = el("div", "exp-row lp-decks");
+    var deckNote = el("p", "exp-note lp-tag");
+    var bKnew = el("button", "ghost-btn", "I knew it"); bKnew.type = "button"; bKnew.hidden = true;
+    nav.appendChild(bKnew);
+    [["mine", "My cards"], ["maths", "Maths"], ["english", "English"], ["history", "History"]].forEach(function(dk){
+      if (dk[0] !== "mine" && !window.LevelPractice) return;
+      var t = el("button", "ghost-btn lp-deck", dk[1]); t.type = "button"; t.dataset.deck = dk[0];
+      t.setAttribute("aria-pressed", dk[0] === "mine" ? "true" : "false");
+      t.addEventListener("click", function(){ useDeck(dk[0]); });
+      tabs.appendChild(t);
+    });
+    p.appendChild(tabs); p.appendChild(deckNote);
     p.appendChild(card); p.appendChild(meta); p.appendChild(nav); p.appendChild(form);
     left.appendChild(p);
 
-    var cards = read("hl.exp.cards", []), at = 0, flipped = false;
+    var mineCards = read("hl.exp.cards", []), cards = mineCards, at = 0, flipped = false, deckName = "mine";
+    function useDeck(name){
+      deckName = name; at = 0; flipped = false;
+      [].forEach.call(tabs.children, function(t){ t.setAttribute("aria-pressed", t.dataset.deck === name ? "true" : "false"); });
+      form.hidden = bDel.hidden = name !== "mine";
+      bKnew.hidden = name !== "history";
+      if (name === "mine") { cards = mineCards; deckNote.textContent = ""; paint(); return; }
+      cards = []; deckNote.textContent = "Getting your cards..."; paint();
+      window.LevelPractice.deck(name).then(function(r){
+        if (deckName !== name) return;            /* switched deck while loading */
+        cards = r.cards; deckNote.textContent = r.note; paint();
+      });
+    }
+    bKnew.addEventListener("click", function(){
+      if (!cards.length || cards[at].hist == null) return;
+      window.LevelPractice.knewIt(cards[at].hist);
+      cards[at].chip = (cards[at].chip || "") + " - known";
+      at = (at + 1) % cards.length; flipped = false; paint();
+    });
     function paint(){
-      if (!cards.length){ card.textContent = "No cards yet. Add one below."; card.disabled = true; meta.textContent = ""; }
+      if (!cards.length){ card.textContent = deckName === "mine" ? "No cards yet. Add one below." : "No cards here yet."; card.disabled = true; meta.textContent = ""; }
       else {
         at = Math.max(0, Math.min(at, cards.length - 1));
         card.disabled = false;
         card.textContent = flipped ? cards[at].b : cards[at].f;
         card.classList.toggle("exp-flipped", flipped);
-        meta.textContent = "Card " + (at+1) + " of " + cards.length + (flipped ? " - the answer" : " - tap to flip");
+        meta.textContent = "Card " + (at+1) + " of " + cards.length + (cards[at].chip ? " - " + cards[at].chip : "") + (flipped ? " - the answer" : " - tap to flip");
       }
-      [bPrev, bNext, bMix, bDel].forEach(function(x){ x.disabled = !cards.length; });
+      [bPrev, bNext, bMix, bDel, bKnew].forEach(function(x){ x.disabled = !cards.length; });
     }
     card.addEventListener("click", function(){ flipped = !flipped; paint(); });
     bNext.addEventListener("click", function(){ at = (at + 1) % cards.length; flipped = false; paint(); });
     bPrev.addEventListener("click", function(){ at = (at - 1 + cards.length) % cards.length; flipped = false; paint(); });
     bMix.addEventListener("click", function(){
       for (var i = cards.length - 1; i > 0; i--){ var j = Math.floor(Math.random()*(i+1)); var t = cards[i]; cards[i] = cards[j]; cards[j] = t; }
-      at = 0; flipped = false; store("hl.exp.cards", cards); paint();
+      at = 0; flipped = false; if (deckName === "mine") store("hl.exp.cards", cards); paint();
     });
     bDel.addEventListener("click", function(){ cards.splice(at, 1); flipped = false; store("hl.exp.cards", cards); paint(); });
     form.addEventListener("submit", function(e){
       e.preventDefault();
       var a = f1.value.trim(), b = f2.value.trim();
       if (!a || !b) return;
-      cards.push({ f:a, b:b }); store("hl.exp.cards", cards.slice(-300));
+      mineCards.push({ f:a, b:b }); store("hl.exp.cards", mineCards.slice(-300));
       at = cards.length - 1; flipped = false; f1.value = f2.value = ""; f1.focus(); paint();
     });
     paint();
@@ -928,6 +970,7 @@
     ".exp-card{display:block;width:100%;min-height:110px;margin:6px 0 0;padding:18px;border-radius:12px;" +
     "border:1px solid var(--rule);background:var(--card,#fff);color:var(--ink);font:inherit;font-size:1.1rem;" +
     "font-weight:600;cursor:pointer;text-align:center}" +
+    ".exp-card{white-space:pre-line}.lp-decks{margin:2px 0 0}.lp-deck[aria-pressed=true]{border-color:currentColor;font-weight:700}.lp-tag{margin:4px 0 0;font-size:.78rem;opacity:.8}" +
     ".exp-card.exp-flipped{background:rgba(124,58,237,.08);border-color:#7c3aed}" +
     ".exp-cardform{display:grid;grid-template-columns:1fr 1fr auto;gap:6px;margin-top:12px}" +
     ".exp-cardform input{font:inherit;font-size:.85rem;padding:8px 10px;border:1px solid var(--rule);border-radius:8px;background:var(--paper);color:var(--ink);min-width:0}" +
