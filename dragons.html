@@ -76,6 +76,7 @@ input[type=email],select{font:inherit;padding:10px 12px;border:1px solid var(--r
 .xbtn:hover{background:rgba(255,255,255,.26)}
 .xbtn:focus-visible{outline:3px solid #fde68a;outline-offset:2px}
 </style>
+<script src="games-gate.js?b=20261024a"></script>
 </head>
 <body>
 <div class="labbar">Lab — things here are being tried out and may break <a href="./">back to the Launchpad</a></div>
@@ -384,8 +385,8 @@ function fight(r, second){
   show();
 }
 
-if (!LAB) { main.textContent = ""; main.appendChild(h("div", "card center", "Word Dragons is being tried out on the lab first.")); }
-else if (!sb) err(new Error("Couldn't load. Check your connection."));
+/* Live as well as lab: the dragons function is installed on both. */
+if (!sb) err(new Error("Couldn't load. Check your connection."));
 else sb.auth.getSession().then(function(r){
   if (!r.data || !r.data.session) {
     main.textContent = ""; var b = h("div", "card center"); b.appendChild(h("div", null, "🐉")).style.fontSize = "3rem";
