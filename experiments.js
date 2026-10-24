@@ -902,7 +902,8 @@
     var d = new Date(), n = Math.floor((d.getTime() - d.getTimezoneOffset()*60000) / 86400000);
     var which = keys[n % keys.length], g = GAMES[which];
     var bar = el("button", "exp-doodle"); bar.type = "button";
-    bar.innerHTML = '<span class="exp-doodle-k">Today’s doodle</span><b></b><span class="exp-doodle-go">Play</span>';
+    bar.innerHTML = '<span class="exp-doodle-k">Today’s doodle · just for fun</span><b></b>' +
+                    '<span class="exp-doodle-go">Play</span>';
     bar.querySelector("b").textContent = g.name;
     bar.addEventListener("click", function(){ openGame(which); });
     cols.parentNode.insertBefore(bar, cols);
@@ -946,25 +947,35 @@
     if (!left || document.getElementById("expGames")) return;
     var p = el("div", "panel exp-panel"); p.id = "expGames"; tag(p);
     p.appendChild(el("p", "panel-title", "Games"));
-    var grid = el("div", "x-ggrid");
-    [["\ud83c\udfce\ufe0f", "Gate Run", "Race your ghost through the right answer", "https://silocell.github.io/HEH-Launchpad-Game/?ghost=1"],
+    /* Two clearly named groups, so school work and play never sit in
+       one undifferentiated pile. */
+    var grid = null;
+    function group(words){
+      p.appendChild(el("p", "x-ghead", words));
+      grid = el("div", "x-ggrid"); p.appendChild(grid);
+    }
+    function tiles(list){
+      list.forEach(function(x){
+        var a = el("a", "x-gtile"); a.href = x[3];
+        a.appendChild(el("span", "x-gicon", x[0]));
+        var w = el("span"); w.appendChild(el("b", null, x[1])); w.appendChild(el("small", null, x[2]));
+        a.appendChild(w); grid.appendChild(a);
+      });
+    }
+    group("Learn while you play");
+    tiles([["\ud83c\udfce\ufe0f", "Gate Run", "Race your ghost through the right answer", "https://silocell.github.io/HEH-Launchpad-Game/?ghost=1"],
+     ["\ud83d\ude80", "Level Up", "Practice that learns you", "levelup.html"],
      ["\u2716\ufe0f", "Times Table Tycoon", "60 seconds - collect Numlings", "tables.html"],
      ["\ud83d\udc09", "Word Dragons", "Grow dragons with English", "dragons.html"],
-     ["\u2694\ufe0f", "Battle Stories", "Hastings, 1066", "history.html"],
-     ["\ud83d\ude80", "Level Up", "Practice that learns you", "levelup.html"],
-     ["\ud83d\udd79\ufe0f", "Arcade", "Just for fun", "arcade.html"],
-     /* The Scratch-made games, same list as the Games page. */
+     ["\u2694\ufe0f", "Battle Stories", "Hastings, 1066", "history.html"]]);
+    group("Just for fun · no school work in these");
+    tiles([["\ud83d\udd79\ufe0f", "Arcade", "8 little games", "arcade.html"],
      ["\ud83d\ude97", "VroomZoom", "Three laps, beat the clock", "sg-vroom.html"],
      ["\ud83c\udf00", "Maze of Confusion", "Three mazes, sixty seconds", "sg-maze.html"],
      ["\ud83e\udd86", "Ducks Rampage", "Dodge yellow, catch silver", "sg-ducks.html"],
      ["\u2694\ufe0f", "Gem Quest", "A tiny RPG - get all 3 gems", "sg-quest.html"],
      ["\ud83c\udfd3", "2 Player Pong", "Grab a friend - first to 7", "sg-pong.html"],
-     ["\ud83c\udf49", "Fruit Slash", "Slice the fruit, not the bomb", "sg-fruit.html"]].forEach(function(x){
-      var a = el("a", "x-gtile"); a.href = x[3];
-      a.appendChild(el("span", "x-gicon", x[0])); var w = el("span"); w.appendChild(el("b", null, x[1])); w.appendChild(el("small", null, x[2])); a.appendChild(w);
-      grid.appendChild(a);
-    });
-    p.appendChild(grid);
+     ["\ud83c\udf49", "Fruit Slash", "Slice the fruit, not the bomb", "sg-fruit.html"]]);
     var all = el("a", null, "All games \u2192"); all.href = "games.html"; all.style.cssText = "display:inline-block;margin-top:10px;font-weight:600;color:var(--accent,#2f6bff)";
     p.appendChild(all); left.appendChild(p);
     askGames(function(){ if (!gamesNo) return;
@@ -976,6 +987,9 @@
   var css = el("style");
   css.textContent =
     ".exp-panel{position:relative}" +
+    ".x-ghead{margin:14px 0 8px;font-size:.72rem;font-weight:700;text-transform:uppercase;" +
+      "letter-spacing:.08em;color:var(--ink-soft)}" +
+    ".x-ghead:first-of-type{margin-top:4px}" +
     ".x-ggrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px}" +
     ".x-gtile{display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--rule);border-radius:12px;color:var(--ink);text-decoration:none}" +
     ".x-gtile:hover{border-color:var(--accent)}.x-gtile b{display:block}.x-gtile small{display:block;color:var(--ink-soft);font-size:.78rem}" +
