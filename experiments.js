@@ -686,7 +686,12 @@
   var GAMES = {
     snake:     { name:"Snake",       how:"Arrow keys or WASD - or swipe. Eat the apples, don't eat yourself." },
     breakout:  { name:"Brick Breaker",    how:"Move with the arrow keys, the mouse, or your finger. Clear every brick." },
-    mole:      { name:"Whack-a-mole",how:"Click or tap the moles before they hide. 30 seconds." }
+    mole:      { name:"Whack-a-mole",how:"Click or tap the moles before they hide. 30 seconds." },
+    /* A doodle that isn't a canvas game: the packaged Scratch game is
+       opened in a frame inside the same overlay. It keeps its own
+       score, so the overlay doesn't show one. */
+    fruit:     { name:"Fruit Slash", how:"Swipe with the mouse to slice the fruit - never the bomb.",
+                 page:"sg-fruit.html" }
   };
   var overlay = null;
 
@@ -717,11 +722,19 @@
     var title = el("b", null, g.name), score = el("span", "exp-game-score", "Score 0");
     var close = el("button", "ghost-btn", "Close"); close.type = "button";
     head.appendChild(title); head.appendChild(score); head.appendChild(close);
-    var cv = el("canvas", "exp-game-cv"); cv.width = 400; cv.height = 400; cv.tabIndex = 0;
+    var cv, frame = null;
+    if (g.page) {
+      frame = el("iframe", "exp-game-frame");
+      frame.src = g.page; frame.title = g.name; frame.setAttribute("loading", "eager");
+      cv = frame;                       // the thing that fills the box
+      score.hidden = true;              // the game keeps its own score
+    } else {
+      cv = el("canvas", "exp-game-cv"); cv.width = 400; cv.height = 400; cv.tabIndex = 0;
+    }
     var foot = el("p", "exp-note", g.how);
     box.appendChild(head); box.appendChild(cv); box.appendChild(foot);
     wrap.appendChild(box); document.body.appendChild(wrap);
-    var ctx2 = cv.getContext("2d");
+    var ctx2 = frame ? null : cv.getContext("2d");
     var bestKey = "hl.exp.best." + which, best = read(bestKey, 0);
     var stopFn = null, alive = true;
     function setScore(n){ score.textContent = "Score " + n + (best ? " - best " + best : ""); }
@@ -747,6 +760,7 @@
       foot.textContent = g.how; setScore(0);
       stopFn = (which === "snake" ? snake : which === "breakout" ? breakout : mole)(cv, ctx2, setScore, finish, colour);
     }
+    if (frame) { setTimeout(function(){ frame.focus(); }, 30); return; }
     cv.addEventListener("keydown", function(e){ if (e.key === " " && foot.textContent.indexOf("play again") > 0){ e.preventDefault(); start(); } });
     cv.addEventListener("click", function(){ if (foot.textContent.indexOf("play again") > 0) start(); });
     setTimeout(function(){ cv.focus(); start(); }, 30);
@@ -884,7 +898,7 @@
   function doodle(){
     var cols = document.querySelector(".columns");
     if (!cols) return;
-    var keys = ["snake", "breakout", "mole"];
+    var keys = ["snake", "breakout", "mole", "fruit"];
     var d = new Date(), n = Math.floor((d.getTime() - d.getTimezoneOffset()*60000) / 86400000);
     var which = keys[n % keys.length], g = GAMES[which];
     var bar = el("button", "exp-doodle"); bar.type = "button";
@@ -938,7 +952,14 @@
      ["\ud83d\udc09", "Word Dragons", "Grow dragons with English", "dragons.html"],
      ["\u2694\ufe0f", "Battle Stories", "Hastings, 1066", "history.html"],
      ["\ud83d\ude80", "Level Up", "Practice that learns you", "levelup.html"],
-     ["\ud83d\udd79\ufe0f", "Arcade", "Just for fun", "arcade.html"]].forEach(function(x){
+     ["\ud83d\udd79\ufe0f", "Arcade", "Just for fun", "arcade.html"],
+     /* The Scratch-made games, same list as the Games page. */
+     ["\ud83d\ude97", "VroomZoom", "Three laps, beat the clock", "sg-vroom.html"],
+     ["\ud83c\udf00", "Maze of Confusion", "Three mazes, sixty seconds", "sg-maze.html"],
+     ["\ud83e\udd86", "Ducks Rampage", "Dodge yellow, catch silver", "sg-ducks.html"],
+     ["\u2694\ufe0f", "Gem Quest", "A tiny RPG - get all 3 gems", "sg-quest.html"],
+     ["\ud83c\udfd3", "2 Player Pong", "Grab a friend - first to 7", "sg-pong.html"],
+     ["\ud83c\udf49", "Fruit Slash", "Slice the fruit, not the bomb", "sg-fruit.html"]].forEach(function(x){
       var a = el("a", "x-gtile"); a.href = x[3];
       a.appendChild(el("span", "x-gicon", x[0])); var w = el("span"); w.appendChild(el("b", null, x[1])); w.appendChild(el("small", null, x[2])); a.appendChild(w);
       grid.appendChild(a);
@@ -1006,6 +1027,7 @@
     ".exp-game-head b{font-size:1.1rem}.exp-game-score{margin-left:auto;font-size:.82rem;color:var(--ink-soft)}" +
     ".exp-game-cv{display:block;width:100%;height:auto;aspect-ratio:1;border-radius:10px;border:1px solid var(--rule);touch-action:none;outline:none}" +
     ".exp-game-cv:focus-visible{outline:2px solid #7c3aed}" +
+    ".exp-game-frame{width:min(92vw,760px);height:min(68vh,560px);border:0;border-radius:12px;background:#000;display:block}" +
     ".exp-doodle{display:flex;align-items:center;gap:12px;width:100%;margin:0 0 18px;padding:12px 16px;border:0;cursor:pointer;" +
     "border-radius:14px;font:inherit;color:#fff;text-align:left;" +
     "background:linear-gradient(100deg,#f08c00,#e8590c 40%,#c2255c);box-shadow:0 8px 24px -12px rgba(232,89,12,.8)}" +
@@ -1031,7 +1053,7 @@
     if (on.konami) konami();
     gamesPanel();          // always on in the lab, like on the real site
     /* From the Games page: ?play=snake opens that game straight away. */
-    var pm = location.search.match(/[?&]play=(snake|breakout|mole)\b/);
+    var pm = location.search.match(/[?&]play=(snake|breakout|mole|fruit)\b/);
     if (pm) setTimeout(function(){ openGame(pm[1]); }, 300);
     if (on.doodle) doodle();
     if (on.eggs) eggs();

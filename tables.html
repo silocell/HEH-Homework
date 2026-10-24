@@ -509,8 +509,8 @@ function drawTrade(){
 }
 
 /* ---------- start ---------- */
-if (!LAB) { main.textContent = ""; main.appendChild(h("div", "card center", "Times Table Tycoon is being tried out on the lab first.")); }
-else if (!sb) err(new Error("Couldn't load. Check your connection."));
+/* Live as well as lab: the tables function is installed on both. */
+if (!sb) err(new Error("Couldn't load. Check your connection."));
 else sb.auth.getSession().then(function(r){
   if (!r.data || !r.data.session) {
     main.textContent = "";

@@ -385,8 +385,8 @@ function fight(r, second){
   show();
 }
 
-if (!LAB) { main.textContent = ""; main.appendChild(h("div", "card center", "Word Dragons is being tried out on the lab first.")); }
-else if (!sb) err(new Error("Couldn't load. Check your connection."));
+/* Live as well as lab: the dragons function is installed on both. */
+if (!sb) err(new Error("Couldn't load. Check your connection."));
 else sb.auth.getSession().then(function(r){
   if (!r.data || !r.data.session) {
     main.textContent = ""; var b = h("div", "card center"); b.appendChild(h("div", null, "🐉")).style.fontSize = "3rem";

@@ -562,10 +562,10 @@ function showErr(e){
   box.appendChild(again);
   main.appendChild(box);
 }
-if (!LAB) {
-  main.innerHTML = "";
-  main.appendChild(h("div", "card center", "Level Up is being tried out on the lab copy of the Launchpad first."));
-} else if (!sb) {
+/* Level Up runs on the real site too now: the levelup function and its
+   tables are installed on the live server, so there is nothing to hold
+   back. The lab still gets new features first. */
+if (!sb) {
   showErr(new Error("Couldn't load. Check your connection."));
 } else {
   sb.auth.getSession().then(function(r){
