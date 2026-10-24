@@ -25,14 +25,6 @@
   function el(tag, cls, text){ var e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; }
   function tag(){ /* the lab marks these; the real site doesn't */ }
 
-  /* Anything here that is play rather than school work says so, right
-     on the panel, so nobody has to guess which is which. */
-  function funLabel(node, words){
-    var s = el("span", "x-fun", words || "Just for fun");
-    if (node.classList.contains("panel-title")) node.appendChild(s);
-    else node.insertBefore(s, node.firstChild);
-    return s;
-  }
 
   /* ---------- Focus timer ---------- */
   function focusTimer(){
@@ -302,8 +294,7 @@
     if (!col) return;
     var p = el("div", "panel exp-panel"); p.id = "expPlant";
     tag(p);
-    var plantTitle = el("p", "panel-title", "Your plant");
-    funLabel(plantTitle); p.appendChild(plantTitle);
+    p.appendChild(el("p", "panel-title", "Your plant"));
     var art = el("div", "exp-plant-art"), cap = el("p", "exp-note");
     art.id = "expPlantArt"; cap.id = "expPlantCap";
     p.appendChild(art); p.appendChild(cap);
@@ -701,8 +692,7 @@
     var d = new Date(), n = Math.floor((d.getTime() - d.getTimezoneOffset()*60000) / 86400000);
     var which = keys[n % keys.length], g = GAMES[which];
     var bar = el("button", "exp-doodle"); bar.type = "button";
-    bar.innerHTML = '<span class="exp-doodle-k">Today’s doodle · just for fun</span><b></b>' +
-                    '<span class="exp-doodle-go">Play</span>';
+    bar.innerHTML = '<span class="exp-doodle-k">Today’s doodle</span><b></b><span class="exp-doodle-go">Play</span>';
     bar.querySelector("b").textContent = g.name;
     bar.addEventListener("click", function(){ openGame(which); });
     cols.parentNode.insertBefore(bar, cols);
@@ -744,13 +734,6 @@
   var css = el("style");
   css.textContent =
     ".exp-panel{position:relative}" +
-    ".x-fun{display:inline-block;margin-left:8px;padding:2px 9px;border-radius:999px;font-size:.62rem;" +
-      "font-weight:700;text-transform:uppercase;letter-spacing:.07em;vertical-align:middle;" +
-      "background:rgba(219,39,119,.16);color:#db2777}" +
-    "html[data-theme='dark'] .x-fun{background:rgba(244,114,182,.18);color:#f9a8d4}" +
-    ".x-ghead{margin:14px 0 8px;font-size:.72rem;font-weight:700;text-transform:uppercase;" +
-      "letter-spacing:.08em;color:var(--ink-soft)}" +
-    ".x-ghead:first-of-type{margin-top:4px}" +
     ".x-ggrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px}" +
     ".x-gtile{display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--rule);border-radius:12px;background:transparent;" +
     "color:var(--ink);text-decoration:none;text-align:left;font:inherit;cursor:pointer;transition:transform .15s,border-color .15s}" +
@@ -829,12 +812,6 @@
     var p = el("div", "panel x-games"); p.id = "xGames";
     p.appendChild(el("p", "panel-title", "Games"));
     var grid = el("div", "x-ggrid");
-    /* Two clearly named groups, so school work and play never sit in
-       one undifferentiated pile. */
-    function group(words){
-      var h = el("p", "x-ghead", words);
-      p.appendChild(h); grid = el("div", "x-ggrid"); p.appendChild(grid);
-    }
     function tile(icon, name, sub, go, soon){
       var t = el(typeof go === "string" ? "a" : "button", "x-gtile" + (soon ? " soon" : ""));
       if (typeof go === "string") { t.href = go; } else { t.type = "button"; if (go) t.addEventListener("click", go); else t.disabled = true; }
@@ -842,25 +819,19 @@
       w.appendChild(el("b", null, name)); w.appendChild(el("small", null, sub));
       t.appendChild(i); t.appendChild(w); grid.appendChild(t);
     }
-    group("Learn while you play");
     tile("🏎️", "Gate Run", "Steer through the right answer", "https://silocell.github.io/HEH-Launchpad-Game/");
     tile("🚀", "Level Up", "Practice at your level", "levelup.html");
     tile("✖️", "Times Table Tycoon", "60-second rounds", "tables.html");
     tile("🐉", "Word Dragons", "Grow dragons with English", "dragons.html");
     tile("⚔️", "Battle Stories", "Hastings, 1066", "history.html");
-    group("Just for fun · no school work in these");
     tile("🐍", "Snake", "Eat the apples", function(){ openGame("snake"); });
     tile("🧱", "Brick Breaker", "Clear every brick", function(){ openGame("breakout"); });
     tile("🔨", "Whack-a-mole", "30 seconds", function(){ openGame("mole"); });
-    tile("🕹️", "Arcade", "8 little games", "arcade.html");
-    /* The Scratch-made games, same list as the Games page. */
-    tile("🚗", "VroomZoom", "Three laps, beat the clock", "sg-vroom.html");
-    tile("🌀", "Maze of Confusion", "Three mazes, sixty seconds", "sg-maze.html");
-    tile("🦆", "Ducks Rampage", "Dodge yellow, catch silver", "sg-ducks.html");
-    tile("⚔️", "Gem Quest", "A tiny RPG - get all 3 gems", "sg-quest.html");
-    tile("🏓", "2 Player Pong", "Grab a friend - first to 7", "sg-pong.html");
-    tile("🍉", "Fruit Slash", "Slice the fruit, not the bomb", "sg-fruit.html");
-    /* the groups have already been added as they were built */
+    tile("🕹️", "Arcade", "Just for fun - 8 games", "arcade.html");
+    /* The six Scratch-made games sit behind one button, rather than
+       filling the panel with tiles. */
+    tile("🧩", "Scratch games", "Six games made in Scratch", "games.html#scratch");
+    p.appendChild(grid);
     var all = el("a", null, "All games \u2192"); all.href = "games.html"; all.style.cssText = "display:inline-block;margin-top:10px;font-weight:600";
     p.appendChild(all);
     left.appendChild(p);
