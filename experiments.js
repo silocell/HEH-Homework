@@ -686,7 +686,10 @@
   var GAMES = {
     snake:     { name:"Snake",       how:"Arrow keys or WASD - or swipe. Eat the apples, don't eat yourself." },
     breakout:  { name:"Brick Breaker",    how:"Move with the arrow keys, the mouse, or your finger. Clear every brick." },
-    mole:      { name:"Whack-a-mole",how:"Click or tap the moles before they hide. 30 seconds." },
+    mole:      { name:"Whack-a-mole",how:"Click or tap the moles before they hide. Gold ones are worth three. 30 seconds." },
+    echo:      { name:"Colour Echo", how:"Watch the colours light up, then tap them back in the same order." },
+    katch:     { name:"Star Catch",  how:"Move with the mouse, the arrow keys or your finger. Catch stars, dodge rocks." },
+    pairs:     { name:"Pairs",       how:"Turn two cards at a time and find every matching pair." },
     /* A doodle that isn't a canvas game: the packaged Scratch game is
        opened in a frame inside the same overlay. It keeps its own
        score, so the overlay doesn't show one. */
@@ -758,7 +761,7 @@
       if (!alive) return;
       if (stopFn) stopFn();
       foot.textContent = g.how; setScore(0);
-      stopFn = (which === "snake" ? snake : which === "breakout" ? breakout : mole)(cv, ctx2, setScore, finish, colour);
+      stopFn = ({ snake:snake, breakout:breakout, mole:mole, echo:echo, katch:katch, pairs:pairs }[which])(cv, ctx2, setScore, finish, colour);
     }
     if (frame) { setTimeout(function(){ frame.focus(); }, 30); return; }
     cv.addEventListener("keydown", function(e){ if (e.key === " " && foot.textContent.indexOf("play again") > 0){ e.preventDefault(); start(); } });
@@ -778,7 +781,7 @@
 
   function snake(cv, g, setScore, finish, colour){
     var N = 20, S = cv.width / N, body = [{x:9,y:10},{x:8,y:10},{x:7,y:10}], dir = {x:1,y:0}, want = dir;
-    var apple = drop(), score = 0, timer = null;
+    var apple = drop(), score = 0, timer = null, pulse = 0, gap = 130;
     function drop(){ var a; do { a = { x:Math.floor(Math.random()*N), y:Math.floor(Math.random()*N) }; }
       while (body.some(function(b){ return b.x === a.x && b.y === a.y; })); return a; }
     /* Checked against the QUEUED direction: two quick turns inside one
@@ -794,101 +797,436 @@
       if (Math.abs(dx) + Math.abs(dy) < 24) return;
       if (Math.abs(dx) > Math.abs(dy)) turn(dx > 0 ? 1 : -1, 0); else turn(0, dy > 0 ? 1 : -1);
     });
+    function round(x, y, w, h, r){
+      g.beginPath();
+      if (g.roundRect) g.roundRect(x, y, w, h, r); else g.rect(x, y, w, h);
+      g.fill();
+    }
     function draw(){
       g.fillStyle = colour("--paper"); g.fillRect(0, 0, cv.width, cv.height);
-      g.fillStyle = "#e03131"; g.beginPath(); g.arc(apple.x*S + S/2, apple.y*S + S/2, S*0.4, 0, Math.PI*2); g.fill();
-      body.forEach(function(b, i){ g.fillStyle = i ? "#2f9e44" : "#1b7a31"; g.fillRect(b.x*S + 1, b.y*S + 1, S - 2, S - 2); });
+      /* a faint board, so the squares read as squares */
+      g.strokeStyle = "rgba(127,127,127,.10)"; g.lineWidth = 1;
+      for (var i = 1; i < N; i++){
+        g.beginPath(); g.moveTo(i*S, 0); g.lineTo(i*S, cv.width); g.stroke();
+        g.beginPath(); g.moveTo(0, i*S); g.lineTo(cv.width, i*S); g.stroke();
+      }
+      /* the apple breathes a little, so the eye finds it at once */
+      var r = S*0.36 + Math.sin(pulse/6) * S*0.04;
+      g.fillStyle = "#e03131";
+      g.beginPath(); g.arc(apple.x*S + S/2, apple.y*S + S/2, r, 0, Math.PI*2); g.fill();
+      g.fillStyle = "#2f9e44";
+      g.beginPath(); g.ellipse(apple.x*S + S/2 + r*0.5, apple.y*S + S/2 - r*0.9, r*0.42, r*0.2, -0.6, 0, Math.PI*2); g.fill();
+      body.forEach(function(b, i){
+        g.fillStyle = i ? "#2f9e44" : "#1b7a31";
+        round(b.x*S + 1.5, b.y*S + 1.5, S - 3, S - 3, i ? 4 : 6);
+      });
+      /* eyes, looking the way you're going */
+      var h = body[0], cx = h.x*S + S/2, cy = h.y*S + S/2, o = S*0.17;
+      g.fillStyle = "#ffffff";
+      g.beginPath(); g.arc(cx + dir.y*o - dir.x*o*0.2, cy + dir.x*o - dir.y*o*0.2, S*0.13, 0, Math.PI*2);
+      g.arc(cx - dir.y*o - dir.x*o*0.2, cy - dir.x*o - dir.y*o*0.2, S*0.13, 0, Math.PI*2); g.fill();
+      g.fillStyle = "#10281a";
+      g.beginPath(); g.arc(cx + dir.y*o + dir.x*o*0.3, cy + dir.x*o + dir.y*o*0.3, S*0.07, 0, Math.PI*2);
+      g.arc(cx - dir.y*o + dir.x*o*0.3, cy - dir.x*o + dir.y*o*0.3, S*0.07, 0, Math.PI*2); g.fill();
     }
     function step(){
-      dir = want;
+      dir = want; pulse++;
       var h = { x: body[0].x + dir.x, y: body[0].y + dir.y };
       if (h.x < 0 || h.y < 0 || h.x >= N || h.y >= N || body.some(function(b){ return b.x === h.x && b.y === h.y; })){
         clearInterval(timer); timer = null; draw(); finish(score, "Game over - " + score + (score === 1 ? " apple." : " apples.")); return;
       }
       body.unshift(h);
-      if (h.x === apple.x && h.y === apple.y){ score++; setScore(score); apple = drop(); } else body.pop();
+      if (h.x === apple.x && h.y === apple.y){
+        score++; setScore(score); apple = drop();
+        /* it quickens as you grow, down to a brisk floor */
+        var faster = Math.max(70, 130 - score * 4);
+        if (faster !== gap){ gap = faster; clearInterval(timer); timer = setInterval(step, gap); }
+      } else body.pop();
       draw();
     }
-    draw(); timer = setInterval(step, 120);
+    draw(); timer = setInterval(step, gap);
     return function(){ if (timer) clearInterval(timer); cv.removeEventListener("keydown", key); unswipe(); };
   }
 
   function breakout(cv, g, setScore, finish, colour){
-    var W = cv.width, H = cv.height, padW = 70, px = W/2 - padW/2, ball = { x:W/2, y:H-60, vx:3, vy:-3.4 };
+    var W = cv.width, H = cv.height, padW = 74, px = W/2 - padW/2, ball = fresh();
     var rows = 5, cols = 8, bw = W/cols, bh = 18, bricks = [], score = 0, keys = {}, raf = 0, lives = 3;
+    var trail = [], shake = 0, last = 0, carry = 0, STEP = 1000/60;
     for (var r = 0; r < rows; r++) for (var c = 0; c < cols; c++) bricks.push({ x:c*bw, y:40 + r*bh, on:true, r:r });
     var hues = ["#e03131","#f08c00","#f2c200","#2f9e44","#1c7ed6"];
+    function fresh(){ return { x:W/2, y:H-60, vx:3, vy:-3.4, r:6 }; }
     function kd(e){ keys[e.key] = true; if (/Arrow/.test(e.key)) e.preventDefault(); }
     function ku(e){ keys[e.key] = false; }
     function mm(e){ var r = cv.getBoundingClientRect(); px = (e.clientX - r.left) * W / r.width - padW/2; }
+    function blur(){ keys = {}; }
     cv.addEventListener("keydown", kd); cv.addEventListener("keyup", ku); cv.addEventListener("mousemove", mm);
+    window.addEventListener("blur", blur);
     var unswipe = swipes(cv, function(x){ var r = cv.getBoundingClientRect(); px = (x - r.left) * W / r.width - padW/2; });
-    function frame(){
-      if (keys.ArrowLeft || keys.a) px -= 6; if (keys.ArrowRight || keys.d) px += 6;
+
+    /* One brick, checked properly: which side the ball came in by
+       decides which way it leaves, so it can't slip through a corner. */
+    function hitBrick(b){
+      var nx = Math.max(b.x, Math.min(ball.x, b.x + bw)), ny = Math.max(b.y, Math.min(ball.y, b.y + bh));
+      var dx = ball.x - nx, dy = ball.y - ny;
+      if (dx*dx + dy*dy > ball.r*ball.r) return false;
+      if (Math.abs(dx) > Math.abs(dy)) { ball.vx = Math.abs(ball.vx) * (dx < 0 ? -1 : 1); ball.x = nx + (dx < 0 ? -ball.r : ball.r); }
+      else { ball.vy = Math.abs(ball.vy) * (dy < 0 ? -1 : 1); ball.y = ny + (dy < 0 ? -ball.r : ball.r); }
+      return true;
+    }
+    function tick(){
+      if (keys.ArrowLeft || keys.a || keys.A) px -= 7;
+      if (keys.ArrowRight || keys.d || keys.D) px += 7;
       px = Math.max(0, Math.min(W - padW, px));
       ball.x += ball.vx; ball.y += ball.vy;
-      if (ball.x < 6 || ball.x > W - 6) ball.vx *= -1;
-      if (ball.y < 6) ball.vy *= -1;
-      if (ball.y > H - 30 && ball.y < H - 18 && ball.x > px && ball.x < px + padW && ball.vy > 0){
-        ball.vy *= -1; ball.vx = ((ball.x - (px + padW/2)) / (padW/2)) * 4.2;
+      trail.push({ x:ball.x, y:ball.y }); if (trail.length > 9) trail.shift();
+      if (ball.x < ball.r){ ball.x = ball.r; ball.vx = Math.abs(ball.vx); }
+      if (ball.x > W - ball.r){ ball.x = W - ball.r; ball.vx = -Math.abs(ball.vx); }
+      if (ball.y < ball.r){ ball.y = ball.r; ball.vy = Math.abs(ball.vy); }
+      /* the paddle: where it hits decides the angle, and it never
+         catches the ball twice on the way up */
+      if (ball.vy > 0 && ball.y + ball.r > H - 24 && ball.y < H - 10 && ball.x > px - 4 && ball.x < px + padW + 4){
+        ball.y = H - 24 - ball.r; ball.vy = -Math.abs(ball.vy);
+        ball.vx = ((ball.x - (px + padW/2)) / (padW/2)) * 4.4;
+        var sp = Math.min(7.5, Math.hypot(ball.vx, ball.vy) + 0.12);
+        var a = Math.atan2(ball.vy, ball.vx); ball.vx = Math.cos(a)*sp; ball.vy = Math.sin(a)*sp;
       }
-      bricks.forEach(function(b){
-        if (b.on && ball.x > b.x && ball.x < b.x + bw && ball.y > b.y && ball.y < b.y + bh){
-          b.on = false; ball.vy *= -1; score += 5 - b.r; setScore(score);
-        }
-      });
-      if (ball.y > H){
-        if (--lives <= 0){ draw(); finish(score, "Out of balls - " + score + " points."); return; }
-        ball = { x:W/2, y:H-60, vx:3, vy:-3.4 };
+      for (var i = 0; i < bricks.length; i++){
+        var b = bricks[i];
+        if (b.on && hitBrick(b)){ b.on = false; score += 5 - b.r; setScore(score); shake = 5; break; }
       }
-      if (!bricks.some(function(b){ return b.on; })){ draw(); finish(score, "Cleared it! " + score + " points."); return; }
+      if (ball.y - ball.r > H){
+        if (--lives <= 0){ draw(); finish(score, "Out of balls - " + score + " points."); return false; }
+        ball = fresh(); trail = [];
+      }
+      if (!bricks.some(function(b){ return b.on; })){ draw(); finish(score, "Cleared it! " + score + " points."); return false; }
+      return true;
+    }
+    /* A fixed step, so the game runs at the same speed on a 60Hz
+       screen and a 120Hz one. */
+    function frame(now){
+      if (!last) last = now;
+      carry += Math.min(100, now - last); last = now;
+      while (carry >= STEP){ if (!tick()) return; carry -= STEP; }
       draw(); raf = requestAnimationFrame(frame);
     }
     function draw(){
-      g.fillStyle = colour("--paper"); g.fillRect(0, 0, W, H);
-      bricks.forEach(function(b){ if (b.on){ g.fillStyle = hues[b.r]; g.fillRect(b.x + 2, b.y + 2, bw - 4, bh - 4); } });
-      g.fillStyle = colour("--ink"); g.fillRect(px, H - 24, padW, 8);
-      g.beginPath(); g.arc(ball.x, ball.y, 6, 0, Math.PI*2); g.fill();
-      g.font = "12px sans-serif"; g.fillText("Balls: " + lives, 8, 20);
+      g.save();
+      if (shake > 0){ g.translate((Math.random()-0.5)*shake, (Math.random()-0.5)*shake); shake -= 0.6; }
+      g.fillStyle = colour("--paper"); g.fillRect(-8, -8, W + 16, H + 16);
+      bricks.forEach(function(b){
+        if (!b.on) return;
+        g.fillStyle = hues[b.r];
+        g.beginPath();
+        if (g.roundRect) g.roundRect(b.x + 2, b.y + 2, bw - 4, bh - 4, 4); else g.rect(b.x + 2, b.y + 2, bw - 4, bh - 4);
+        g.fill();
+        g.fillStyle = "rgba(255,255,255,.28)"; g.fillRect(b.x + 5, b.y + 5, bw - 10, 3);
+      });
+      trail.forEach(function(t, i){
+        g.globalAlpha = (i + 1) / trail.length * 0.33;
+        g.fillStyle = colour("--ink");
+        g.beginPath(); g.arc(t.x, t.y, ball.r * (0.4 + i/trail.length*0.5), 0, Math.PI*2); g.fill();
+      });
+      g.globalAlpha = 1;
+      g.fillStyle = colour("--ink");
+      g.beginPath();
+      if (g.roundRect) g.roundRect(px, H - 24, padW, 9, 5); else g.rect(px, H - 24, padW, 9);
+      g.fill();
+      g.beginPath(); g.arc(ball.x, ball.y, ball.r, 0, Math.PI*2); g.fill();
+      g.font = "bold 12px sans-serif";
+      g.fillText("Balls: " + lives, 8, 20);
+      g.restore();
     }
     raf = requestAnimationFrame(frame);
-    return function(){ cancelAnimationFrame(raf); cv.removeEventListener("keydown", kd); cv.removeEventListener("keyup", ku); cv.removeEventListener("mousemove", mm); unswipe(); };
+    return function(){ cancelAnimationFrame(raf); cv.removeEventListener("keydown", kd);
+      cv.removeEventListener("keyup", ku); cv.removeEventListener("mousemove", mm);
+      window.removeEventListener("blur", blur); unswipe(); };
   }
 
   function mole(cv, g, setScore, finish, colour){
     var W = cv.width, holes = [], score = 0, ends = performance.now() + 30000, raf = 0, nextPop = 0;
-    for (var r = 0; r < 3; r++) for (var c = 0; c < 3; c++) holes.push({ x:70 + c*130, y:90 + r*120, up:0, hit:0 });
+    var puffs = [], streak = 0, best = 0;
+    for (var r = 0; r < 3; r++) for (var c = 0; c < 3; c++) holes.push({ x:70 + c*130, y:90 + r*120, up:0, hit:0, gold:false });
     function click(e){
       var rc = cv.getBoundingClientRect(), x = (e.clientX - rc.left) * W / rc.width, y = (e.clientY - rc.top) * W / rc.height;
-      var now = performance.now();
+      var now = performance.now(), got = false;
       holes.forEach(function(h){
-        if (h.up > now && !h.hit && Math.hypot(x - h.x, y - (h.y - 18)) < 38){ h.hit = now; h.up = now + 250; score++; setScore(score); }
+        if (h.up > now && !h.hit && Math.hypot(x - h.x, y - (h.y - 18)) < 38){
+          h.hit = now; h.up = now + 260; got = true;
+          streak++; if (streak > best) best = streak;
+          /* a golden mole is worth three, and a run of hits adds one more */
+          score += (h.gold ? 3 : 1) + (streak >= 3 ? 1 : 0);
+          setScore(score);
+          puffs.push({ x:h.x, y:h.y - 30, t:now, gold:h.gold });
+        }
       });
+      /* a swing at nothing breaks the run */
+      if (!got) streak = 0;
     }
     cv.addEventListener("pointerdown", click);
     function frame(now){
-      if (now > ends){ draw(now); finish(score, "Time! " + score + " moles whacked."); return; }
+      if (now > ends){ draw(now); finish(score, "Time! " + score + " points, best run " + best + "."); return; }
       if (now > nextPop){
         var free = holes.filter(function(h){ return h.up < now; });
-        if (free.length){ var h = free[Math.floor(Math.random()*free.length)]; h.up = now + 700 + Math.random()*600; h.hit = 0; }
+        if (free.length){
+          var h = free[Math.floor(Math.random()*free.length)];
+          h.gold = Math.random() < 0.16;
+          h.up = now + (h.gold ? 620 : 700) + Math.random()*600; h.hit = 0;
+        }
         nextPop = now + 380 + Math.random()*420 - Math.min(250, score*6);
       }
       draw(now); raf = requestAnimationFrame(frame);
     }
     function draw(now){
       g.fillStyle = "#8fd46a"; g.fillRect(0, 0, W, W);
+      /* a few tufts of grass, so it isn't a flat green square */
+      g.strokeStyle = "rgba(32,94,32,.25)"; g.lineWidth = 2;
+      for (var i = 0; i < 26; i++){
+        var gx = (i * 71) % W, gy = 30 + ((i * 133) % (W - 50));
+        g.beginPath(); g.moveTo(gx, gy); g.lineTo(gx + 3, gy - 9); g.stroke();
+      }
+      var left = Math.max(0, (ends - now) / 30000);
+      g.fillStyle = "rgba(0,0,0,.18)"; g.fillRect(10, 30, W - 20, 7);
+      g.fillStyle = left < 0.25 ? "#e03131" : "#1b2430";
+      g.fillRect(10, 30, (W - 20) * left, 7);
       g.fillStyle = "#1b2430"; g.font = "bold 14px sans-serif";
       g.fillText("Time " + Math.max(0, Math.ceil((ends - now)/1000)) + "s", 10, 22);
+      if (streak >= 3){ g.fillStyle = "#b54708"; g.fillText("Run of " + streak + "!", W - 96, 22); }
       holes.forEach(function(h){
         g.fillStyle = "#5b3a1e"; g.beginPath(); g.ellipse(h.x, h.y + 10, 46, 16, 0, 0, Math.PI*2); g.fill();
+        g.fillStyle = "rgba(0,0,0,.25)"; g.beginPath(); g.ellipse(h.x, h.y + 7, 38, 11, 0, 0, Math.PI*2); g.fill();
         if (h.up > now){
-          g.fillStyle = h.hit ? "#c9a27e" : "#8a5a3b";
+          /* it rises out of the hole rather than snapping into place */
+          var life = h.up - now, rise = h.hit ? 10 : Math.min(1, (1 - Math.min(1, life / 900)) * 4 + 0.35) * 22;
+          g.save(); g.translate(0, 22 - rise);
+          g.fillStyle = h.hit ? "#c9a27e" : (h.gold ? "#e8b923" : "#8a5a3b");
           g.beginPath(); g.arc(h.x, h.y - 14, 30, Math.PI, 0); g.rect(h.x - 30, h.y - 14, 60, 22); g.fill();
-          g.fillStyle = "#1b2430"; g.fillRect(h.x - 12, h.y - 22, 5, 5); g.fillRect(h.x + 7, h.y - 22, 5, 5);
-          g.fillStyle = "#f783ac"; g.beginPath(); g.arc(h.x, h.y - 10, 5, 0, Math.PI*2); g.fill();
-          if (h.hit){ g.fillStyle = "#1b2430"; g.font = "bold 18px sans-serif"; g.fillText("BONK", h.x - 24, h.y - 52); g.font = "bold 14px sans-serif"; }
+          g.fillStyle = h.gold ? "#fff3c4" : "#c9a27e";
+          g.beginPath(); g.ellipse(h.x, h.y - 6, 17, 12, 0, 0, Math.PI*2); g.fill();
+          g.fillStyle = "#1b2430";
+          g.beginPath(); g.arc(h.x - 10, h.y - 22, 3.4, 0, Math.PI*2); g.arc(h.x + 10, h.y - 22, 3.4, 0, Math.PI*2); g.fill();
+          g.fillStyle = "#f783ac"; g.beginPath(); g.arc(h.x, h.y - 12, 5, 0, Math.PI*2); g.fill();
+          g.restore();
         }
       });
+      puffs = puffs.filter(function(p){ return now - p.t < 520; });
+      puffs.forEach(function(p){
+        var k = (now - p.t) / 520;
+        g.globalAlpha = 1 - k;
+        g.fillStyle = p.gold ? "#b54708" : "#1b2430";
+        g.font = "bold " + (17 + k*9) + "px sans-serif";
+        var word = p.gold ? "+3!" : "BONK";
+        g.fillText(word, p.x - g.measureText(word).width/2, p.y - k*26);
+        g.globalAlpha = 1;
+      });
+    }
+    raf = requestAnimationFrame(frame);
+    return function(){ cancelAnimationFrame(raf); cv.removeEventListener("pointerdown", click); };
+  }
+  /* ---------- Colour Echo: watch the pattern, play it back ---------- */
+  function echo(cv, g, setScore, finish, colour){
+    var W = cv.width, pads = [
+      { c:"#e03131", lit:"#ff8787", x:0, y:0 }, { c:"#1c7ed6", lit:"#74c0fc", x:1, y:0 },
+      { c:"#2f9e44", lit:"#8ce99a", x:0, y:1 }, { c:"#f2b200", lit:"#ffe066", x:1, y:1 }
+    ];
+    var seq = [], step = 0, showing = true, flash = -1, flashUntil = 0, raf = 0, round = 0;
+    var next = performance.now() + 600, idx = 0, dead = false;
+    /* Sized to fit BOTH ways: the header eats 54px of height, so the
+       pads take whichever of the two budgets is smaller, then sit in
+       the middle of what's left. */
+    var M = 18, TOP = 54;
+    var S = Math.min((W - M*3) / 2, (W - TOP - M*3) / 2);
+    var ox = (W - (S*2 + M)) / 2, oy = TOP + (W - TOP - (S*2 + M)) / 2;
+    pads.forEach(function(p){ p.px = ox + p.x*(S + M); p.py = oy + p.y*(S + M); });
+    function grow(){ seq.push(Math.floor(Math.random()*4)); round++; showing = true; idx = 0; next = performance.now() + 420; }
+    function at(x, y){
+      for (var i = 0; i < 4; i++){ var p = pads[i];
+        if (x >= p.px && x <= p.px + S && y >= p.py && y <= p.py + S) return i; }
+      return -1;
+    }
+    function click(e){
+      if (showing || dead) return;
+      var rc = cv.getBoundingClientRect();
+      var i = at((e.clientX - rc.left) * W / rc.width, (e.clientY - rc.top) * W / rc.height);
+      if (i < 0) return;
+      flash = i; flashUntil = performance.now() + 180;
+      if (i === seq[step]){
+        step++;
+        if (step >= seq.length){ setScore(round); step = 0; setTimeout(grow, 420); }
+      } else {
+        dead = true;
+        finish(round - 1, "Wrong colour - you reached round " + round + ".");
+      }
+    }
+    cv.addEventListener("pointerdown", click);
+    function frame(now){
+      if (showing && now > next){
+        if (idx < seq.length){ flash = seq[idx]; flashUntil = now + 340; idx++; next = now + 520; }
+        else { showing = false; flash = -1; }
+      }
+      if (now > flashUntil && !showing) flash = -1;
+      if (now > flashUntil && showing && flash >= 0 && now > flashUntil) flash = -1;
+      draw(now);
+      if (!dead) raf = requestAnimationFrame(frame);
+    }
+    function draw(now){
+      g.fillStyle = colour("--paper"); g.fillRect(0, 0, W, W);
+      g.fillStyle = colour("--ink"); g.font = "bold 20px sans-serif";
+      g.fillText("Round " + Math.max(1, round), 18, 34);
+      g.font = "13px sans-serif"; g.globalAlpha = .7;
+      g.fillText(showing ? "Watch..." : "Your turn", W - 92, 34);
+      g.globalAlpha = 1;
+      pads.forEach(function(p, i){
+        g.fillStyle = (flash === i && now < flashUntil) ? p.lit : p.c;
+        g.beginPath();
+        if (g.roundRect) g.roundRect(p.px, p.py, S, S, 16); else g.rect(p.px, p.py, S, S);
+        g.fill();
+      });
+    }
+    grow(); raf = requestAnimationFrame(frame);
+    return function(){ cancelAnimationFrame(raf); cv.removeEventListener("pointerdown", click); };
+  }
+
+  /* ---------- Star Catch: a basket, falling stars, dodge the rocks ---------- */
+  function katch(cv, g, setScore, finish, colour){
+    var W = cv.width, H = cv.height, bx = W/2, bw = 84, score = 0, lives = 3;
+    var drops = [], raf = 0, keys = {}, last = 0, carry = 0, STEP = 1000/60, spawn = 0, fall = 2.6;
+    function kd(e){ keys[e.key] = true; if (/Arrow/.test(e.key)) e.preventDefault(); }
+    function ku(e){ keys[e.key] = false; }
+    function mm(e){ var r = cv.getBoundingClientRect(); bx = (e.clientX - r.left) * W / r.width; }
+    function blur(){ keys = {}; }
+    cv.addEventListener("keydown", kd); cv.addEventListener("keyup", ku); cv.addEventListener("mousemove", mm);
+    window.addEventListener("blur", blur);
+    var unswipe = swipes(cv, function(x){ var r = cv.getBoundingClientRect(); bx = (x - r.left) * W / r.width; });
+    function star(g2, x, y, r, fill){
+      g2.fillStyle = fill; g2.beginPath();
+      for (var i = 0; i < 10; i++){
+        var rr = i % 2 ? r*0.46 : r, a = -Math.PI/2 + i*Math.PI/5;
+        g2[i ? "lineTo" : "moveTo"](x + Math.cos(a)*rr, y + Math.sin(a)*rr);
+      }
+      g2.closePath(); g2.fill();
+    }
+    function tick(now){
+      if (keys.ArrowLeft || keys.a) bx -= 7;
+      if (keys.ArrowRight || keys.d) bx += 7;
+      bx = Math.max(bw/2, Math.min(W - bw/2, bx));
+      if (now > spawn){
+        drops.push({ x: 30 + Math.random()*(W - 60), y: -20, rock: Math.random() < 0.26, spin: Math.random()*6 });
+        spawn = now + Math.max(260, 760 - score*9);
+        fall = Math.min(6.5, 2.6 + score*0.05);
+      }
+      for (var i = drops.length - 1; i >= 0; i--){
+        var d = drops[i]; d.y += fall; d.spin += 0.05;
+        if (d.y > H - 46 && d.y < H - 8 && Math.abs(d.x - bx) < bw/2 + 8){
+          drops.splice(i, 1);
+          if (d.rock){ if (--lives <= 0){ draw(now); finish(score, "A rock got you - " + score + " stars."); return false; } }
+          else { score++; setScore(score); }
+        } else if (d.y > H + 24){
+          drops.splice(i, 1);
+          if (!d.rock && --lives <= 0){ draw(now); finish(score, "Three stars missed - " + score + " caught."); return false; }
+        }
+      }
+      return true;
+    }
+    function frame(now){
+      if (!last) last = now;
+      carry += Math.min(100, now - last); last = now;
+      while (carry >= STEP){ if (!tick(now)) return; carry -= STEP; }
+      draw(now); raf = requestAnimationFrame(frame);
+    }
+    function draw(now){
+      var sky = g.createLinearGradient(0, 0, 0, H);
+      sky.addColorStop(0, "#1b1b3a"); sky.addColorStop(1, "#3b2a5a");
+      g.fillStyle = sky; g.fillRect(0, 0, W, H);
+      for (var i = 0; i < 30; i++){
+        g.globalAlpha = 0.25 + ((i * 37) % 10) / 20;
+        g.fillStyle = "#ffffff";
+        g.fillRect((i * 97) % W, (i * 53) % (H - 60), 2, 2);
+      }
+      g.globalAlpha = 1;
+      drops.forEach(function(d){
+        if (d.rock){
+          g.save(); g.translate(d.x, d.y); g.rotate(d.spin);
+          g.fillStyle = "#6b7280"; g.beginPath();
+          g.moveTo(-11, 3); g.lineTo(-5, -10); g.lineTo(8, -8); g.lineTo(12, 4); g.lineTo(2, 11); g.closePath(); g.fill();
+          g.restore();
+        } else star(g, d.x, d.y, 12, "#ffd93d");
+      });
+      /* the basket */
+      g.fillStyle = "#b45309";
+      g.beginPath();
+      g.moveTo(bx - bw/2, H - 40); g.lineTo(bx + bw/2, H - 40);
+      g.lineTo(bx + bw/2 - 10, H - 10); g.lineTo(bx - bw/2 + 10, H - 10); g.closePath(); g.fill();
+      g.fillStyle = "#92400e"; g.fillRect(bx - bw/2 - 3, H - 44, bw + 6, 7);
+      g.fillStyle = "#ffffff"; g.font = "bold 14px sans-serif";
+      g.fillText("Lives " + lives, 10, 24);
+    }
+    raf = requestAnimationFrame(frame);
+    return function(){ cancelAnimationFrame(raf); cv.removeEventListener("keydown", kd);
+      cv.removeEventListener("keyup", ku); cv.removeEventListener("mousemove", mm);
+      window.removeEventListener("blur", blur); unswipe(); };
+  }
+
+  /* ---------- Pairs: turn two cards, find the match ---------- */
+  function pairs(cv, g, setScore, finish, colour){
+    var W = cv.width, N = 4, M = 14, TOP = 44;
+    var S = Math.min((W - M*(N+1)) / N, (W - TOP - M*(N+1)) / N);
+    var OX = (W - (S*N + M*(N-1))) / 2, OY = TOP + (W - TOP - (S*N + M*(N-1))) / 2;
+    var icons = ["★","▲","●","♥","♪","❖","■","✿"];
+    var deck = [], first = null, second = null, lock = 0, found = 0, turns = 0, raf = 0, done = false;
+    icons.concat(icons).forEach(function(s){ deck.push({ s:s, up:false, gone:false }); });
+    for (var i = deck.length - 1; i > 0; i--){ var j = Math.floor(Math.random()*(i+1)); var t = deck[i]; deck[i] = deck[j]; deck[j] = t; }
+    deck.forEach(function(c, i){ c.cx = OX + (i % N)*(S + M); c.cy = OY + Math.floor(i / N)*(S + M); });
+    var hues = ["#e03131","#1c7ed6","#2f9e44","#f2b200","#7c3aed","#0ca678","#f06595","#fd7e14"];
+    deck.forEach(function(c){ c.hue = hues[icons.indexOf(c.s)]; });
+    function click(e){
+      if (lock > performance.now() || done) return;
+      var rc = cv.getBoundingClientRect();
+      var x = (e.clientX - rc.left) * W / rc.width, y = (e.clientY - rc.top) * W / rc.height;
+      deck.forEach(function(c){
+        if (c.gone || c.up) return;
+        if (x < c.cx || x > c.cx + S || y < c.cy || y > c.cy + S) return;
+        c.up = true;
+        if (!first) { first = c; return; }
+        second = c; turns++;
+        if (first.s === second.s){
+          first.gone = second.gone = true; found++; setScore(found);
+          first = second = null;
+          if (found === icons.length){ done = true; finish(found, "All matched in " + turns + " turns!"); }
+        } else {
+          lock = performance.now() + 700;
+          var a = first, b = second; first = second = null;
+          setTimeout(function(){ a.up = b.up = false; }, 700);
+        }
+      });
+    }
+    cv.addEventListener("pointerdown", click);
+    function frame(){
+      g.fillStyle = colour("--paper"); g.fillRect(0, 0, W, W);
+      g.fillStyle = colour("--ink"); g.font = "bold 19px sans-serif";
+      g.fillText("Pairs found " + found + " / " + icons.length, 14, 30);
+      g.font = "13px sans-serif"; g.globalAlpha = .7;
+      g.fillText("Turns " + turns, W - 78, 30); g.globalAlpha = 1;
+      deck.forEach(function(c){
+        if (c.gone){
+          g.globalAlpha = .18;
+          g.fillStyle = c.hue;
+          g.beginPath();
+          if (g.roundRect) g.roundRect(c.cx, c.cy, S, S, 12); else g.rect(c.cx, c.cy, S, S);
+          g.fill(); g.globalAlpha = 1; return;
+        }
+        g.fillStyle = c.up ? c.hue : "#4c6ef5";
+        g.beginPath();
+        if (g.roundRect) g.roundRect(c.cx, c.cy, S, S, 12); else g.rect(c.cx, c.cy, S, S);
+        g.fill();
+        if (c.up){
+          g.fillStyle = "#ffffff"; g.font = "bold " + Math.round(S*0.52) + "px sans-serif";
+          g.fillText(c.s, c.cx + S/2 - g.measureText(c.s).width/2, c.cy + S*0.68);
+        } else {
+          g.strokeStyle = "rgba(255,255,255,.35)"; g.lineWidth = 3;
+          g.beginPath(); g.arc(c.cx + S/2, c.cy + S/2, S*0.22, 0, Math.PI*2); g.stroke();
+        }
+      });
+      if (!done) raf = requestAnimationFrame(frame);
     }
     raf = requestAnimationFrame(frame);
     return function(){ cancelAnimationFrame(raf); cv.removeEventListener("pointerdown", click); };
@@ -898,7 +1236,7 @@
   function doodle(){
     var cols = document.querySelector(".columns");
     if (!cols) return;
-    var keys = ["snake", "breakout", "mole", "fruit"];
+    var keys = ["snake", "breakout", "mole", "echo", "katch", "pairs", "fruit"];
     var d = new Date(), n = Math.floor((d.getTime() - d.getTimezoneOffset()*60000) / 86400000);
     var which = keys[n % keys.length], g = GAMES[which];
     var bar = el("button", "exp-doodle"); bar.type = "button";
@@ -1049,7 +1387,7 @@
     if (on.konami) konami();
     gamesPanel();          // always on in the lab, like on the real site
     /* From the Games page: ?play=snake opens that game straight away. */
-    var pm = location.search.match(/[?&]play=(snake|breakout|mole|fruit)\b/);
+    var pm = location.search.match(/[?&]play=(snake|breakout|mole|echo|katch|pairs|fruit)\b/);
     if (pm) setTimeout(function(){ openGame(pm[1]); }, 300);
     if (on.doodle) doodle();
     if (on.eggs) eggs();

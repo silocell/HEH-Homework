@@ -1188,6 +1188,11 @@ footer{
 :root[data-theme="dark"] .playcard::after{opacity:.3}
 :root[data-theme="dark"] .playgo{background:#eef0f5;color:#2a2366}
 /* A tiny car, built from four boxes, that drives on the spot. */
+.playstick{position:relative;flex:0 0 auto;width:62px;height:34px;z-index:1}
+.ps-base{position:absolute;left:9px;bottom:0;width:44px;height:13px;border-radius:8px 8px 4px 4px;background:#2b3a4a}
+.ps-rod{position:absolute;left:28px;bottom:9px;width:6px;height:15px;border-radius:3px;background:#cbd5e1}
+.ps-ball{position:absolute;left:21px;bottom:19px;width:20px;height:20px;border-radius:50%;background:#ff5a5f;
+  box-shadow:inset -3px -3px 0 rgba(0,0,0,.18)}
 .playcar{position:relative;flex:0 0 auto;width:62px;height:34px;z-index:1}
 .pc-body{position:absolute;left:0;bottom:7px;width:62px;height:15px;border-radius:5px;background:#ff5a5f}
 .pc-cabin{position:absolute;left:15px;bottom:19px;width:30px;height:12px;border-radius:5px 5px 2px 2px;background:#2b3a4a}
@@ -1368,14 +1373,13 @@ html.lab body{padding-top:26px}
     <button type="submit" class="btn">Search</button>
   </form>
 
-  <a class="playcard" id="playCard" href="https://silocell.github.io/HEH-Launchpad-Game/">
-    <span class="playcar" aria-hidden="true">
-      <span class="pc-body"></span><span class="pc-cabin"></span>
-      <span class="pc-wheel left"></span><span class="pc-wheel right"></span>
+  <a class="playcard" id="playCard" href="games.html">
+    <span class="playstick" aria-hidden="true">
+      <span class="ps-base"></span><span class="ps-rod"></span><span class="ps-ball"></span>
     </span>
     <span class="playwords">
-      <strong>Gate Run</strong>
-      <span>Maths and English at 50mph. Three gates, one right answer.</span>
+      <strong>Games</strong>
+      <span>Every game in one place - the ones that teach you something, and the ones that don't.</span>
     </span>
     <span class="playgo">Play</span>
   </a>
