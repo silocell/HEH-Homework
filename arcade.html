@@ -209,7 +209,143 @@ var rocks = { id:"rocks", name:"Space Rocks", icon:"🚀", bg:"#1e293b", sub:"Bl
   touch:function(x, phase){ if (this.dead) { if (phase === "start") this.start(); return; } this.x = x; this.auto = phase !== "end"; }
 };
 
-var GAMES = [plane, drop, dbl, rocks];
+/* ===================== Robin Hop =====================
+   Tap to flap a robin through gaps in the hedges. Our own bird and
+   garden, not anyone else's game. */
+var robin = { id:"robin", name:"Robin Hop", icon:"🐦", bg:"#16a34a", sub:"Flap through the hedges",
+  help:"Tap, click or press Space to flap. Fly through the gaps in the hedges.",
+  start:function(){ this.y = H/2; this.v = 0; this.hedges = []; this.t = 0; this.dead = false; this.go = false; this.wing = 0; setScore(0); },
+  flap:function(){ if (this.dead) { if (this.t - this.deadAt > 25) this.start(); return; } this.go = true; this.v = -7; this.wing = 8; },
+  step:function(){
+    var s = this, X = 110;
+    if (s.go && !s.dead) {
+      s.v = Math.min(9, s.v + 0.42); s.y += s.v; s.t++; if (s.wing > 0) s.wing--;
+      var every = Math.max(70, 100 - score * 2);
+      if (s.t % every === 1) { var gap = Math.max(130, 175 - score * 2); s.hedges.push({ x: W + 10, top: 50 + Math.random() * (H - 170 - gap), gap: gap, done: false }); }
+      var speed = 2.8 + Math.min(2.2, score * 0.06);
+      s.hedges.forEach(function(h){ h.x -= speed;
+        if (!h.done && h.x + 70 < X - 14) { h.done = true; setScore(score + 1); }
+        if (X + 14 > h.x && X - 14 < h.x + 70 && (s.y - 12 < h.top || s.y + 12 > h.top + h.gap)) { s.dead = true; s.deadAt = s.t; } });
+      s.hedges = s.hedges.filter(function(h){ return h.x > -80; });
+      if (s.y > H - 52) { s.y = H - 52; s.dead = true; s.deadAt = s.t; }
+      if (s.y < 12) { s.y = 12; s.v = 0; }
+    } else if (s.dead) { s.t++; if (s.y < H - 52) { s.v += .5; s.y = Math.min(H - 52, s.y + s.v); } }
+    // garden sky, hills and grass
+    var sky = g.createLinearGradient(0, 0, 0, H); sky.addColorStop(0, "#fde68a"); sky.addColorStop(1, "#fbcfe8");
+    g.fillStyle = sky; g.fillRect(0, 0, W, H);
+    g.fillStyle = "#86efac"; g.beginPath(); g.arc(120, H + 40, 220, Math.PI, 0); g.arc(400, H + 60, 200, Math.PI, 0); g.fill();
+    s.hedges.forEach(function(h){ hedge(h.x, 0, h.top); hedge(h.x, h.top + h.gap, H - 40 - h.top - h.gap); });
+    g.fillStyle = "#65a30d"; g.fillRect(0, H - 40, W, 40);
+    // the robin: round brown body, orange-red breast, little beak
+    g.save(); g.translate(X, s.y); g.rotate(Math.max(-0.4, Math.min(1.1, s.v / 9)));
+    g.fillStyle = "#92400e"; g.beginPath(); g.arc(0, 0, 15, 0, Math.PI * 2); g.fill();
+    g.fillStyle = "#f97316"; g.beginPath(); g.arc(5, 4, 9, 0, Math.PI * 2); g.fill();
+    g.fillStyle = "#facc15"; g.beginPath(); g.moveTo(13, -3); g.lineTo(22, 0); g.lineTo(13, 3); g.fill();
+    g.fillStyle = "#111"; g.beginPath(); g.arc(7, -6, 2.2, 0, Math.PI * 2); g.fill();
+    g.fillStyle = "#78350f"; g.beginPath(); g.ellipse(-4, s.wing > 0 ? -10 : 2, 9, 5, s.wing > 0 ? -0.6 : 0.3, 0, Math.PI * 2); g.fill();
+    g.restore();
+    if (!s.go) overlay(["Robin Hop", "Tap or press Space to flap"]);
+    if (s.dead) overlay(["Bump! Score " + score, "Tap or press Space to fly again"]);
+    function hedge(x, y, h){ if (h <= 0) return; g.fillStyle = "#15803d"; g.fillRect(x, y, 70, h);
+      g.fillStyle = "#22c55e"; for (var yy = y + 8; yy < y + h - 4; yy += 18) for (var xx = x + 8; xx < x + 66; xx += 20) { g.beginPath(); g.arc(xx, yy, 6, 0, Math.PI * 2); g.fill(); } }
+  }
+};
+
+/* ===================== Catapult Castle =====================
+   Drag back, aim, let go. Knock the goblins out of their wooden towers.
+   Simple physics: stones are circles, blocks are boxes that fall,
+   stack and get shoved; a goblin is out when hit hard or knocked off. */
+var LEVELS = [
+  [ // one small tower
+    { x:330, w:20, h:90 }, { x:400, w:20, h:90 }, { x:320, w:110, h:16, y:-90 }, { gob:true, x:355, y:-106 } ],
+  [ // two towers
+    { x:240, w:18, h:80 }, { x:300, w:18, h:80 }, { x:232, w:94, h:14, y:-80 }, { gob:true, x:260, y:-94 },
+    { x:350, w:18, h:120 }, { x:410, w:18, h:120 }, { x:342, w:94, h:14, y:-120 }, { gob:true, x:370, y:-134 }, { gob:true, x:370, y:0 } ],
+  [ // the castle
+    { x:250, w:16, h:70 }, { x:300, w:16, h:70 }, { x:244, w:78, h:12, y:-70 },
+    { x:340, w:16, h:110 }, { x:410, w:16, h:110 }, { x:334, w:98, h:12, y:-110 },
+    { x:350, w:16, h:60, y:-122 }, { x:400, w:16, h:60, y:-122 }, { x:344, w:78, h:12, y:-182 },
+    { gob:true, x:268, y:-82 }, { gob:true, x:368, y:0 }, { gob:true, x:368, y:-194 } ]
+];
+var cata = { id:"catapult", name:"Catapult Castle", icon:"🏰", bg:"#b45309", sub:"Smash the towers, knock out goblins",
+  help:"Drag back from the catapult, aim, and let go. Knock every goblin out. 5 stones a level.",
+  GROUND: H - 50, SX: 90, SY: H - 130,
+  start:function(){ this.lvl = 0; setScore(0); this.load(); },
+  load:function(){ var G = this.GROUND, self = this; this.blocks = []; this.gobs = []; this.stones = []; this.left = 5; this.aim = null; this.msg = ""; this.wait = 0;
+    LEVELS[this.lvl].forEach(function(b){
+      if (b.gob) self.gobs.push({ x: b.x, y: G + (b.y || 0) - 16, vx: 0, vy: 0, r: 13, out: false, startY: G + (b.y || 0) - 16 });
+      else self.blocks.push({ x: b.x, y: G + (b.y || 0) - b.h, w: b.w, h: b.h, vx: 0, vy: 0 }); }); },
+  press:function(p){ if (this.msg) { this.next(); return; } if (this.left > 0 && Math.hypot(p.x - this.SX, p.y - this.SY) < 70) this.aim = p; },
+  drag:function(p){ if (this.aim) { var dx = p.x - this.SX, dy = p.y - this.SY, d = Math.hypot(dx, dy), m = 90; if (d > m) { dx *= m / d; dy *= m / d; } this.aim = { x: this.SX + dx, y: this.SY + dy }; } },
+  release:function(){ if (!this.aim) return; var dx = this.SX - this.aim.x, dy = this.SY - this.aim.y;
+    if (Math.hypot(dx, dy) > 10) { this.stones.push({ x: this.SX, y: this.SY, vx: dx * 0.2, vy: dy * 0.2, r: 11, life: 400 }); this.left--; }
+    this.aim = null; },
+  next:function(){ if (this.msg === "won") { this.lvl++; if (this.lvl >= LEVELS.length) { this.lvl = 0; } this.load(); } else if (this.msg === "lost") { this.start(); } else this.load(); },
+  key:function(k){ if ((k === " " || k === "Enter") && this.msg) { this.next(); return true; } },
+  step:function(){
+    var s = this, G = s.GROUND, grav = 0.3;
+    if (!s.msg) {
+      // stones
+      s.stones.forEach(function(st){ st.vy += grav; st.x += st.vx; st.y += st.vy; st.life--;
+        if (st.y + st.r > G) { st.y = G - st.r; st.vy *= -0.3; st.vx *= 0.8; }
+        s.blocks.forEach(function(b){ hitBox(st, b); });
+        s.gobs.forEach(function(gb){ if (!gb.out && Math.hypot(st.x - gb.x, st.y - gb.y) < st.r + gb.r && Math.hypot(st.vx, st.vy) > 2) knock(gb); }); });
+      s.stones = s.stones.filter(function(st){ return st.life > 0 && st.x > -40 && st.x < W + 40; });
+      // blocks: fall, land on the ground or on each other
+      for (var it = 0; it < 2; it++) s.blocks.forEach(function(b){
+        b.vy += grav / 2; b.y += b.vy / 2; b.x += b.vx / 2; b.vx *= 0.96;
+        if (b.y + b.h > G) { b.y = G - b.h; b.vy = 0; b.vx *= 0.7; }
+        s.blocks.forEach(function(o){ if (o !== b) sep(b, o); }); });
+      // goblins sit on whatever is under them; a big fall or a hard shove knocks them out
+      s.gobs.forEach(function(gb){ if (gb.out) return; gb.vy += grav; gb.y += gb.vy; gb.x += gb.vx; gb.vx *= 0.9;
+        var floor = G - gb.r;
+        s.blocks.forEach(function(b){ if (gb.x > b.x - 4 && gb.x < b.x + b.w + 4 && gb.y + gb.r <= b.y + 8 && gb.y + gb.r + gb.vy >= b.y - 1) floor = Math.min(floor, b.y - gb.r);
+          if (gb.x + gb.r > b.x && gb.x - gb.r < b.x + b.w && gb.y + gb.r > b.y + 6 && gb.y - gb.r < b.y + b.h) { var sp = Math.hypot(b.vx, b.vy); if (sp > 2.2) knock(gb); } });
+        if (gb.y >= floor) { if (gb.vy > 6.5) knock(gb); gb.y = floor; gb.vy = 0; }
+        if (gb.x < -20 || gb.x > W + 20) knock(gb); });
+      var leftGobs = s.gobs.filter(function(gb){ return !gb.out; }).length;
+      if (!leftGobs) { s.wait++; if (s.wait > 40) { s.msg = "won"; setScore(score + 100 + s.left * 50); } }
+      else if (s.left === 0 && !s.stones.length) { s.wait++; if (s.wait > 90) s.msg = "lost"; }
+    }
+    // draw
+    var sky = g.createLinearGradient(0, 0, 0, H); sky.addColorStop(0, "#93c5fd"); sky.addColorStop(1, "#e0f2fe");
+    g.fillStyle = sky; g.fillRect(0, 0, W, H);
+    g.fillStyle = "#4d7c0f"; g.fillRect(0, G, W, H - G);
+    // catapult
+    g.strokeStyle = "#78350f"; g.lineWidth = 8; g.beginPath(); g.moveTo(s.SX, G); g.lineTo(s.SX, s.SY + 20); g.stroke();
+    g.lineWidth = 6; g.beginPath(); g.moveTo(s.SX - 16, s.SY - 10); g.lineTo(s.SX, s.SY + 20); g.lineTo(s.SX + 16, s.SY - 10); g.stroke();
+    var hold = s.aim || { x: s.SX, y: s.SY };
+    g.strokeStyle = "#451a03"; g.lineWidth = 3; g.beginPath(); g.moveTo(s.SX - 16, s.SY - 10); g.lineTo(hold.x, hold.y); g.lineTo(s.SX + 16, s.SY - 10); g.stroke();
+    if (s.left > 0 && !s.msg) { g.fillStyle = "#57534e"; g.beginPath(); g.arc(hold.x, hold.y, 11, 0, Math.PI * 2); g.fill(); }
+    // aiming dots
+    if (s.aim) { var vx = (s.SX - s.aim.x) * 0.2, vy = (s.SY - s.aim.y) * 0.2, x = s.SX, y = s.SY; g.fillStyle = "rgba(0,0,0,.35)";
+      for (var i = 0; i < 26; i++) { vy += grav; x += vx; y += vy; if (i % 2) { g.beginPath(); g.arc(x, y, 2.5, 0, Math.PI * 2); g.fill(); } } }
+    s.blocks.forEach(function(b){ g.fillStyle = "#b45309"; g.fillRect(b.x, b.y, b.w, b.h); g.strokeStyle = "#78350f"; g.lineWidth = 2; g.strokeRect(b.x + 1, b.y + 1, b.w - 2, b.h - 2); });
+    s.gobs.forEach(function(gb){ if (gb.out) return; g.fillStyle = "#84cc16"; g.beginPath(); g.arc(gb.x, gb.y, gb.r, 0, Math.PI * 2); g.fill();
+      g.fillStyle = "#365314"; g.beginPath(); g.moveTo(gb.x - 12, gb.y - 4); g.lineTo(gb.x - 20, gb.y - 12); g.lineTo(gb.x - 9, gb.y - 9); g.fill();
+      g.beginPath(); g.moveTo(gb.x + 12, gb.y - 4); g.lineTo(gb.x + 20, gb.y - 12); g.lineTo(gb.x + 9, gb.y - 9); g.fill();
+      g.fillStyle = "#fff"; g.beginPath(); g.arc(gb.x - 4, gb.y - 2, 3, 0, Math.PI * 2); g.arc(gb.x + 4, gb.y - 2, 3, 0, Math.PI * 2); g.fill();
+      g.fillStyle = "#111"; g.beginPath(); g.arc(gb.x - 4, gb.y - 2, 1.4, 0, Math.PI * 2); g.arc(gb.x + 4, gb.y - 2, 1.4, 0, Math.PI * 2); g.fill(); });
+    s.stones.forEach(function(st){ g.fillStyle = "#57534e"; g.beginPath(); g.arc(st.x, st.y, st.r, 0, Math.PI * 2); g.fill(); });
+    g.fillStyle = "#0f172a"; g.font = "700 16px system-ui"; g.textAlign = "left";
+    g.fillText("Level " + (s.lvl + 1) + " of " + LEVELS.length + "   Stones: " + "●".repeat(s.left), 12, 26);
+    if (!s.stones.length && !s.aim && s.left === 5 && !s.msg) { g.textAlign = "center"; g.fillText("Drag back from the catapult and let go", W / 2, 60); }
+    if (s.msg === "won") overlay([s.lvl + 1 < LEVELS.length ? "Level " + (s.lvl + 1) + " cleared!" : "Castle conquered! " + score, "Tap or press Space for the next one"]);
+    if (s.msg === "lost") overlay(["Out of stones", "Tap or press Space to start again"]);
+
+    function knock(gb){ if (gb.out) return; gb.out = true; setScore(score + 50); }
+    function hitBox(st, b){ var cx = Math.max(b.x, Math.min(st.x, b.x + b.w)), cy = Math.max(b.y, Math.min(st.y, b.y + b.h)), dx = st.x - cx, dy = st.y - cy, d = Math.hypot(dx, dy);
+      if (d >= st.r || d === 0) return; var nx = dx / d, ny = dy / d, push = st.r - d; st.x += nx * push; st.y += ny * push;
+      var heavy = 30 / (b.w * b.h) * 40; b.vx -= nx * Math.abs(st.vx) * Math.min(1.4, heavy); b.vy -= ny * Math.abs(st.vy) * Math.min(1, heavy) * 0.5;
+      var dot = st.vx * nx + st.vy * ny; st.vx -= 1.5 * dot * nx; st.vy -= 1.5 * dot * ny; st.vx *= 0.6; st.vy *= 0.6; }
+    function sep(a, b){ var ox = Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x), oy = Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y);
+      if (ox <= 0 || oy <= 0) return;
+      if (oy < ox) { if (a.y < b.y) { a.y -= oy; if (a.vy > 0) a.vy = 0; a.vx = a.vx * 0.85 + b.vx * 0.15; } else { a.y += oy; } }
+      else { var m = (a.vx + b.vx) / 2; if (a.x < b.x) { a.x -= ox / 2; b.x += ox / 2; } else { a.x += ox / 2; b.x -= ox / 2; } a.vx = b.vx = m; } }
+  }
+};
+
+var GAMES = [robin, cata, plane, drop, dbl, rocks];
 
 /* ---------- menu ---------- */
 var picks = document.getElementById("picks");
@@ -249,7 +385,7 @@ document.addEventListener("keydown", function(e){
   if (e.key === "Escape") { back(); return; }
   keys[e.key] = true;
   var used = false;
-  if (cur === plane && (e.key === " " || e.key === "ArrowUp")) { plane.flap(); used = true; }
+  if ((cur === plane || cur === robin) && (e.key === " " || e.key === "ArrowUp")) { cur.flap(); used = true; }
   else if (cur.key) used = cur.key(e.key);
   if (used || e.key === " " || e.key.indexOf("Arrow") === 0) e.preventDefault();
 });
@@ -257,10 +393,11 @@ document.addEventListener("keyup", function(e){ keys[e.key] = false; });
 function pos(e){ var r = cv.getBoundingClientRect(), t = e.touches ? e.touches[0] || e.changedTouches[0] : e; return { x: (t.clientX - r.left) * W / r.width, y: (t.clientY - r.top) * H / r.height }; }
 var sx = 0, sy = 0;
 cv.addEventListener("pointerdown", function(e){ var p = pos(e); sx = p.x; sy = p.y;
-  if (cur === plane) plane.flap(); else if (cur === rocks) rocks.touch(p.x, "start"); else if (cur === drop && drop.dead) drop.start(); });
-cv.addEventListener("pointermove", function(e){ if (cur === rocks && e.buttons) rocks.touch(pos(e).x, "move"); });
+  if (cur === plane || cur === robin) cur.flap(); else if (cur === cata) { cata.press(p); try { cv.setPointerCapture(e.pointerId); } catch(err){} } else if (cur === rocks) rocks.touch(p.x, "start"); else if (cur === drop && drop.dead) drop.start(); });
+cv.addEventListener("pointermove", function(e){ if (cur === rocks && e.buttons) rocks.touch(pos(e).x, "move"); if (cur === cata) cata.drag(pos(e)); });
 cv.addEventListener("pointerup", function(e){ var p = pos(e), dx = p.x - sx, dy = p.y - sy;
   if (cur === rocks) rocks.touch(p.x, "end");
+  if (cur === cata) cata.release();
   if (cur === dbl && Math.max(Math.abs(dx), Math.abs(dy)) > 30) dbl.swipe(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? "right" : "left") : (dy > 0 ? "down" : "up")); });
 
 /* Straight into a game from a link: arcade.html#drop */
