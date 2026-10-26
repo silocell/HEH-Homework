@@ -23,7 +23,16 @@ server instead of the real one.
 
 Repositories: `silocell/HEH-Homework` (branch `main` = real site, branch
 `lab` = lab code), `silocell/HEH-Launchpad-Lab` (published copy of the lab
-branch), `silocell/HEH-Launchpad-Game`.
+branch), and three game repositories: `silocell/HEH-Launchpad-Game`
+(Gate Run), `silocell/HEH-Launchpad-Scratch` (the six Scratch games),
+`silocell/HEH-Launchpad-Learn` (Level Up, Times Table Tycoon, Word
+Dragons, Battle Stories).
+
+The games are in repositories of their own because they are GPL v3 while
+the dashboard is all rights reserved, and one repository cannot honestly
+claim both. Every link to them is root-relative —
+`/HEH-Launchpad-Learn/levelup.html`, not `levelup.html` — so it resolves
+from any of these paths and survives the move to the custom domain.
 
 ## Pages
 
@@ -31,11 +40,18 @@ branch), `silocell/HEH-Launchpad-Game`.
   noticeboard, "Explain a topic" (AI), "Look it up" (Wikipedia), word of the day.
 - `notes.html` – the admin panel. Opens only for Shiv's own account; the
   server checks the signed-in account, so editing the page changes nothing.
+- `games.html` – every game in one place; the dashboard's Games panel links to it.
+
+The game pages themselves now live in `HEH-Launchpad-Learn`, not here:
+
 - `levelup.html` – Level Up (lab only so far).
 - `tables.html` – Times Table Tycoon (lab): 60-second rounds, Numling cards, trading. Function `tables`; tables `tt_progress`, `tt_rounds`, `tt_cards`, `tt_offers`; the swap is `tt_accept()` in the database, all-or-nothing.
 - `dragons.html` – Word Dragons (lab): dragons grow on English lessons, battles by email with no names shown. Function `dragons`; tables `dr_players`, `dr_dragons`, `dr_lessons`, `dr_battles`. Questions share `levelup_bank`.
 - `history.html` – Battle Stories: Hastings 1066, animated scenes + questions. Runs entirely in the browser - no server part, nothing to install.
-- `games.html` – every game in one place; the dashboard's Games panel links to it.
+
+and the six `sg-*.html` Scratch games, with `game-hud.js`, live in
+`HEH-Launchpad-Scratch`. They load `games-gate.js` from `HEH-Homework`
+rather than carrying their own copy.
 - `experiments.js` – lab only: the experiments and the admin Experiments and
   Ask Claude sections.
 - `extras.js` – real site only: the experiments that were kept.

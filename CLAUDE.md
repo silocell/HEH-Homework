@@ -13,6 +13,15 @@ GitHub Pages, with Supabase for accounts, data and edge functions.
 | Real site | `silocell/HEH-Homework`, `main` | silocell.github.io/HEH-Homework/ | Hosted Supabase (project `lkyfpvlrqgezgitfmpqo`) |
 | Lab (testing copy) | `HEH-Homework`, `lab` branch → published to `silocell/HEH-Launchpad-Lab` | silocell.github.io/HEH-Launchpad-Lab/ | Self-hosted Supabase on an Oracle Cloud ARM machine, `https://hehs.duckdns.org` (old: `79.72.79.18.sslip.io`, blocked by BT) |
 | Gate Run (game) | `silocell/HEH-Launchpad-Game` | silocell.github.io/HEH-Launchpad-Game/ | none |
+| Scratch games | `silocell/HEH-Launchpad-Scratch` | silocell.github.io/HEH-Launchpad-Scratch/ | none |
+| Learning games | `silocell/HEH-Launchpad-Learn` | silocell.github.io/HEH-Launchpad-Learn/ | same as the site it is opened from |
+
+The games live in repositories of their own because they are GPL v3 and the
+dashboard is all rights reserved; one repository cannot carry both licences
+honestly. Links to them are always root-relative
+(`/HEH-Launchpad-Learn/levelup.html`), never `levelup.html` and never a full
+`silocell.github.io` URL — root-relative resolves correctly from the real
+site, the lab and the custom domain alike.
 
 The same files serve both the real site and the lab. Lab mode is decided by
 the page address (`/^\/HEH-(Homework|Launchpad)-Lab(\/|$)/i`), which adds
@@ -35,6 +44,9 @@ HEH-Launchpad-Lab checkout (`git archive lab <files> | tar -x`) and push its
   `lab_flags` table, plus the Experiments and Ask Claude sections of the lab
   admin panel. Keys `hl.exp.*`.
 - `chaos.js` (lab): fault switch ("Break things"), including an SSH tunnel mode.
+- The game pages below are in `HEH-Launchpad-Learn` now, not this repo. They
+  still behave as described, and they load `games-gate.js` from this repo so
+  the access rules have one home.
 - `levelup.html` (lab): Level Up, adaptive practice. See below.
 - `tables.html` (lab): Times Table Tycoon - 60s rounds, Numling cards, lab-only
   trading (`tt_accept()` swaps atomically in the database).
@@ -42,6 +54,11 @@ HEH-Launchpad-Lab checkout (`git archive lab <files> | tar -x`) and push its
   email, only dragons ever shown. Shares `levelup_bank` for questions.
 - `history.html`: Battle Stories (Hastings 1066), client-only - facts checked by
   hand, never AI-written; BBC clips embedded from the BBC's own YouTube.
+- The six `sg-*.html` Scratch games and `game-hud.js` are in
+  `HEH-Launchpad-Scratch`. Note the lab's copies used to carry a
+  `games-gate.js` tag that the real site's did not — the shared copies are
+  ungated, so the "games off for new users" test on the Scratch games is not
+  running any more.
 - `games.html`: all games in one place. The dashboard Games panel (always on in
   the lab via experiments.js, `gamesHub()` in extras.js on main) links here.
   Every game page has a big round ✕ back to the dashboard.

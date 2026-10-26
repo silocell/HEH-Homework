@@ -694,7 +694,7 @@
        opened in a frame inside the same overlay. It keeps its own
        score, so the overlay doesn't show one. */
     fruit:     { name:"Fruit Slash", how:"Swipe with the mouse to slice the fruit - never the bomb.",
-                 page:"sg-fruit.html" }
+                 page:"/HEH-Launchpad-Scratch/sg-fruit.html" }
   };
   var overlay = null;
 
@@ -1285,11 +1285,11 @@
     var p = el("div", "panel exp-panel"); p.id = "expGames"; tag(p);
     p.appendChild(el("p", "panel-title", "Games"));
     var grid = el("div", "x-ggrid");
-    [["\ud83c\udfce\ufe0f", "Gate Run", "Race your ghost through the right answer", "https://silocell.github.io/HEH-Launchpad-Game/?ghost=1"],
-     ["\u2716\ufe0f", "Times Table Tycoon", "60 seconds - collect Numlings", "tables.html"],
-     ["\ud83d\udc09", "Word Dragons", "Grow dragons with English", "dragons.html"],
-     ["\u2694\ufe0f", "Battle Stories", "Hastings, 1066", "history.html"],
-     ["\ud83d\ude80", "Level Up", "Practice that learns you", "levelup.html"],
+    [["\ud83c\udfce\ufe0f", "Gate Run", "Race your ghost through the right answer", "/HEH-Launchpad-Game/?ghost=1"],
+     ["\u2716\ufe0f", "Times Table Tycoon", "60 seconds - collect Numlings", "/HEH-Launchpad-Learn/tables.html"],
+     ["\ud83d\udc09", "Word Dragons", "Grow dragons with English", "/HEH-Launchpad-Learn/dragons.html"],
+     ["\u2694\ufe0f", "Battle Stories", "Hastings, 1066", "/HEH-Launchpad-Learn/history.html"],
+     ["\ud83d\ude80", "Level Up", "Practice that learns you", "/HEH-Launchpad-Learn/levelup.html"],
      ["\ud83d\udd79\ufe0f", "Arcade", "Just for fun", "arcade.html"],
      /* The six Scratch-made games sit behind one button, rather than
         filling the panel with tiles. */

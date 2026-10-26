@@ -37,7 +37,7 @@
     var p = panel("funMonster", "Homework Monster", "right-top"); if (!p) return;
     var name = el("p", "fun-big", "..."), bar = el("div", "fun-bar"), fill = el("div", "fun-fill"), info = el("p", "exp-note"), face = el("div", "fun-monster", "👾");
     bar.appendChild(fill);
-    var go = el("a", "ghost-btn", "Hit it in Level Up →"); go.href = "levelup.html";
+    var go = el("a", "ghost-btn", "Hit it in Level Up →"); go.href = "/HEH-Launchpad-Learn/levelup.html";
     p.appendChild(face); p.appendChild(name); p.appendChild(bar); p.appendChild(info); p.appendChild(go);
     var faces = ["👾","👹","🐙","🦑","🐲","🧌","👻","🦖"];
     function paint(m){
