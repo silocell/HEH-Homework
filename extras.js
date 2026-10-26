@@ -188,7 +188,7 @@
     var saved = read("hl.x.warmup", null);
     if (saved && saved.day === today()) { show(saved.item); return; }
     var s = document.createElement("script");
-    s.src = "https://games.civilinitiatives.org/questions.js";
+    s.src = "https://gaterun.civilinitiatives.org/questions.js";
     s.onload = function(){
       if (!window.QUIZ){ q.textContent = "Couldn't load today's question."; return; }
       var m = QUIZ.next("both", 1);
@@ -503,7 +503,7 @@
        opened in a frame inside the same overlay. It keeps its own
        score, so the overlay doesn't show one. */
     fruit:     { name:"Fruit Slash", how:"Swipe with the mouse to slice the fruit - never the bomb.",
-                 page:"https://scratch.civilinitiatives.org/sg-fruit.html" }
+                 page:"https://games.civilinitiatives.org/sg-fruit.html" }
   };
   var overlay = null;
 
@@ -1157,7 +1157,7 @@
       w.appendChild(el("b", null, name)); w.appendChild(el("small", null, sub));
       t.appendChild(i); t.appendChild(w); grid.appendChild(t);
     }
-    tile("🏎️", "Gate Run", "Steer through the right answer", "https://games.civilinitiatives.org/");
+    tile("🏎️", "Gate Run", "Steer through the right answer", "https://gaterun.civilinitiatives.org/");
     tile("🚀", "Level Up", "Practice at your level", "https://learn.civilinitiatives.org/levelup.html");
     tile("✖️", "Times Table Tycoon", "60-second rounds", "https://learn.civilinitiatives.org/tables.html");
     tile("🐉", "Word Dragons", "Grow dragons with English", "https://learn.civilinitiatives.org/dragons.html");
