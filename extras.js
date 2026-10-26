@@ -503,7 +503,7 @@
        opened in a frame inside the same overlay. It keeps its own
        score, so the overlay doesn't show one. */
     fruit:     { name:"Fruit Slash", how:"Swipe with the mouse to slice the fruit - never the bomb.",
-                 page:"sg-fruit.html" }
+                 page:"/HEH-Launchpad-Scratch/sg-fruit.html" }
   };
   var overlay = null;
 
@@ -1157,11 +1157,11 @@
       w.appendChild(el("b", null, name)); w.appendChild(el("small", null, sub));
       t.appendChild(i); t.appendChild(w); grid.appendChild(t);
     }
-    tile("🏎️", "Gate Run", "Steer through the right answer", "https://silocell.github.io/HEH-Launchpad-Game/");
-    tile("🚀", "Level Up", "Practice at your level", "levelup.html");
-    tile("✖️", "Times Table Tycoon", "60-second rounds", "tables.html");
-    tile("🐉", "Word Dragons", "Grow dragons with English", "dragons.html");
-    tile("⚔️", "Battle Stories", "Hastings, 1066", "history.html");
+    tile("🏎️", "Gate Run", "Steer through the right answer", "/HEH-Launchpad-Game/");
+    tile("🚀", "Level Up", "Practice at your level", "/HEH-Launchpad-Learn/levelup.html");
+    tile("✖️", "Times Table Tycoon", "60-second rounds", "/HEH-Launchpad-Learn/tables.html");
+    tile("🐉", "Word Dragons", "Grow dragons with English", "/HEH-Launchpad-Learn/dragons.html");
+    tile("⚔️", "Battle Stories", "Hastings, 1066", "/HEH-Launchpad-Learn/history.html");
     tile("🐍", "Snake", "Eat the apples", function(){ openGame("snake"); });
     tile("🧱", "Brick Breaker", "Clear every brick", function(){ openGame("breakout"); });
     tile("🔨", "Whack-a-mole", "30 seconds", function(){ openGame("mole"); });

@@ -41,6 +41,20 @@ to the AI — isn't here. Not because hiding code makes anything safe: it
 doesn't, and anyone who tells you otherwise is selling something. It's
 because those files hold keys, and keys belong somewhere private.
 
+The games aren't here either. They're in three repos of their own:
+
+- [HEH-Launchpad-Game](https://github.com/silocell/HEH-Launchpad-Game) — Gate Run
+- [HEH-Launchpad-Scratch](https://github.com/silocell/HEH-Launchpad-Scratch) — the six Scratch games
+- [HEH-Launchpad-Learn](https://github.com/silocell/HEH-Launchpad-Learn) — Level Up, Times Table Tycoon, Word Dragons, Battle Stories
+
+That split is on purpose, and it's about the licence as much as the file
+sizes. The games are released under the GNU GPL v3: copy them, change
+them, put them on your own site. The dashboard in this repository is not —
+it's all rights reserved, and you're welcome to read it but not to run
+your own copy. Keeping them in separate repositories means each one has a
+single, unambiguous licence, instead of one repository claiming both
+things at once.
+
 ## What actually keeps it safe
 
 Not this repository being tidy. Three things:
