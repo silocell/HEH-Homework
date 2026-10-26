@@ -11,7 +11,7 @@
    is left open rather than broken; a "no" is always obeyed.
    ===================================================================== */
 (function(){
-  var LAB = /^\/HEH-(Homework|Launchpad)-Lab(\/|$)/i.test(location.pathname);
+  var LAB = (/^lab\./i.test(location.hostname) || /^\/HEH-(Homework|Launchpad)-Lab(\/|$)/i.test(location.pathname));
   var URL = LAB ? "https://hehs.duckdns.org" : "https://hehs-live.duckdns.org";
   var KEY = LAB
     ? "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzkyNzcxNTQzLCJleHAiOjIxMDgxMzE1NDN9.MFpgmA0d-KISwuCicZMUhnaEpVHY-Sw_jFp3Muck6FM"
