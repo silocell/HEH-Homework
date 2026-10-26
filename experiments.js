@@ -17,7 +17,7 @@
 /* Remember the last few errors on this page, for "Ask Claude" on the
    admin page. Error text and where it happened only. */
 (function(){
-  if (!/^\/HEH-(Homework|Launchpad)-Lab(\/|$)/i.test(location.pathname)) return;
+  if (!(/^lab\./i.test(location.hostname) || /^\/HEH-(Homework|Launchpad)-Lab(\/|$)/i.test(location.pathname))) return;
   var errs = window.__labErrs = [];
   function keep(t){ errs.push(new Date().toTimeString().slice(0, 8) + " " + String(t).slice(0, 300)); if (errs.length > 30) errs.shift(); }
   window.addEventListener("error", function(e){ keep((e.message || "error") + (e.filename ? " @ " + e.filename.split("/").pop() + ":" + e.lineno : "")); });

@@ -373,7 +373,7 @@ html.lab .shell{padding-top:26px}
 <div class="labbar" aria-label="Lab copy">Lab — things here are being tried out and may break
   <a href="https://silocell.github.io/HEH-Homework/notes">go to the real admin panel</a></div>
 <script>
-  if (/^\/HEH-(Homework|Launchpad)-Lab(\/|$)/i.test(location.pathname)) document.documentElement.classList.add("lab");
+  if ((/^lab\./i.test(location.hostname) || /^\/HEH-(Homework|Launchpad)-Lab(\/|$)/i.test(location.pathname))) document.documentElement.classList.add("lab");
   if (document.documentElement.classList.contains("lab")) document.querySelectorAll('link[rel="icon"],link[rel="apple-touch-icon"]').forEach(function(l){ l.href = "data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Crect width=%2264%22 height=%2264%22 rx=%2216%22 fill=%22%237c3aed%22/%3E%3Cpath d=%22M26 12h12M28 12v14L16 48a4 4 0 0 0 3.5 6h25a4 4 0 0 0 3.5-6L36 26V12%22 fill=%22none%22 stroke=%22%23fff%22 stroke-width=%224%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22/%3E%3Cpath d=%22M21 42h22l4 7.5a2 2 0 0 1-1.8 2.5H18.8a2 2 0 0 1-1.8-2.5Z%22 fill=%22%23f0abfc%22/%3E%3Ccircle cx=%2228%22 cy=%2246%22 r=%222%22 fill=%22%23fff%22/%3E%3Ccircle cx=%2235%22 cy=%2244%22 r=%221.5%22 fill=%22%23fff%22/%3E%3C/svg%3E"; });
 </script>
 <script src="chaos.js"></script>
