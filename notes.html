@@ -673,6 +673,7 @@ body.demo #mainPanel .sec.off{ opacity:.42; pointer-events:none; user-select:non
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.0/dist/umd/supabase.js"></script>
+<script src="auth-store.js?b=20261026a"></script>
 <script src="polish.js?b=20261021194235"></script>
 <script>
 /* The real site's own server (HEH-Live, since 24 Oct 2026). */
@@ -710,7 +711,8 @@ var sb = null;
 try{
   if(window.supabase && window.supabase.createClient){
     sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-      auth:{ persistSession:true, autoRefreshToken:true }
+      auth:{ persistSession:true, autoRefreshToken:true,
+             storage:(window.HEHAuth && window.HEHAuth.storage) || undefined }
     });
   }
 }catch(e){ sb = null; }

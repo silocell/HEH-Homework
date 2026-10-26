@@ -127,6 +127,21 @@
     onDomain: onDomain,
     storage: onDomain ? shared : localStore,
     /* For code that wants the token without going through supabase-js. */
-    get: function (key) { return this.storage.getItem(key); }
+    get: function (key) { return this.storage.getItem(key); },
+    /* "Is anyone signed in?", without waiting for getSession() to answer.
+       The key is sb-<project>-auth-token, so look for that shape in both
+       places rather than hard-coding the project name. */
+    hasSession: function () {
+      var k, i;
+      var c = jar();
+      for (k in c) if (/^sb-.*-auth-token(\.\d+)?$/.test(k) && c[k]) return true;
+      try {
+        for (i = 0; i < localStorage.length; i++) {
+          k = localStorage.key(i);
+          if (k && /^sb-.*-auth-token$/.test(k) && localStorage.getItem(k)) return true;
+        }
+      } catch (e) {}
+      return false;
+    }
   };
 })();

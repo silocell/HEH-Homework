@@ -1545,6 +1545,7 @@ footer{
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.0/dist/umd/supabase.js"></script>
+<script src="auth-store.js?b=20261026a"></script>
 <script src="polish.js?b=20261021194235"></script>
 <script src="level-practice.js?b=20261024a"></script>
 <script src="extras.js?b=20261024b"></script>
@@ -1593,7 +1594,8 @@ var sb = null;
 try{
   if(window.supabase && window.supabase.createClient){
     sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-      auth:{ persistSession:true, autoRefreshToken:true }
+      auth:{ persistSession:true, autoRefreshToken:true,
+             storage:(window.HEHAuth && window.HEHAuth.storage) || undefined }
     });
   }
 }catch(e){ sb = null; }
@@ -2464,6 +2466,9 @@ function comingBackFromSignIn(){
    shown a login box when you are already logged in looks like you have
    been thrown out, which is alarming and wrong. */
 function haveStoredSession(){
+  /* The session may be in a cookie now rather than localStorage, so ask
+     auth-store.js, which knows to look in both. */
+  if(window.HEHAuth && window.HEHAuth.hasSession) return window.HEHAuth.hasSession();
   try{
     for(var i = 0; i < localStorage.length; i++){
       var k = localStorage.key(i);

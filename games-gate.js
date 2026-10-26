@@ -20,7 +20,13 @@
   var SKEY = "sb-" + URL.replace(/^https:\/\//, "").split(".")[0] + "-auth-token";
   var token = null, sess = null;
   try {
-    sess = JSON.parse(localStorage.getItem(SKEY) || "null");
+    /* auth-store.js knows whether the session is in a cookie shared
+       across the subdomains or in localStorage, and reads the right one.
+       If it has not loaded, fall back to how this always worked. */
+    var raw = (window.HEHAuth && window.HEHAuth.get)
+                ? window.HEHAuth.get(SKEY)
+                : localStorage.getItem(SKEY);
+    sess = JSON.parse(raw || "null");
     token = sess && sess.access_token;
   } catch(e) {}
 
