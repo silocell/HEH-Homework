@@ -379,7 +379,7 @@
     var saved = read("hl.exp.warmup", null);
     if (saved && saved.day === today()) { show(saved.item); return; }
     var s = document.createElement("script");
-    s.src = "/HEH-Launchpad-Game/questions.js";
+    s.src = "https://games.civilinitiatives.org/questions.js";
     s.onload = function(){
       if (!window.QUIZ){ q.textContent = "Couldn't load today's question."; return; }
       var m = QUIZ.next("both", 1);
@@ -694,7 +694,7 @@
        opened in a frame inside the same overlay. It keeps its own
        score, so the overlay doesn't show one. */
     fruit:     { name:"Fruit Slash", how:"Swipe with the mouse to slice the fruit - never the bomb.",
-                 page:"/HEH-Launchpad-Scratch/sg-fruit.html" }
+                 page:"https://scratch.civilinitiatives.org/sg-fruit.html" }
   };
   var overlay = null;
 
@@ -1285,11 +1285,11 @@
     var p = el("div", "panel exp-panel"); p.id = "expGames"; tag(p);
     p.appendChild(el("p", "panel-title", "Games"));
     var grid = el("div", "x-ggrid");
-    [["\ud83c\udfce\ufe0f", "Gate Run", "Race your ghost through the right answer", "/HEH-Launchpad-Game/?ghost=1"],
-     ["\u2716\ufe0f", "Times Table Tycoon", "60 seconds - collect Numlings", "/HEH-Launchpad-Learn/tables.html"],
-     ["\ud83d\udc09", "Word Dragons", "Grow dragons with English", "/HEH-Launchpad-Learn/dragons.html"],
-     ["\u2694\ufe0f", "Battle Stories", "Hastings, 1066", "/HEH-Launchpad-Learn/history.html"],
-     ["\ud83d\ude80", "Level Up", "Practice that learns you", "/HEH-Launchpad-Learn/levelup.html"],
+    [["\ud83c\udfce\ufe0f", "Gate Run", "Race your ghost through the right answer", "https://games.civilinitiatives.org/?ghost=1"],
+     ["\u2716\ufe0f", "Times Table Tycoon", "60 seconds - collect Numlings", "https://learn.civilinitiatives.org/tables.html"],
+     ["\ud83d\udc09", "Word Dragons", "Grow dragons with English", "https://learn.civilinitiatives.org/dragons.html"],
+     ["\u2694\ufe0f", "Battle Stories", "Hastings, 1066", "https://learn.civilinitiatives.org/history.html"],
+     ["\ud83d\ude80", "Level Up", "Practice that learns you", "https://learn.civilinitiatives.org/levelup.html"],
      ["\ud83d\udd79\ufe0f", "Arcade", "Just for fun", "arcade.html"],
      /* The six Scratch-made games sit behind one button, rather than
         filling the panel with tiles. */
