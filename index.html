@@ -4737,7 +4737,11 @@ if(wikiForm) wikiForm.addEventListener("submit", function(e){
    account on the server, so this is convenience, not a lock.
    ------------------------------------------------------------- */
 function isOwner(){
-  return !!(currentUser && !currentUser.offline && isOwnerEmail(currentUser.email));
+  /* The main admin account, or the school account while the "School
+     account admin" switch is on (it then has the Admin tag). The chat
+     function checks the same switch, so these buttons work for both. */
+  return !!(currentUser && !currentUser.offline &&
+    (isOwnerEmail(currentUser.email) || staffTags[currentUser.uid] === "admin"));
 }
 
 /* The Admin panel link shows for Shiv straight away, and for a look-only
@@ -5464,6 +5468,14 @@ function loadStaffTags(){
     staffTags = {};
     r.data.forEach(function(x){ staffTags[x.user_id] = x.tag; });
     document.querySelectorAll("[data-uid]").forEach(function(e){ addStaffTag(e, e.getAttribute("data-uid")); });
+    /* The school account just turned out to be an admin: draw the chat and
+       board again so its delete buttons appear. */
+    if(currentUser && !isOwnerEmail(currentUser.email) && staffTags[currentUser.uid] === "admin"){
+      var log = document.getElementById("chatLog");
+      if(log && log.offsetParent){ chatSeen = {}; log.textContent = ""; loadChat(true); }
+      var bl = document.getElementById("boardList");
+      if(bl && bl.offsetParent && typeof loadBoard === "function") loadBoard();
+    }
   }, function(){});
 }
 
