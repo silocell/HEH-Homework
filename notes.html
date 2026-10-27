@@ -199,6 +199,9 @@ button,input,select,textarea{font:inherit;color:inherit}
   padding:10px 15px;font-size:.84rem;font-weight:600;cursor:pointer;flex:none;
 }
 .abtn[disabled]{opacity:.55;cursor:default}
+.askmode{display:inline-flex;border:1px solid var(--rule);border-radius:999px;padding:3px;margin-bottom:10px;background:var(--card)}
+.askmode button{font:inherit;font-size:.86rem;border:0;background:transparent;color:var(--ink-soft);padding:5px 14px;border-radius:999px;cursor:pointer}
+.askmode button[aria-pressed="true"]{background:var(--accent);color:var(--on-accent)}
 .abtn.danger{background:var(--margin)}
 .abtn.quiet{background:transparent;color:var(--ink-soft);border:1px solid var(--rule)}
 .abtn.quiet:hover{border-color:var(--accent);color:var(--accent)}
@@ -358,7 +361,7 @@ body.demo #mainPanel .sec.off{ opacity:.42; pointer-events:none; user-select:non
   background:rgba(17,20,27,.78);color:#fff;backdrop-filter:blur(6px);
 }
 :fullscreen{position:relative}
-#claudeQ{width:100%;font:inherit;padding:10px;border:1px solid var(--rule);border-radius:10px;background:var(--paper);color:var(--ink);resize:vertical}
+#askInput{width:100%;font:inherit;padding:10px;border:1px solid var(--rule);border-radius:10px;background:var(--paper);color:var(--ink);resize:vertical}
 </style>
 <link rel="stylesheet" href="polish.css?b=20261021194235">
 
@@ -566,34 +569,25 @@ body.demo #mainPanel .sec.off{ opacity:.42; pointer-events:none; user-select:non
 
       <div class="sec" id="techSec">
         <p class="sec-h">Ask a technical question</p>
+        <div class="askmode" role="group" aria-label="Who answers">
+          <button type="button" data-mode="quick" aria-pressed="true">Quick</button>
+          <button type="button" data-mode="claude" aria-pressed="false">Claude</button>
+        </div>
         <form id="askForm">
           <div class="arow">
             <div class="afield">
               <label for="askInput">Question</label>
-              <input type="text" id="askInput" autocomplete="off"
-                     placeholder="e.g. how do I add another site to the revision search?">
+              <textarea id="askInput" rows="2" maxlength="2000"
+                     placeholder="e.g. how do I add another site to the revision search?"></textarea>
             </div>
             <button type="submit" class="abtn" id="askBtn">Ask</button>
           </div>
+          <label id="askErrsRow" style="font-size:.86rem;display:none;margin-top:6px"><input type="checkbox" id="askErrs" checked> Include errors from this browser</label>
         </form>
-        <div class="ask-out" id="askOut"></div>
+        <div class="ask-out" id="askOut" style="white-space:pre-wrap"></div>
         <p class="ex-left" id="askLeft" style="margin-top:10px"></p>
         <p class="amsg" id="askMsg"></p>
-      </div>
-
-      <div class="sec" id="claudeSec">
-        <p class="sec-h">Ask Claude</p>
-        <form id="claudeForm">
-          <textarea id="claudeQ" rows="4" maxlength="2000" aria-label="What's wrong"
-                    placeholder="e.g. Level Up says ‘Couldn’t get a question’ every time"></textarea>
-          <div class="arow" style="justify-content:space-between;align-items:center;margin-top:8px">
-            <label style="font-size:.86rem"><input type="checkbox" id="claudeErrs" checked> Include errors from this browser</label>
-            <button type="submit" class="abtn" id="claudeGo">Ask Claude</button>
-          </div>
-        </form>
-        <div class="ask-out" id="claudeOut"></div>
-        <p class="amsg" id="claudeMsg">Never sees pupils’ messages.</p>
-        <details id="claudeOld" style="margin-top:10px"><summary>Earlier answers</summary><div id="claudeLog"></div></details>
+        <details id="claudeOld" style="margin-top:10px"><summary>Earlier Claude answers</summary><div id="claudeLog"></div></details>
       </div>
 
       <div class="sec">
@@ -799,7 +793,7 @@ function hideForDemo(){
    updates one card instead of stacking them. */
 /* Test results and anything about a password you have to copy stay put
    by their section, where you can read them properly. */
-var SAY_STAYS = { diagMsg:1, modMsg:1, siteMsg:1, showMsg:1, queueMsg:1, backupMsg:1, restoreMsg:1, roomMsg:1, labMsg:1 };
+var SAY_STAYS = { diagMsg:1, modMsg:1, siteMsg:1, showMsg:1, queueMsg:1, backupMsg:1, restoreMsg:1, roomMsg:1, labMsg:1, askMsg:1 };
 var RESTORE_META = { accounts:1, truncated:1, takenAt:1, tablesSaved:1 };
 function say(id, text, kind){
   var el = document.getElementById(id);
@@ -1864,19 +1858,45 @@ document.getElementById("wordForm").addEventListener("submit",function(e){
   }).then(function(){ btn.disabled = false; });
 });
 
-/* ---------- technical helper ---------- */
+/* ---------- technical helper ----------
+   One box, two answerers. Quick = the admin function's "ask" (fast).
+   Claude = the askclaude function (gets the project briefing and this
+   browser's errors). 15 questions a day in all, at most 5 of them Claude -
+   the server counts both, this just shows it. */
+var askMode = "quick", askAllow = null;
+try { if (localStorage.getItem("askMode") === "claude") askMode = "claude"; } catch(e){}
 function setAskLeft(remaining, limit){
   var el = document.getElementById("askLeft");
   if(!el) return;
-  el.textContent = (remaining === null || remaining === undefined)
-    ? "" : remaining + " of " + limit + " questions left today";
+  if(remaining === null || remaining === undefined){ el.textContent = ""; return; }
+  var t = remaining + " of " + limit + " questions left today";
+  if(askAllow && typeof askAllow.claudeLeft === "number")
+    t += " \u00b7 Claude: " + askAllow.claudeLeft + " of " + askAllow.claudeLimit + " left";
+  el.textContent = t;
 }
+function showAskMode(){
+  document.querySelectorAll(".askmode button").forEach(function(b){
+    b.setAttribute("aria-pressed", String(b.dataset.mode === askMode));
+  });
+  document.getElementById("askErrsRow").style.display = askMode === "claude" ? "block" : "none";
+  document.getElementById("askBtn").textContent = askMode === "claude" ? "Ask Claude" : "Ask";
+  document.getElementById("askInput").placeholder = askMode === "claude"
+    ? "e.g. Level Up says \u2018Couldn\u2019t get a question\u2019 every time"
+    : "e.g. how do I add another site to the revision search?";
+}
+document.querySelectorAll(".askmode button").forEach(function(b){
+  b.addEventListener("click", function(){
+    askMode = b.dataset.mode;
+    try { localStorage.setItem("askMode", askMode); } catch(e){}
+    say("askMsg", "");
+    showAskMode();
+  });
+});
+showAskMode();
+document.getElementById("askInput").addEventListener("keydown", function(e){
+  if(e.key === "Enter" && !e.shiftKey){ e.preventDefault(); document.getElementById("askForm").requestSubmit(); }
+});
 
-/* ---------- Ask Claude ----------
-   A function of its own on the server (askclaude): it asks the admin
-   function whether this is the owner, takes one from the shared Claude
-   allowance, and gives Claude the project briefing plus this question.
-   Browser errors from this page go along too - they're usually the clue. */
 var pageErrs = [];
 window.addEventListener("error", function(e){
   pageErrs.push(new Date().toTimeString().slice(0, 8) + " " + String(e.message || "error").slice(0, 200) +
@@ -1904,26 +1924,15 @@ function loadClaudeLog(){
     if(!(d.log || []).length){ var p = document.createElement("p"); p.className = "amsg"; p.textContent = "None yet."; box.appendChild(p); }
   }).catch(function(){});
 }
-document.getElementById("claudeForm").addEventListener("submit", function(e){
-  e.preventDefault();
-  var q = document.getElementById("claudeQ"), go = document.getElementById("claudeGo"), out = document.getElementById("claudeOut");
-  var text = q.value.trim();
-  if(text.length < 5){ say("claudeMsg", "Say what's wrong first.", "err"); return; }
-  if(!canSync()){ say("claudeMsg", "Sign in first.", "err"); return; }
-  go.disabled = true; go.textContent = "Asking\u2026"; out.textContent = ""; say("claudeMsg", "");
-  var ctx = document.getElementById("claudeErrs").checked ? pageErrs.slice(-15).join("\n") : "";
-  invokeOn("askclaude", { action:"askclaude", question:text, context:ctx }).then(function(d){
-    out.style.whiteSpace = "pre-wrap"; out.textContent = d.answer || "(no answer)";
-    say("claudeMsg", "Claude can't see the code. If something needs changing, bring this answer to the main Claude chat.");
-    loadClaudeLog();
-  }).catch(function(err){ say("claudeMsg", err.message, "err"); })
-    .then(function(){ go.disabled = false; go.textContent = "Ask Claude"; });
-});
-
+function takeAllowance(d){
+  if(typeof d.claudeLeft === "number") askAllow = d;
+  if(typeof d.remaining === "number") setAskLeft(d.remaining, d.limit);
+}
 function refreshAskAllowance(){
-  call({ action:"ask", check:true }).then(function(d){
-    if(typeof d.remaining === "number") setAskLeft(d.remaining, d.limit);
-  }).catch(function(){});
+  if(!canSync()) return;
+  invokeOn("askclaude", { action:"check" }).then(takeAllowance).catch(function(){
+    call({ action:"ask", check:true }).then(takeAllowance).catch(function(){});
+  });
 }
 
 document.getElementById("askForm").addEventListener("submit",function(e){
@@ -1933,21 +1942,35 @@ document.getElementById("askForm").addEventListener("submit",function(e){
   var out   = document.getElementById("askOut");
   var q = input.value.trim();
   if(!q) return;
+  var mode = askMode;
+  if(mode === "claude" && q.length < 5){ say("askMsg", "Say what's wrong first.", "err"); return; }
+  if(!canSync()){ say("askMsg", "Sign in first.", "err"); return; }
 
   btn.disabled = true;
-  btn.textContent = "Thinking\u2026";
+  btn.textContent = mode === "claude" ? "Asking Claude\u2026" : "Thinking\u2026";
   out.textContent = "";
   say("askMsg","");
 
-  call({ action:"ask", question:q }).then(function(d){
-    out.textContent = d.text || "";
+  var job = mode === "claude"
+    ? invokeOn("askclaude", { action:"askclaude", question:q,
+        context: document.getElementById("askErrs").checked ? pageErrs.slice(-15).join("\n") : "" })
+    : call({ action:"ask", question:q });
+  job.then(function(d){
+    out.textContent = (mode === "claude" ? d.answer : d.text) || "";
     input.value = "";
-    if(typeof d.remaining === "number") setAskLeft(d.remaining, d.limit);
+    if(mode === "claude"){
+      takeAllowance(d);
+      say("askMsg", "Claude can't see the code. If something needs changing, bring this answer to the main Claude chat.");
+      loadClaudeLog();
+    } else {
+      refreshAskAllowance();
+    }
   }).catch(function(err){
     say("askMsg", err.message, "err");
+    refreshAskAllowance();
   }).then(function(){
     btn.disabled = false;
-    btn.textContent = "Ask";
+    showAskMode();
   });
 });
 
