@@ -5,7 +5,8 @@
 <script>
 /* The saved theme, before anything is drawn - so dark mode doesn't flash
    light for a moment on every load. The full theme code runs later. */
-try{ var t = JSON.parse(localStorage.getItem("hl.theme")); if(t === "dark" || t === "light") document.documentElement.setAttribute("data-theme", t); }catch(e){}
+try{ var m = document.cookie.match(/(?:^|; )hl_theme=(dark|light|system)/), t = m ? m[1] : JSON.parse(localStorage.getItem("hl.theme")); /* the cookie is shared by every *.civilinitiatives.org site */
+     if(t === "dark" || t === "light") document.documentElement.setAttribute("data-theme", t); }catch(e){}
 </script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
@@ -1548,6 +1549,7 @@ footer{
 <script src="polish.js?b=20261021194235"></script>
 <script src="level-practice.js?b=20261024a"></script>
 <script src="extras.js?b=20261027r"></script>
+<script src="profile.js?b=20261027a"></script>
 <script>
 /* ?v=<number> is how a reload dodges the cache - after an update, or when
    the site opens or closes. By the time anyone can see the page it has
@@ -2064,10 +2066,24 @@ var WORDS = [
    STORAGE HELPERS — all wrapped, so a blocked localStorage
    never breaks the page.
    ================================================================== */
+/* Light or dark is shared with every *.civilinitiatives.org site (Level
+   Up, the games, the panels) through one cookie, because localStorage
+   belongs to one address only. "system" = follow the device. */
+function shareTheme(val){
+  if(!/(^|\.)civilinitiatives\.org$/.test(location.hostname)) return;
+  document.cookie = "hl_theme=" + (val === "dark" || val === "light" ? val : "system") +
+    "; domain=.civilinitiatives.org; path=/; max-age=34560000; secure; samesite=lax";
+}
+function sharedTheme(){
+  var m = document.cookie.match(/(?:^|; )hl_theme=(dark|light|system)/);
+  return m ? (m[1] === "system" ? null : m[1]) : undefined;
+}
 function store(key,val){
   try{ localStorage.setItem(key,JSON.stringify(val)); }catch(e){}
+  if(key === "hl.theme") shareTheme(val);
 }
 function recall(key,fallback){
+  if(key === "hl.theme"){ var sh = sharedTheme(); if(sh !== undefined) return sh; }
   try{
     var raw = localStorage.getItem(key);
     return raw === null ? fallback : JSON.parse(raw);
