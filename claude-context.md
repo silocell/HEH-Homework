@@ -74,6 +74,7 @@ The game pages live in `HEH-Launchpad-Learn` (learn.civilinitiatives.org):
 - `geo.html` – Map Quest: Year 7 geography, questions made in the page. "Practise my weakest" uses the progress model.
 - `cards.html` – Flash cards, made automatically from wrong answers in every learning game (Leitner boxes 1–5: 0, 1, 3, 7, 16 days).
 - `progress.html` – My progress: a score per skill per subject, cards due, each game's record.
+- `related.js` – a flash card keeps its fact (`flashcards.data`) and is asked a different way each day, chosen by date + card id; harder forms (typed, backwards) at higher boxes. A wrong answer is followed by a related question. `geo-facts.js` holds the geography facts Map Quest and the cards share.
 - `learn.js` – every learning game reports answers here. It queues them in the browser and sends them to `learn_record()`; if the server has no tables yet, they wait.
 
 Progress tables (from `learning.sql`, 27 Oct): `learn_skills` (mastery per skill), `flashcards`, `game_saves` (Battle Stories and Map Quest best scores). All private to the pupil by Row Level Security. Model: each answer moves mastery 30% toward right/wrong; time away fades it toward 0.5, halving every 30 days. If Cards or Progress say "not switched on yet", `learning.sql` hasn't been run on that server.
