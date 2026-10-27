@@ -62,7 +62,14 @@
       .then(function(r){ return r.ok ? r.json() : null; })
       .then(function(n){ if (!n || !n.access_token) return null;
         if (!n.expires_at && n.expires_in) n.expires_at = Math.floor(Date.now() / 1000) + n.expires_in;
-        try { localStorage.setItem(SKEY, JSON.stringify(n)); } catch(e) {}
+        try {
+          /* Save it where the page will look: the shared cookie on the
+             domain, localStorage elsewhere. Writing it only to localStorage
+             left the cookie holding a refresh token that had just been
+             used up. */
+          if (window.HEHAuth && window.HEHAuth.storage) window.HEHAuth.storage.setItem(SKEY, JSON.stringify(n));
+          else localStorage.setItem(SKEY, JSON.stringify(n));
+        } catch(e) {}
         return n.access_token; });
   }
   window.GamesGate.ready = ask(token).then(function(r){
