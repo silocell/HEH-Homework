@@ -18,7 +18,7 @@ A homework dashboard for Year 7 at my school. I'm in Year 7 too — I built
 this because I wanted one place for the things I needed every evening,
 instead of six tabs and a planner I'd left in my locker.
 
-**Live:** https://silocell.github.io/HEH-Homework/
+**Live:** https://civilinitiatives.org
 
 ## What it does
 
@@ -43,9 +43,13 @@ because those files hold keys, and keys belong somewhere private.
 
 The games aren't here either. They're in three repos of their own:
 
-- [HEH-Launchpad-Game](https://github.com/silocell/HEH-Launchpad-Game) — Gate Run
-- [HEH-Launchpad-Scratch](https://github.com/silocell/HEH-Launchpad-Scratch) — the six Scratch games
-- [HEH-Launchpad-Learn](https://github.com/silocell/HEH-Launchpad-Learn) — Level Up, Times Table Tycoon, Word Dragons, Battle Stories
+- [HEH-Launchpad-Game](https://github.com/silocell/HEH-Launchpad-Game) — Gate Run, at gaterun.civilinitiatives.org
+- [HEH-Launchpad-Scratch](https://github.com/silocell/HEH-Launchpad-Scratch) — the six Scratch games, at games.civilinitiatives.org
+- [HEH-Launchpad-Learn](https://github.com/silocell/HEH-Launchpad-Learn) — Level Up, Times Table Tycoon, Word Dragons, Battle Stories, at learn.civilinitiatives.org
+
+One sign-in covers all of them: `auth-store.js` keeps the session in a
+cookie for `.civilinitiatives.org`, because each subdomain is a separate
+origin and can't see the others' localStorage.
 
 That split is on purpose, and it's about the licence as much as the file
 sizes. The games are released under the GNU GPL v3: copy them, change
@@ -57,7 +61,7 @@ things at once.
 
 ## What actually keeps it safe
 
-Not this repository being tidy. Three things:
+Not this repository being tidy. Five things:
 
 1. **Row Level Security.** Every table has rules about who may read and
    write it, enforced by the database. The key in this page is meant to be
@@ -80,7 +84,8 @@ Not this repository being tidy. Three things:
 
 ### If the server side ever has to be rebuilt
 
-Three Supabase Edge Functions — `chat`, `admin`, `explain` — and a handful
+Supabase, self-hosted on an Oracle Cloud server since 24 October. Three edge
+functions — `chat`, `admin`, `explain` — and a handful
 of SQL files that are run once in the SQL editor, in this order:
 `site_status.sql`, `rooms.sql`, `room_requests.sql`, `demo_admins.sql`,
 `lock_columns.sql`, `spend_ai.sql`, `rate_limits.sql`. The functions need
@@ -101,7 +106,7 @@ copies with the backups.
 
 Plain HTML, CSS and JavaScript — no framework. Supabase for the database,
 sign-in and server functions. Groq and Cloudflare for the AI. GitHub Pages
-for hosting.
+for hosting, on civilinitiatives.org.
 
 Built with a lot of help from Claude, which argued with me about several
 of the decisions above, and was right about some of them.
