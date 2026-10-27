@@ -8,31 +8,54 @@ Most likely cause first, then the exact checks or fixes.
 This file is public (it is served from the lab website). It holds no keys,
 no passwords and no personal details, and you must never ask for any.
 
-## The three sites
+## The sites
 
-| Site | Address | What it is |
+Everything is on `civilinitiatives.org` (Shiv's domain until 31 Dec 2028),
+DNS at GoDaddy, pages on GitHub Pages with HTTPS.
+
+| Address | Repository | What it is |
 |---|---|---|
-| Real site | silocell.github.io/HEH-Homework | The homework dashboard pupils use. Hosted Supabase project. |
-| Lab | silocell.github.io/HEH-Launchpad-Lab | Test copy. Own database on Shiv's Oracle server, made-up pupils. Purple bar across the top, flask icon in the tab. |
-| Gate Run | silocell.github.io/HEH-Launchpad-Game | A Three.js driving game: steer through the gate with the right answer. |
+| civilinitiatives.org | `HEH-Homework` (`main`) | The dashboard pupils use. Admin panel at `/notes`. Server: `hehs-live.duckdns.org`. |
+| lab.civilinitiatives.org | `HEH-Launchpad-Lab` | Test copy, made-up pupils. Purple bar, flask icon. Server: `hehs.duckdns.org`. |
+| gaterun.civilinitiatives.org | `HEH-Launchpad-Game` | Gate Run, the Three.js driving game. |
+| games.civilinitiatives.org | `HEH-Launchpad-Scratch` | The six Scratch games. |
+| learn.civilinitiatives.org | `HEH-Launchpad-Learn` | Level Up, Times Table Tycoon, Word Dragons, Battle Stories. |
+| silocell.github.io | `silocell.github.io` | Shiv's portfolio page. |
 
-All three are static pages on GitHub Pages. The lab and the real site are the
-same files: the page decides it is the lab from its address
-(`/HEH-Launchpad-Lab/` or `/HEH-Homework-Lab/`) and then talks to the lab's
-server instead of the real one.
+`maintenance.civilinitiatives.org` is planned for the admin panel but has
+no DNS record yet.
 
-Repositories: `silocell/HEH-Homework` (branch `main` = real site, branch
-`lab` = lab code), `silocell/HEH-Launchpad-Lab` (published copy of the lab
-branch), and three game repositories: `silocell/HEH-Launchpad-Game`
-(Gate Run), `silocell/HEH-Launchpad-Scratch` (the six Scratch games),
-`silocell/HEH-Launchpad-Learn` (Level Up, Times Table Tycoon, Word
-Dragons, Battle Stories).
+The lab and the real site are the same files. A page decides it is the lab
+from its address — hostname starting `lab.`, or the old path
+`/HEH-Launchpad-Lab/` — and then talks to the lab server. `games-gate.js`
+and the lab bar both use that test.
 
-The games are in repositories of their own because they are GPL v3 while
-the dashboard is all rights reserved, and one repository cannot honestly
-claim both. Every link to them is root-relative —
-`/HEH-Launchpad-Learn/levelup.html`, not `levelup.html` — so it resolves
-from any of these paths and survives the move to the custom domain.
+Old `silocell.github.io/HEH-…/` bookmarks still work: GitHub forwards them
+to the custom domain, and each repo's `404.html` strips a leftover
+`/HEH-…/` prefix and sends you to the same page without it.
+
+### Sign-in across the subdomains
+
+Each subdomain is a separate origin, so `localStorage` is not shared. On
+the real site, `auth-store.js` keeps the Supabase session in a cookie for
+`.civilinitiatives.org` (split into `key.0`, `key.1`… because a session is
+bigger than one 4 KB cookie), so signing in on the dashboard also signs you
+in on learn./games./gaterun. It is loaded before the Supabase client is
+made and passed as `auth.storage`. An older session still in localStorage is
+moved into the cookie on first read. The cookie is `secure`, so it is
+invisible on plain `http://` — **Enforce HTTPS** must be ticked on every repo.
+
+The lab does not load `auth-store.js`: its session stays in localStorage on
+`lab.civilinitiatives.org`, so you sign in to the lab separately.
+
+### Repositories and licences
+
+`HEH-Homework` has branch `main` (real site) and branch `lab` (lab code);
+`HEH-Launchpad-Lab` is the published copy of the lab branch. The games are
+GPL v3 and live in their own repositories; the dashboard is all rights
+reserved. One repository cannot honestly claim both licences.
+
+Every page uses `/favicon.png` (the school crest) as its tab icon.
 
 ## Pages
 
@@ -42,15 +65,15 @@ from any of these paths and survives the move to the custom domain.
   server checks the signed-in account, so editing the page changes nothing.
 - `games.html` – every game in one place; the dashboard's Games panel links to it.
 
-The game pages themselves now live in `HEH-Launchpad-Learn`, not here:
+The game pages live in `HEH-Launchpad-Learn` (learn.civilinitiatives.org):
 
-- `levelup.html` – Level Up (lab only so far).
+- `levelup.html` – Level Up.
 - `tables.html` – Times Table Tycoon (lab): 60-second rounds, Numling cards, trading. Function `tables`; tables `tt_progress`, `tt_rounds`, `tt_cards`, `tt_offers`; the swap is `tt_accept()` in the database, all-or-nothing.
 - `dragons.html` – Word Dragons (lab): dragons grow on English lessons, battles by email with no names shown. Function `dragons`; tables `dr_players`, `dr_dragons`, `dr_lessons`, `dr_battles`. Questions share `levelup_bank`.
 - `history.html` – Battle Stories: Hastings 1066, animated scenes + questions. Runs entirely in the browser - no server part, nothing to install.
 
 and the six `sg-*.html` Scratch games, with `game-hud.js`, live in
-`HEH-Launchpad-Scratch`. They load `games-gate.js` from `HEH-Homework`
+`HEH-Launchpad-Scratch`. They load `games-gate.js` from the main site
 rather than carrying their own copy.
 - `experiments.js` – lab only: the experiments and the admin Experiments and
   Ask Claude sections.
@@ -88,7 +111,12 @@ rather than carrying their own copy.
 ### How Shiv runs commands
 
 He's on Windows PowerShell, in `C:\Users\shivk\Downloads`. His SSH key is at
-`C:\heh\keys\ssh-key-2026-10-23.key`, user `opc`. Long commands pasted into an
+`C:\heh\keys\ssh-key-2026-10-23.key`, user `opc`.
+
+**Since 26 Oct his laptop is away for repair and that key is out of reach.**
+Recovery is in the runbook in the Project (`heh-live-ssh-recovery-runbook.md`):
+a temporary key with an expiry, added through the Oracle serial console,
+because Run Command never picks up commands on this VM. Long commands pasted into an
 SSH session get split by Windows, so the pattern that works is: download a
 script, copy it up, run it in one go:
 
@@ -199,6 +227,11 @@ used only when key 1 returns 429). Changed with `add-keys.sh` or
 | Level Up slow on every question | (fixed 23 Oct) writing on every request | now writes in the background |
 | Explanation points at the wrong option | (fixed 23 Oct) options are shuffled | writer told never to say "the first one" |
 | Old page after an update | GitHub Pages / browser cache | wait a few minutes, Ctrl+Shift+R |
+| Ask Claude missing from the lab admin panel | (fixed 27 Oct) it shared the id `askSec` with "Asked for a room", which hides itself when the queue is empty | ids renamed to `claude*` |
+| Signed in on the dashboard but not in a game | game page on `http://`, so the `secure` cookie is hidden | tick Enforce HTTPS on that repo |
+| Lab admin panel shows "nothing here" | lab sign-in is per address; the lab moved to lab.civilinitiatives.org | sign in again on the lab |
+| "Unsupported provider" on Continue with Google (real site) | Google sign-in not switched on in the self-hosted live server since 24 Oct | add the Google provider to the live server's auth settings |
+| "Certificate Request Error" on a new subdomain | GitHub hadn't issued the certificate yet | wait, then re-save the custom domain |
 
 ## What you can't do
 

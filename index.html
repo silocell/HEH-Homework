@@ -1235,7 +1235,7 @@ html.lab body{padding-top:26px}
 </head>
 <body>
 <div class="labbar" aria-label="Lab copy">Lab — things here are being tried out and may break
-  <a href="https://silocell.github.io/HEH-Homework/">go to the real site</a></div>
+  <a href="https://civilinitiatives.org/">go to the real site</a></div>
 <script>
   if ((/^lab\./i.test(location.hostname) || /^\/HEH-(Homework|Launchpad)-Lab(\/|$)/i.test(location.pathname))) document.documentElement.classList.add("lab");
   if (document.documentElement.classList.contains("lab")) document.querySelectorAll('link[rel="icon"],link[rel="apple-touch-icon"]').forEach(function(l){ l.href = "data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Crect width=%2264%22 height=%2264%22 rx=%2216%22 fill=%22%237c3aed%22/%3E%3Cpath d=%22M26 12h12M28 12v14L16 48a4 4 0 0 0 3.5 6h25a4 4 0 0 0 3.5-6L36 26V12%22 fill=%22none%22 stroke=%22%23fff%22 stroke-width=%224%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22/%3E%3Cpath d=%22M21 42h22l4 7.5a2 2 0 0 1-1.8 2.5H18.8a2 2 0 0 1-1.8-2.5Z%22 fill=%22%23f0abfc%22/%3E%3Ccircle cx=%2228%22 cy=%2246%22 r=%222%22 fill=%22%23fff%22/%3E%3Ccircle cx=%2235%22 cy=%2244%22 r=%221.5%22 fill=%22%23fff%22/%3E%3C/svg%3E"; });
@@ -1243,7 +1243,7 @@ html.lab body{padding-top:26px}
 <script src="chaos.js"></script>
 <script src="level-practice.js?b=20261024a"></script>
 <script src="fun.js?b=20261024a"></script>
-<script src="experiments.js?b=20261024b"></script>
+<script src="experiments.js?b=20261027a"></script>
 
 
 <!-- ============================================================
@@ -1282,7 +1282,7 @@ html.lab body{padding-top:26px}
           <svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#4285F4" d="M45.1 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h11.8c-.5 2.7-2 5-4.4 6.6v5.5h7.1c4.1-3.8 6.6-9.4 6.6-16.1z"/><path fill="#34A853" d="M24 46c6 0 11-2 14.6-5.4l-7.1-5.5c-2 1.3-4.5 2.1-7.5 2.1-5.8 0-10.7-3.9-12.4-9.1H4.3v5.7C7.9 41.1 15.4 46 24 46z"/><path fill="#FBBC05" d="M11.6 28.1c-.4-1.3-.7-2.7-.7-4.1s.3-2.8.7-4.1v-5.7H4.3C2.8 17.1 2 20.4 2 24s.8 6.9 2.3 9.8l7.3-5.7z"/><path fill="#EA4335" d="M24 10.8c3.3 0 6.2 1.1 8.5 3.3l6.3-6.3C35 4.1 30 2 24 2 15.4 2 7.9 6.9 4.3 14.2l7.3 5.7c1.7-5.2 6.6-9.1 12.4-9.1z"/></svg>
           Continue with Google
         </button>
-        <p class="other-why">The spare key. Same Year 7 rule, same checks.</p>
+
       </div>
     </div>
 
@@ -1291,13 +1291,8 @@ html.lab body{padding-top:26px}
          nothing, and nothing is what gets filed as "unknown". -->
     <details class="about" id="about">
       <summary>What is this site?</summary>
-      <p>A homework site built by a Year 7 pupil at Hatch End High School, for pupils
-         there: one page with the school's revision sites, a word of the day, a to-do
-         list, a dictionary look-up and a maths-and-English game. Accounts are only
-         made for pupils at the school and sign in with their school Microsoft login.</p>
-      <p>No adverts, nothing to buy, no tracking. The code is public under an open
-         licence at <a href="https://github.com/silocell/HEH-Homework" rel="noopener">github.com/silocell/HEH-Homework</a>,
-         and questions are welcome through the school.</p>
+      <p>A homework site built by a Year 7 pupil at Hatch End High School, for pupils there. Sign in with your school Microsoft login.</p>
+      <p>No adverts, nothing to buy, no tracking. The code is readable at <a href="https://github.com/silocell/HEH-Homework" rel="noopener">github.com/silocell/HEH-Homework</a>; the games are open source.</p>
     </details>
   </div>
 </div>
@@ -1495,7 +1490,6 @@ html.lab body{padding-top:26px}
       <div class="panel" id="askedPanel" hidden>
         <p class="panel-title">What people are asking</p>
         <div class="asked" id="askedList"></div>
-        <p class="ex-note">Already explained, so these come back straight away and don't use up your ten.</p>
       </div>
 
       <div class="panel">
@@ -3497,7 +3491,7 @@ function readerSrc(href){
   /* The lab copy of this site, for the owner only: it lives on the same
      address as this page, so it opens in the reader like a revision
      site, purple bar and all. Nobody else is offered it. */
-  if(u.origin === location.origin && /^\/HEH-Launchpad-Lab(\/|$)/.test(u.pathname)){
+  if(u.hostname === "lab.civilinitiatives.org" || (u.origin === location.origin && /^\/HEH-Launchpad-Lab(\/|$)/.test(u.pathname))){
     return isOwner() ? u.href : null;
   }
   var yt = youtubeEmbed(u);
@@ -3599,7 +3593,7 @@ function fsWatch(el, btn, onLabel, offLabel){
 })();
 
 document.getElementById("labBtn").addEventListener("click",function(){
-  openInReader(location.origin + "/HEH-Launchpad-Lab/");
+  openInReader("https://lab.civilinitiatives.org/");
 });
 
 document.getElementById("readerClose").addEventListener("click",function(){

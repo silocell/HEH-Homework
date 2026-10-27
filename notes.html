@@ -371,14 +371,14 @@ html.lab .shell{padding-top:26px}
 <link rel="stylesheet" href="polish.css?b=20261021194235">
 
 <div class="labbar" aria-label="Lab copy">Lab — things here are being tried out and may break
-  <a href="https://silocell.github.io/HEH-Homework/notes">go to the real admin panel</a></div>
+  <a href="https://civilinitiatives.org/notes">go to the real admin panel</a></div>
 <script>
   if ((/^lab\./i.test(location.hostname) || /^\/HEH-(Homework|Launchpad)-Lab(\/|$)/i.test(location.pathname))) document.documentElement.classList.add("lab");
   if (document.documentElement.classList.contains("lab")) document.querySelectorAll('link[rel="icon"],link[rel="apple-touch-icon"]').forEach(function(l){ l.href = "data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Crect width=%2264%22 height=%2264%22 rx=%2216%22 fill=%22%237c3aed%22/%3E%3Cpath d=%22M26 12h12M28 12v14L16 48a4 4 0 0 0 3.5 6h25a4 4 0 0 0 3.5-6L36 26V12%22 fill=%22none%22 stroke=%22%23fff%22 stroke-width=%224%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22/%3E%3Cpath d=%22M21 42h22l4 7.5a2 2 0 0 1-1.8 2.5H18.8a2 2 0 0 1-1.8-2.5Z%22 fill=%22%23f0abfc%22/%3E%3Ccircle cx=%2228%22 cy=%2246%22 r=%222%22 fill=%22%23fff%22/%3E%3Ccircle cx=%2235%22 cy=%2244%22 r=%221.5%22 fill=%22%23fff%22/%3E%3C/svg%3E"; });
 </script>
 <script src="chaos.js"></script>
 <script src="fun.js?b=20261024a"></script>
-<script src="experiments.js?b=20261024b"></script>
+<script src="experiments.js?b=20261027a"></script>
 
 <div class="shell">
 
@@ -410,13 +410,13 @@ html.lab .shell{padding-top:26px}
           </label>
         </div>
         <div class="watch" id="watchBox"></div>
-        <p class="amsg" id="watchMsg">Everything from the last 30 days that wants a person rather than a filter &mdash; built fresh each time out of what already happened, so there is nothing here the chat log doesn&rsquo;t already hold. Anything in red goes to your form tutor or the safeguarding lead the same day; it isn&rsquo;t yours to handle on your own. Ticking one off only hides it from this list.</p>
+        <p class="amsg" id="watchMsg"></p>
       </div>
 
       <div class="sec" id="helperSec" hidden>
         <p class="sec-h">People</p>
         <div id="helperRows"></div>
-        <p class="amsg" id="helperMsg">Turn somebody&rsquo;s explainer or chat off while they&rsquo;re messing about, and back on when they&rsquo;ve stopped. The switches above do the same for everyone at once. Nothing here shows what anybody actually typed.</p>
+        <p class="amsg" id="helperMsg"></p>
         <div class="arow" style="margin-top:14px">
           <button type="button" class="abtn quiet" id="helperRefresh">Refresh</button>
         </div>
@@ -431,13 +431,13 @@ html.lab .shell{padding-top:26px}
         </div>
         <div id="showList"></div>
         <p class="pw-out" id="showPass" hidden></p>
-        <p class="amsg" id="showMsg">These can open this panel and run the checks, and nothing else &mdash; not the chat or board logs, not deleting, not closing the site. For showing the panel on somebody else&rsquo;s laptop without signing in as yourself. Passwords aren&rsquo;t stored anywhere, so to get one again you make a new one.</p>
+        <p class="amsg" id="showMsg">Look-only: can run the checks, nothing else. Passwords aren&rsquo;t stored &mdash; make a new one to get one again.</p>
       </div>
 
       <div class="sec" id="askSec" hidden>
         <p class="sec-h">Asked for a room</p>
         <div id="askList"></div>
-        <p class="amsg" id="queueMsg">Nothing exists until you say yes. Turning one down leaves no room and no members behind &mdash; only a note to whoever asked.</p>
+        <p class="amsg" id="queueMsg"></p>
       </div>
 
       <div class="sec" id="roomSec">
@@ -447,7 +447,7 @@ html.lab .shell{padding-top:26px}
           <button type="button" class="abtn" id="roomMake">Make a room</button>
         </div>
         <div id="roomList"></div>
-        <p class="amsg" id="roomMsg">Only you can make a room or put somebody in one, so nobody can start a private chat with another pupil. Everything said in a room goes through the same filter, the same checker and the same pause as the year chat, and anything turned away lands in the same log. Each room says on its header that you can see it.</p>
+        <p class="amsg" id="roomMsg"></p>
       </div>
 
       <div class="sec" id="siteSec">
@@ -456,7 +456,7 @@ html.lab .shell{padding-top:26px}
           <span id="siteState">Checking…</span>
           <button type="button" class="abtn" id="siteToggle" disabled>—</button>
         </div>
-        <p class="amsg" id="siteMsg">Closing it shows everyone a maintenance notice. You and your school account can still sign in. Remember to open it again &mdash; a closed site on Wednesday morning would be a bad surprise.</p>
+        <p class="amsg" id="siteMsg">Closing shows everyone a maintenance notice. Remember to open it again.</p>
       </div>
 
       <div class="sec" id="gamesSec">
@@ -465,13 +465,13 @@ html.lab .shell{padding-top:26px}
           <button type="button" class="abtn quiet" id="gamesLoad">Show who can play</button>
         </div>
         <div id="gamesRows"></div>
-        <p class="amsg" id="gamesMsg">Who can play the games (Tycoon, Dragons, Battle Stories, the Arcade, Gate Run and the doodles). New accounts start with games off until you switch them on. Three strikes also takes games away until midnight. Learning &mdash; Level Up and the dashboard &mdash; is never switched off here.</p>
+        <p class="amsg" id="gamesMsg">New accounts start with games off. Level Up is never switched off here.</p>
       </div>
 
       <div class="sec" id="switchSec" hidden>
         <p class="sec-h">Switches</p>
         <div class="arow" id="switchRow"></div>
-        <p class="amsg" id="switchMsg">These apply to everyone at once, above the per-person ones. Yours keep working either way, so you can check before opening it back up.</p>
+        <p class="amsg" id="switchMsg"></p>
       </div>
 
       <div class="sec">
@@ -499,12 +499,12 @@ html.lab .shell{padding-top:26px}
             <button type="submit" class="abtn" id="nuBtn">Create</button>
           </div>
         </form>
-        <p class="amsg" id="newUserMsg">Any address works here &mdash; school, Hotmail, Gmail. No confirmation email is sent. The explainer and the chat start switched off.</p>
+        <p class="amsg" id="newUserMsg">No confirmation email is sent. Explainer and chat start off.</p>
       </div>
 
       <div class="sec" id="sharedSec">
         <p class="sec-h">Shortcuts everyone gets</p>
-        <p class="amsg">These appear on everybody&rsquo;s dashboard under &ldquo;From school&rdquo;. Each person can put one away if they don&rsquo;t use it.</p>
+        
         <div id="sharedRows"></div>
         <form id="sharedForm">
           <div class="arow" style="margin-top:10px">
@@ -524,7 +524,7 @@ html.lab .shell{padding-top:26px}
 
       <div class="sec" id="allowSec" hidden>
         <p class="sec-h">Exceptions left open</p>
-        <p class="amsg">These addresses are allowed in but no account was made. That means a create didn&rsquo;t finish, and the way in is still standing open. Clear them.</p>
+        <p class="amsg">Allowed in, but no account was made. Clear them.</p>
         <div id="allowRows"></div>
         <p class="amsg" id="allowMsg"></p>
       </div>
@@ -578,14 +578,12 @@ html.lab .shell{padding-top:26px}
 
       <div class="sec" id="labSec">
         <p class="sec-h">The lab</p>
-        <p class="amsg">The test copy on your Oracle server, with made-up pupils. Check it from here,
-          or open its admin panel inside this one - it has its own login, and nothing done in it
-          touches this site.</p>
+        
         <div class="arow" style="align-items:center">
           <button type="button" class="abtn quiet" id="labCheck">Check the lab</button>
           <button type="button" class="abtn" id="labOpen">Open the lab panel here</button>
           <button type="button" class="abtn quiet" id="labFull" hidden>Full screen</button>
-          <a class="abtn quiet" id="labSite" href="/HEH-Launchpad-Lab/" target="_blank" rel="noopener">Lab site</a>
+          <a class="abtn quiet" id="labSite" href="https://lab.civilinitiatives.org/" target="_blank" rel="noopener">Lab site</a>
         </div>
         <p class="amsg" id="labMsg"></p>
         <div id="labFrameWrap" hidden>
@@ -626,7 +624,7 @@ html.lab .shell{padding-top:26px}
         <div class="arow" style="margin-top:4px">
           <button type="button" class="abtn quiet" id="cacheTest">Test the cache</button>
         </div>
-        <p class="amsg" id="cacheMsg">A word to look for, not a command. Leave it empty for the most-asked.</p>
+        <p class="amsg" id="cacheMsg"></p>
         <div class="ascroll" style="margin-top:12px">
           <table class="atable" id="cacheTable">
             <thead><tr><th>Topic</th><th>Served</th><th>Made by</th><th></th></tr></thead>
@@ -641,7 +639,7 @@ html.lab .shell{padding-top:26px}
           <button type="button" class="abtn quiet" id="modTest">Test the filter and checker</button>
         </div>
         <div id="modRows"></div>
-        <p class="amsg" id="modMsg">Runs the real filter and the real checker against known phrases. Nothing is posted and nothing is stored. The phrases live on the server, so the words this blocks are never published in this page.</p>
+        <p class="amsg" id="modMsg"></p>
       </div>
 
       <div class="sec" id="chatlogSec">
@@ -651,7 +649,7 @@ html.lab .shell{padding-top:26px}
           <button type="button" class="abtn quiet" id="loadLog">Load the last 30 days</button>
         </div>
         <div class="log" id="logBox"></div>
-        <p class="amsg" id="logMsg">Live messages, ones you deleted, and ones the filter turned away — newest first.</p>
+        <p class="amsg" id="logMsg"></p>
       </div>
 
       <div class="sec" id="boardlogSec">
@@ -661,7 +659,7 @@ html.lab .shell{padding-top:26px}
           <button type="button" class="abtn quiet" id="loadBoardLog">Load the last 30 days</button>
         </div>
         <div class="log" id="boardBox"></div>
-        <p class="amsg" id="boardLogMsg">Notices, questions and replies &mdash; live, hashed out, and removed. Anything the filter refused is in the chat log above, since both share it.</p>
+        <p class="amsg" id="boardLogMsg"></p>
       </div>
 
       <div class="sec" id="backupSec" hidden>
@@ -681,9 +679,9 @@ html.lab .shell{padding-top:26px}
           </label>
         </div>
         <div id="restoreRows"></div>
-        <p class="amsg" id="restoreMsg">Puts back anything missing. Tick the box as well if a bad command changed rows rather than deleting them &mdash; that only applies to things the computer generated, like the explanation cache. The chat log, the board and who&rsquo;s approved can only ever be added to, never overwritten.</p>
+        <p class="amsg" id="restoreMsg">Only puts back what&rsquo;s missing. Tick the box only for generated data like the explanation cache.</p>
 
-        <p class="amsg" id="backupMsg">Every table in the database as one file &mdash; the list comes from the database itself, so anything added later is included without this needing changing. Keep it in OneDrive. It holds real messages and email addresses, so treat it like a document with people&rsquo;s names in it. A mistyped SQL command is the realistic way this loses data.</p>
+        <p class="amsg" id="backupMsg">Holds real messages and email addresses &mdash; keep it private.</p>
       </div>
 
       <div class="sec" id="diagSec">
@@ -1707,7 +1705,7 @@ function checkLab(){
   say("labMsg","Checking…");
   return Promise.all([
     labTimed(LAB_API + "/auth/v1/health", { headers:{ apikey: LAB_ANON } }),
-    labTimed("/HEH-Launchpad-Lab/", { method:"HEAD" })
+    labTimed("https://lab.civilinitiatives.org/", { method:"HEAD" })
   ]).then(function(r){
     var srv = r[0], site = r[1];
     var a = srv.ok ? "Lab server: up (" + srv.ms + " ms)"
@@ -1763,7 +1761,7 @@ document.getElementById("labOpen").addEventListener("click", function(){
   var wrap = document.getElementById("labFrameWrap");
   var frame = document.getElementById("labFrame");
   var open = wrap.hidden;
-  if(open && !frame.getAttribute("src")) frame.setAttribute("src", "/HEH-Launchpad-Lab/notes");
+  if(open && !frame.getAttribute("src")) frame.setAttribute("src", "https://lab.civilinitiatives.org/notes");
   wrap.hidden = !open;
   document.getElementById("labFull").hidden = !open;
   this.textContent = open ? "Close the lab panel" : "Open the lab panel here";

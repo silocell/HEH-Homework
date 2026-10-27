@@ -88,8 +88,7 @@
     var sec = document.createElement("div"); sec.className = "sec"; sec.id = "expSec";
     sec.innerHTML =
       '<p class="sec-h">Experiments</p>' +
-      '<p class="amsg" id="expMsg">Ideas being tried on the lab before they go anywhere near the real site. ' +
-      'Switch one on and the testers get it; give it a verdict so you remember what you decided.</p>' +
+      '<p class="amsg" id="expMsg"></p>' +
       '<div id="expRows"></div>';
     main.insertBefore(sec, main.querySelector(".sec"));
     var css = document.createElement("style");
@@ -115,30 +114,29 @@
      explain and suggest, not change code. Browser errors seen on this
      page are sent along too, because they're usually the clue. */
   function askClaude(main, after){
-    var sec = document.createElement("div"); sec.className = "sec"; sec.id = "askSec";
+    var sec = document.createElement("div"); sec.className = "sec"; sec.id = "claudeSec";
     sec.innerHTML =
       '<p class="sec-h">Ask Claude</p>' +
-      '<p class="amsg" id="askMsg">Say what\u2019s wrong in your own words. Claude gets that plus a snapshot of the lab ' +
-      '(numbers and switches \u2014 never pupils\u2019 messages) and suggests what to check. Up to 10 a day.</p>' +
-      '<textarea id="askQ" rows="4" placeholder="e.g. Level Up says \u2018Couldn\u2019t get a question\u2019 every time"></textarea>' +
-      '<div class="ask-row"><label><input type="checkbox" id="askErrs" checked> Include errors from this browser</label>' +
-      '<button class="btn" id="askGo" type="button">Ask Claude</button></div>' +
-      '<div id="askOut"></div><details id="askOld"><summary>Earlier answers</summary><div id="askLog"></div></details>';
+      '<p class="amsg" id="claudeMsg">Up to 10 a day. Never sees pupils\u2019 messages.</p>' +
+      '<textarea id="claudeQ" rows="4" placeholder="e.g. Level Up says \u2018Couldn\u2019t get a question\u2019 every time"></textarea>' +
+      '<div class="ask-row"><label><input type="checkbox" id="claudeErrs" checked> Include errors from this browser</label>' +
+      '<button class="btn" id="claudeGo" type="button">Ask Claude</button></div>' +
+      '<div id="claudeOut"></div><details id="claudeOld"><summary>Earlier answers</summary><div id="claudeLog"></div></details>';
     after.parentNode.insertBefore(sec, after);
     var css = document.createElement("style");
     css.textContent =
-      "#askQ{width:100%;font:inherit;padding:10px;border:1px solid var(--rule);border-radius:10px;background:var(--paper);color:var(--ink);resize:vertical}" +
+      "#claudeQ{width:100%;font:inherit;padding:10px;border:1px solid var(--rule);border-radius:10px;background:var(--paper);color:var(--ink);resize:vertical}" +
       ".ask-row{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:8px 0;flex-wrap:wrap;font-size:.86rem}" +
       ".ask-ans{white-space:pre-wrap;padding:14px;border:1px solid var(--rule);border-radius:10px;margin-top:8px;line-height:1.5}" +
-      "#askOld{margin-top:10px}#askOld summary{cursor:pointer;color:var(--ink-soft)}" +
+      "#claudeOld{margin-top:10px}#claudeOld summary{cursor:pointer;color:var(--ink-soft)}" +
       ".ask-q{font-weight:600;margin-top:12px}.ask-when{font-size:.75rem;color:var(--ink-soft)}";
     document.head.appendChild(css);
-    var go = sec.querySelector("#askGo"), q = sec.querySelector("#askQ"), out = sec.querySelector("#askOut"), m = sec.querySelector("#askMsg");
+    var go = sec.querySelector("#claudeGo"), q = sec.querySelector("#claudeQ"), out = sec.querySelector("#claudeOut"), m = sec.querySelector("#claudeMsg");
     go.addEventListener("click", function(){
       var text = q.value.trim();
       if (text.length < 5){ m.textContent = "Say what's wrong first."; return; }
       go.disabled = true; go.textContent = "Asking\u2026"; out.textContent = "";
-      var ctx = sec.querySelector("#askErrs").checked ? (window.__labErrs || []).slice(-15).join("\n") : "";
+      var ctx = sec.querySelector("#claudeErrs").checked ? (window.__labErrs || []).slice(-15).join("\n") : "";
       window.call({ action:"askclaude", question:text, context:ctx }).then(function(d){
         var a = document.createElement("div"); a.className = "ask-ans"; a.textContent = d.answer || "(no answer)";
         out.appendChild(a); m.textContent = "Claude\u2019s answer is below. It can\u2019t see the code - if it needs changing, bring this back to the chat.";
@@ -147,7 +145,7 @@
     });
     function loadLog(){
       window.call({ action:"askclaudelog" }).then(function(d){
-        var box = sec.querySelector("#askLog"); box.textContent = "";
+        var box = sec.querySelector("#claudeLog"); box.textContent = "";
         (d.log || []).forEach(function(r){
           var w = document.createElement("div");
           var t = document.createElement("div"); t.className = "ask-when"; t.textContent = new Date(r.at).toLocaleString("en-GB");
