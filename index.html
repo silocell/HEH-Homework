@@ -4759,8 +4759,9 @@ function showOwnerButton(){
      This is not what keeps them out. The server refuses them whatever
      they open, which is the only protection that counts. But there is
      no reason to hand the address out with it. */
-  function show(label){
-    b.setAttribute("href", "https://maintenance.civilinitiatives.org/");
+  /* The admin panel is at maintenance., the helper panel at helpers. */
+  function show(label, where){
+    b.setAttribute("href", where || "https://maintenance.civilinitiatives.org/");
     b.textContent = label;
     b.hidden = false;
   }
@@ -4775,7 +4776,7 @@ function showOwnerButton(){
     /* A helper's panel is a different, much smaller thing, so the way in
        says so rather than promising an admin panel they will not get. */
     if(d.owner || d.demo) show("Admin panel");
-    else if(d.helper) show("Helper panel");
+    else if(d.helper) show("Helper panel", "https://helpers.civilinitiatives.org/");
   }).catch(function(){});
 }
 
