@@ -1,8 +1,8 @@
 /* =====================================================================
    Games gate. Loaded at the top of every game page (Arcade, Battle
-   Stories, the Games page). Asks the server "may this pupil play?"
-   (my_games, games_nightly_oct24.sql) and, if the answer is no, covers
-   the page with the reason and a way back.
+   Stories, the Games page, the Scratch games, Gate Run). Asks the
+   server "may this pupil play?" (my_games) and, if the answer is no,
+   sends them to the site's "404 - File not found" page: a dead end.
 
    The server is the one that decides: Tycoon and Word Dragons also
    refuse on the server itself. These pages have nothing on the server
@@ -39,33 +39,29 @@
     token = sess && sess.access_token;
   } catch(e) {}
 
-  var cover = null;
-  function block(why){
-    if (cover) return;
-    cover = document.createElement("div");
-    cover.setAttribute("role", "alertdialog"); cover.setAttribute("aria-modal", "true");
-    cover.style.cssText = "position:fixed;inset:0;z-index:2147483000;display:grid;place-items:center;padding:20px;" +
-      "background:rgba(10,13,26,.92);color:#fff;font:16px/1.5 system-ui,-apple-system,'Segoe UI',sans-serif;text-align:center";
-    var box = document.createElement("div"); box.style.maxWidth = "420px";
-    var big = document.createElement("p"); big.style.cssText = "font-size:2.6rem;margin:0"; big.textContent = "🔒";
-    var h = document.createElement("p"); h.style.cssText = "font-weight:800;font-size:1.3rem;margin:8px 0";
-    h.textContent = /learning games/.test(why) ? "This one's locked" : "Games are locked";
-    var p = document.createElement("p"); p.style.margin = "0 0 18px"; p.textContent = why;
-    var a = document.createElement("a"); a.textContent = "Back to the Launchpad";
-    /* From games. or gaterun., "./" would be that site's own front page. */
-    a.href = /(^|\.)civilinitiatives\.org$/i.test(location.hostname) && !/^(civilinitiatives\.org|lab\.civilinitiatives\.org)$/i.test(location.hostname)
-      ? (LAB ? "https://lab.civilinitiatives.org/" : "https://civilinitiatives.org/") : "./";
-    a.style.cssText = "display:inline-block;background:#fff;color:#111827;font-weight:700;padding:10px 18px;border-radius:12px;text-decoration:none";
-    box.appendChild(big); box.appendChild(h); box.appendChild(p); box.appendChild(a); cover.appendChild(box);
-    (document.body || document.documentElement).appendChild(cover);
-    document.documentElement.style.overflow = "hidden";
-    setTimeout(function(){ a.focus(); }, 50);
+  /* Anyone who isn't allowed in gets a dead end: the site's own "404 -
+     File not found" page (404.html), with the crest and a link back to
+     the Launchpad and nothing about why. replace(), so Back doesn't land
+     on the game again, and stop() so nothing else on this page loads.
+     Until the answer comes the page stays invisible, so the game never
+     flashes up first; if the server can't be reached at all the page is
+     shown after a few seconds rather than left blank. */
+  var root = document.documentElement;
+  root.style.visibility = "hidden";
+  var shown = false;
+  function reveal(){ if (!shown) { shown = true; root.style.visibility = ""; } }
+  var failsafe = setTimeout(reveal, 5000);
+  var gone = false;
+  function block(){
+    if (gone) return; gone = true;
+    clearTimeout(failsafe);
+    try { window.stop(); } catch (e) {}
+    location.replace("/404");
   }
   window.GamesGate = { ready: null, level: null };
   if (!token) {
-    var show = function(){ block("Sign in on the Launchpad first, then come back to play."); };
-    if (document.body) show(); else document.addEventListener("DOMContentLoaded", show);
     window.GamesGate.ready = Promise.resolve(false);
+    block();
     return;
   }
   function ask(t){ return fetch(URL + "/rest/v1/rpc/my_games", {
@@ -95,22 +91,18 @@
     if (r.status !== 401) return r;
     return refresh().then(function(t){ return t ? ask(t) : r; });
   }).then(function(r){
-    if (r.status === 401) return { allowed: false, why: "Open the Launchpad and sign in again, then come back to play." };
+    if (r.status === 401) return { allowed: false };
     return r.ok ? r.json() : null;
   }).then(function(d){
-    function shut(why){
-      var go = function(){ block(why); };
-      if (document.body) go(); else document.addEventListener("DOMContentLoaded", go);
-      return false;
-    }
-    if (d && d.allowed === false) { window.GamesGate.level = "off"; return shut(d.why || "Games are switched off for your account."); }
+    if (d && d.allowed === false) { window.GamesGate.level = "off"; block(); return false; }
     /* An older server doesn't say a level: that means every game. */
     var level = (d && d.level === "learning") ? "learning" : "all";
     window.GamesGate.level = level;
     if (level === "learning") {
-      document.documentElement.classList.add("learning-only");
-      if (KIND === "fun") return shut("Only the learning games are switched on for your account. Try Level Up, Times Table Tycoon or Map Quest.");
+      root.classList.add("learning-only");
+      if (KIND === "fun") { block(); return false; }
     }
+    clearTimeout(failsafe); reveal();
     return true;
-  }).catch(function(){ return true; });
+  }).catch(function(){ clearTimeout(failsafe); reveal(); return true; });
 })();
