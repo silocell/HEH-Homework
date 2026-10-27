@@ -1,125 +1,16 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en-GB">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Games</title>
+<meta name="robots" content="noindex">
+<title>Homework Launchpad</title>
 <link rel="icon" type="image/png" href="/favicon.png">
-<script>
-try{ var t = JSON.parse(localStorage.getItem("hl.theme")); if(t === "dark" || t === "light") document.documentElement.setAttribute("data-theme", t); }catch(e){}
-if ((/^lab\./i.test(location.hostname) || /^\/HEH-(Homework|Launchpad)-Lab(\/|$)/i.test(location.pathname))) document.documentElement.classList.add("lab");
-</script>
-<style>
-/* Every game in one place. On the lab, the lab games are live; anything
-   not yet on the real site is marked so testers know what they're trying. */
-:root{ --bg:#f3f5fb; --card:#fff; --ink:#151a2d; --soft:#5b6380; --rule:#e2e6f2; --bar:#141a33; }
-@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --bg:#0e1120; --card:#171b2e; --ink:#e7eaf6; --soft:#9aa3c2; --rule:#272d47; --bar:#0a0d1a; } }
-:root[data-theme="dark"]{ --bg:#0e1120; --card:#171b2e; --ink:#e7eaf6; --soft:#9aa3c2; --rule:#272d47; --bar:#0a0d1a; }
-*{box-sizing:border-box} html,body{margin:0}
-body{background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;min-height:100vh}
-.labbar{display:none;background:#7c3aed;color:#fff;font-size:.72rem;font-weight:700;letter-spacing:.06em;text-align:center;padding:5px 12px;text-transform:uppercase}
-.labbar a{color:#fff;text-transform:none;letter-spacing:0;margin-left:10px} html.lab .labbar{display:block}
-.top{background:var(--bar);color:#fff;display:flex;align-items:center;gap:12px;padding:12px 18px}
-.top b{font-size:1.15rem} .top .sp{flex:1} .top a{color:#c7cbe0;font-size:.85rem;text-decoration:none}
-main{max-width:1000px;margin:0 auto;padding:22px 16px 60px}
-h1{margin:0 0 4px} .muted{color:var(--soft)}
-h2{font-size:.85rem;text-transform:uppercase;letter-spacing:.07em;color:var(--soft);margin:26px 0 10px}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
-.game{display:flex;gap:14px;align-items:flex-start;background:var(--card);border:1px solid var(--rule);border-radius:16px;padding:16px;color:var(--ink);text-decoration:none;transition:transform .15s,border-color .15s}
-.game:hover{transform:translateY(-2px);border-color:#6366f1}
-.icon{width:56px;height:56px;border-radius:14px;display:grid;place-items:center;font-size:1.8rem;flex:none;color:#fff}
-.game b{display:block;font-size:1.08rem}
-.game p{margin:4px 0 6px;color:var(--soft);font-size:.9rem}
-.tags{display:flex;gap:6px;flex-wrap:wrap}
-.tag{font-size:.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;padding:2px 8px;border-radius:999px;background:var(--rule);color:var(--soft)}
-.tag.live{background:#dcfce7;color:#166534} .tag.lab{background:#ede9fe;color:#5b21b6}
-@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]) .tag.live{background:#14532d;color:#bbf7d0} :root:not([data-theme="light"]) .tag.lab{background:#3b0764;color:#ddd6fe} }
-:root[data-theme="dark"] .tag.live{background:#14532d;color:#bbf7d0} :root[data-theme="dark"] .tag.lab{background:#3b0764;color:#ddd6fe}
-@media (prefers-reduced-motion: reduce){ .game{transition:none} .game:hover{transform:none} }
-.xbtn{display:grid;place-items:center;width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.14);color:#fff;
-  font:700 22px/1 system-ui,sans-serif;text-decoration:none;border:2px solid rgba(255,255,255,.35);flex:none;margin-left:6px}
-.xbtn:hover{background:rgba(255,255,255,.26)}
-.xbtn:focus-visible{outline:3px solid #fde68a;outline-offset:2px}
-</style>
-<script src="auth-store.js?b=20261026a"></script>
-<script src="games-gate.js?b=20261027h" data-kind="hub"></script>
+<!-- The games page moved to play.civilinitiatives.org (27 Oct). Its source is in
+     the HEH-Play repository now; this only forwards old bookmarks there. -->
+<script>location.replace("https://play.civilinitiatives.org/" + location.search + location.hash);</script>
 </head>
 <body>
-<div class="labbar">Lab — things here are being tried out and may break <a href="./">back to the Launchpad</a></div>
-<div class="top"><b>🎮 Games</b><div class="sp"></div><a class="xbtn" href="./" title="Back to the Launchpad" aria-label="Close and go back to the Launchpad">✕</a></div>
-<main>
-  <h1>Games</h1>
-  <p class="muted">Every game in one place. They're all about school work underneath - except the doodle games, which are just for fun.</p>
-  <div id="list"></div>
-</main>
-<script>
-(function(){
-var LAB = document.documentElement.classList.contains("lab");
-/* where: "live" = on the real site, "lab" = being tried on the lab. */
-var GAMES = [
-  { group:"Learn while you play", icon:"🏎️", bg:"linear-gradient(135deg,#1e1b4b,#f97316)", name:"Gate Run", url:"https://gaterun.civilinitiatives.org/",
-    says:"Drive at 50mph and steer through the gate with the right answer. Maths and English.", tags:["Maths","English"], where:"live" },
-  { group:"Learn while you play", icon:"🚀", bg:"linear-gradient(135deg,#4f46e5,#06b6d4)", name:"Level Up", url:"https://learn.civilinitiatives.org/levelup.html",
-    says:"Practice that learns you: daily tasks that get harder each day, points and a shop.", tags:["Maths","English","Science"], where:"live" },
-  { group:"Learn while you play", icon:"✖️", bg:"linear-gradient(135deg,#f59e0b,#ef4444)", name:"Times Table Tycoon", url:"https://learn.civilinitiatives.org/tables.html",
-    says:"60-second times-table rounds that learn your slow facts. Collect all the Numlings.", tags:["Maths"], where:"live" },
-  { group:"Learn while you play", icon:"🐉", bg:"linear-gradient(135deg,#059669,#0ea5e9)", name:"Word Dragons", url:"https://learn.civilinitiatives.org/dragons.html",
-    says:"Hatch and grow dragons by doing English. Keep them healthy, then battle someone by email.", tags:["English"], where:"live" },
-  { group:"Learn while you play", icon:"⚔️", bg:"linear-gradient(135deg,#b45309,#7c2d12)", name:"Battle Stories", url:"https://learn.civilinitiatives.org/history.html",
-    says:"Watch a battle re-enacted, then explain why it happened. Episode 1: Hastings, 1066 - with BBC clips.", tags:["History"], where:"live" },
-  { group:"Learn while you play", icon:"🧭", bg:"linear-gradient(135deg,#0e7490,#0f766e)", name:"Map Quest", url:"https://learn.civilinitiatives.org/geo.html",
-    says:"Capitals, the UK, continents, oceans and the compass. Practises what you're weakest at.", tags:["Geography"], where:"live" },
-  { group:"Learn while you play", icon:"📈", bg:"linear-gradient(135deg,#4338ca,#7c3aed)", name:"My Progress", url:"https://learn.civilinitiatives.org/progress.html",
-    says:"Every subject in one place, plus flash cards made from what you got wrong.", tags:["All subjects"], where:"live" },
-  { group:"Scratch games", icon:"🚗", bg:"linear-gradient(135deg,#16a34a,#166534)", name:"VroomZoom Car Simulator", url:"https://games.civilinitiatives.org/sg-vroom.html",
-    says:"A real circuit: three laps, hidden checkpoints, and the grass is slow. W or up to go, A/D or arrows to steer.", tags:["Race"], where:"live" },
-  { group:"Scratch games", icon:"🌀", bg:"linear-gradient(135deg,#7c3aed,#4c1d95)", name:"The Maze of Confusion", url:"https://games.civilinitiatives.org/sg-maze.html",
-    says:"Three freshly generated neon mazes, sixty seconds for the lot. Walls stop you - the clock beats you.", tags:["Puzzle"], where:"live" },
-  { group:"Scratch games", icon:"🦆", bg:"linear-gradient(135deg,#f59e0b,#b45309)", name:"Ducks Rampage", url:"https://games.civilinitiatives.org/sg-ducks.html",
-    says:"The ducks are on the rampage! Dodge the angry yellow ones, catch the silver ones. Three hearts.", tags:["Dodge"], where:"live" },
-  { group:"Scratch games", icon:"🍉", bg:"linear-gradient(135deg,#be123c,#7c3aed)", name:"Fruit Slash", url:"https://games.civilinitiatives.org/sg-fruit.html",
-    says:"Swipe to slice the fruit - but never the bomb. Three lives, and it speeds up as you score.", tags:["Fun"], where:"live" },
-  { group:"Scratch games", icon:"⚔️", bg:"linear-gradient(135deg,#059669,#1e2a6e)", name:"Gem Quest", url:"https://games.civilinitiatives.org/sg-quest.html",
-    says:"A tiny RPG: walk the meadow, spin your sword at the slimes, and bring home all three gems.", tags:["RPG","New"], where:"live" },
-  { group:"Scratch games", icon:"🏓", bg:"linear-gradient(135deg,#0ea5e9,#1e40af)", name:"2 Player Pong", url:"https://games.civilinitiatives.org/sg-pong.html",
-    says:"Neon pong for two: arrows against W and S, spin off the paddles, first to 7 takes the match.", tags:["2 player"], where:"live" },
-  { group:"Just for fun", icon:"🕹️", bg:"linear-gradient(135deg,#db2777,#7c3aed)", name:"Arcade", url:"arcade.html",
-    says:"Robin Hop, Catapult Castle, Paper Toss, Penalty Shootout, Paper Plane, Block Drop, Doubles and Space Rocks. No questions - just games.", tags:["Fun"], where:"live" },
-  { group:"Just for fun", icon:"🐍", bg:"#16a34a", name:"Snake", url:"./?play=snake", says:"Eat the apples, don't eat yourself.", tags:["Doodle"], where:"live" },
-  { group:"Just for fun", icon:"🧱", bg:"#dc2626", name:"Brick Breaker", url:"./?play=breakout", says:"Clear every brick.", tags:["Doodle"], where:"live" },
-  { group:"Just for fun", icon:"🔨", bg:"#92400e", name:"Whack-a-mole", url:"./?play=mole", says:"30 seconds. Tap them before they hide.", tags:["Doodle"], where:"live" }
-];
-var list = document.getElementById("list"), last = "";
-function h(t, c, x){ var e = document.createElement(t); if (c) e.className = c; if (x != null) e.textContent = x; return e; }
-var grid;
-GAMES.forEach(function(g){
-  if (!LAB && g.where === "lab") return;          // the real site only lists what's live there
-  if (g.group !== last) {
-    var head = h("h2", null, g.group);
-    /* "Scratch games" -> id="scratch", so the dashboard button can
-       link straight to this group. */
-    head.id = g.group.toLowerCase().split(" ")[0];
-    grid = h("div", "grid");
-    /* The fun groups disappear for an account with only the learning games on. */
-    if (g.group !== "Learn while you play") { head.className = "fun"; grid.className += " fun"; }
-    list.appendChild(head); list.appendChild(grid); last = g.group;
-  }
-  var a = h("a", "game"); a.href = g.url;
-  /* Lab testers get Gate Run with the ghost race switched on. */
-  if (LAB && g.name === "Gate Run") a.href = g.url + "?ghost=1";
-  var i = h("span", "icon", g.icon); i.style.background = g.bg; a.appendChild(i);
-  var w = h("span"); w.appendChild(h("b", null, g.name)); w.appendChild(h("p", null, g.says));
-  var tags = h("span", "tags"); g.tags.forEach(function(t){ tags.appendChild(h("span", "tag", t)); });
-  if (LAB) tags.appendChild(h("span", "tag " + g.where, g.where === "live" ? "On the real site" : "Lab only"));
-  w.appendChild(tags); a.appendChild(w); grid.appendChild(a);
-});
-if (window.GamesGate && GamesGate.ready) GamesGate.ready.then(function(){
-  if (GamesGate.level !== "learning") return;
-  document.querySelectorAll("#list .fun").forEach(function(e){ e.hidden = true; });
-  var note = h("p", "muted", "Only the learning games are switched on for your account.");
-  list.insertBefore(note, list.firstChild);
-});
-})();
-</script>
+<noscript><a href="https://play.civilinitiatives.org/">Continue</a></noscript>
 </body>
 </html>

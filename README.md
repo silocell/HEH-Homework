@@ -41,11 +41,14 @@ to the AI — isn't here. Not because hiding code makes anything safe: it
 doesn't, and anyone who tells you otherwise is selling something. It's
 because those files hold keys, and keys belong somewhere private.
 
-The games aren't here either. They're in three repos of their own:
+The games aren't here either. They're in repos of their own:
 
 - [HEH-Launchpad-Game](https://github.com/silocell/HEH-Launchpad-Game) — Gate Run, at gaterun.civilinitiatives.org
 - [HEH-Launchpad-Scratch](https://github.com/silocell/HEH-Launchpad-Scratch) — the six Scratch games, at games.civilinitiatives.org
 - [HEH-Launchpad-Learn](https://github.com/silocell/HEH-Launchpad-Learn) — Level Up, Times Table Tycoon, Word Dragons, Battle Stories, at learn.civilinitiatives.org
+- [HEH-Play](https://github.com/silocell/HEH-Play) — the games page (every game in one place), at play.civilinitiatives.org
+- [HEH-Arcade](https://github.com/silocell/HEH-Arcade) — the Arcade, at arcade.civilinitiatives.org (GPL-3.0)
+- [HEH-Doodles](https://github.com/silocell/HEH-Doodles) — the doodle games, at doodles.civilinitiatives.org (GPL-3.0)
 
 One sign-in covers all of them: `auth-store.js` keeps the session in a
 cookie for `.civilinitiatives.org`, because each subdomain is a separate
