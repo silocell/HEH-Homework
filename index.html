@@ -1059,6 +1059,11 @@ body.gsc-overflow-hidden{overflow:auto!important}
   min-width:62px;
 }
 .msg-who.me{color:var(--good)}
+/* "Admin" and "Helper" next to a name in the chat and on the board */
+.staff-tag{display:inline-block;margin-left:5px;padding:0 6px;border-radius:999px;font-size:.62rem;font-weight:700;
+  line-height:1.6;vertical-align:1px;letter-spacing:.02em;white-space:nowrap}
+.staff-tag.admin{background:var(--accent);color:#fff}
+.staff-tag.helper{background:color-mix(in srgb,var(--good) 18%,transparent);color:var(--good)}
 .msg-body{flex:1;min-width:0;font-size:.87rem;line-height:1.5;overflow-wrap:anywhere}
 .msg-time{
   font-family:var(--font-mono);font-size:.66rem;color:var(--ink-faint);
@@ -2931,6 +2936,7 @@ function openDashboard(who, supaUser){
     showClosed();
     return;
   }
+  loadStaffTags();
   var bar = document.getElementById("maintBar");
   if(bar) bar.hidden = siteOpen;
 
@@ -4843,6 +4849,7 @@ function showPending(text){
   var who = document.createElement("span");
   who.className = "msg-who me";
   who.textContent = (currentUser && currentUser.name) || "You";
+  if(currentUser) addStaffTag(who, currentUser.uid);
 
   var body = document.createElement("span");
   body.className = "msg-body";
@@ -4901,6 +4908,7 @@ function addMessage(m, atTop, fresh){
   var who = document.createElement("span");
   who.className = "msg-who" + (currentUser && m.user_id === currentUser.uid ? " me" : "");
   who.textContent = m.name || "Someone";
+  addStaffTag(who, m.user_id);
 
   var body = document.createElement("span");
   body.className = "msg-body";
@@ -5428,13 +5436,46 @@ function actBtn(label, onClick){
   return b;
 }
 
+/* ---------- "Admin" and "Helper" tags ----------
+   The owner's account gets "Admin" and helpers get "Helper" next to their
+   name in the chat and on the board. staff_tags() hands back account ids
+   and the tag only - no addresses. Names drawn before it answers are
+   tagged as soon as it does (each name remembers whose it is). */
+var staffTags = {};
+function addStaffTag(whoEl, uid){
+  if(!whoEl || !uid) return;
+  whoEl.setAttribute("data-uid", uid);
+  var old = whoEl.querySelector(".staff-tag");
+  if(old) old.remove();
+  var t = staffTags[uid];
+  if(!t) return;
+  var tag = document.createElement("span");
+  tag.className = "staff-tag " + t;
+  tag.textContent = t === "admin" ? "Admin" : "Helper";
+  /* before the ":" after a reply's name, if there is one */
+  var colon = whoEl.querySelector(".who-colon");
+  if(colon) whoEl.insertBefore(tag, colon); else whoEl.appendChild(tag);
+}
+function loadStaffTags(){
+  if(!sb) return;
+  sb.rpc("staff_tags").then(function(r){
+    if(r.error || !r.data) return;
+    staffTags = {};
+    r.data.forEach(function(x){ staffTags[x.user_id] = x.tag; });
+    document.querySelectorAll("[data-uid]").forEach(function(e){ addStaffTag(e, e.getAttribute("data-uid")); });
+  }, function(){});
+}
+
 function replyEl(r, mine){
   var row = document.createElement("div");
   row.className = "reply";
 
   var who = document.createElement("span");
   who.className = "reply-who";
-  who.textContent = (r.name || "Someone") + ":";
+  who.textContent = r.name || "Someone";
+  var colon = document.createElement("span"); colon.className = "who-colon"; colon.textContent = ":";
+  who.appendChild(colon);
+  addStaffTag(who, r.user_id);
   row.appendChild(who);
 
   var body = document.createElement("span");
@@ -5472,6 +5513,7 @@ function postEl(p, replies, meId){
   var who = document.createElement("span");
   who.className = "post-who";
   who.textContent = p.name || "Someone";
+  addStaffTag(who, p.user_id);
   top.appendChild(who);
 
   var when = document.createElement("span");
