@@ -71,6 +71,12 @@ The game pages live in `HEH-Launchpad-Learn` (learn.civilinitiatives.org):
 - `tables.html` – Times Table Tycoon (lab): 60-second rounds, Numling cards, trading. Function `tables`; tables `tt_progress`, `tt_rounds`, `tt_cards`, `tt_offers`; the swap is `tt_accept()` in the database, all-or-nothing.
 - `dragons.html` – Word Dragons (lab): dragons grow on English lessons, battles by email with no names shown. Function `dragons`; tables `dr_players`, `dr_dragons`, `dr_lessons`, `dr_battles`. Questions share `levelup_bank`.
 - `history.html` – Battle Stories: Hastings 1066, animated scenes + questions. Runs entirely in the browser - no server part, nothing to install.
+- `geo.html` – Map Quest: Year 7 geography, questions made in the page. "Practise my weakest" uses the progress model.
+- `cards.html` – Flash cards, made automatically from wrong answers in every learning game (Leitner boxes 1–5: 0, 1, 3, 7, 16 days).
+- `progress.html` – My progress: a score per skill per subject, cards due, each game's record.
+- `learn.js` – every learning game reports answers here. It queues them in the browser and sends them to `learn_record()`; if the server has no tables yet, they wait.
+
+Progress tables (from `learning.sql`, 27 Oct): `learn_skills` (mastery per skill), `flashcards`, `game_saves` (Battle Stories and Map Quest best scores). All private to the pupil by Row Level Security. Model: each answer moves mastery 30% toward right/wrong; time away fades it toward 0.5, halving every 30 days. If Cards or Progress say "not switched on yet", `learning.sql` hasn't been run on that server.
 
 and the six `sg-*.html` Scratch games, with `game-hud.js`, live in
 `HEH-Launchpad-Scratch`. They load `games-gate.js` from the main site
