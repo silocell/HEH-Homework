@@ -496,7 +496,8 @@
   var DOODLES = "https://doodles.civilinitiatives.org/";
   var GAMES = {
     snake:"Snake", breakout:"Brick Breaker", mole:"Whack-a-mole", echo:"Colour Echo",
-    katch:"Star Catch", pairs:"Pairs", fruit:"Fruit Slash"
+    katch:"Star Catch", pairs:"Pairs", fruit:"Fruit Slash", boba:"Bubble Tea", hop:"Hop Runner",
+    float:"Bubble Float", ttt:"Noughts & Crosses", mines:"Bomb Squad", stack:"Tower Stack", quick:"Quick Draw"
   };
 
   /* "learning" = this account has only the learning games switched on
@@ -524,7 +525,9 @@
   function doodle(){
     var cols = document.querySelector(".columns");
     if (!cols) return;
-    var keys = ["snake", "breakout", "mole", "echo", "katch", "pairs", "fruit"];
+    /* Keep this list the same as the one on doodles.civilinitiatives.org,
+       so both show the same doodle of the day. */
+    var keys = ["snake", "breakout", "mole", "echo", "katch", "pairs", "fruit", "boba", "hop", "float", "ttt", "mines", "stack", "quick"];
     var d = new Date(), n = Math.floor((d.getTime() - d.getTimezoneOffset()*60000) / 86400000);
     var which = keys[n % keys.length];
     var bar = el("button", "exp-doodle"); bar.type = "button";
@@ -657,7 +660,8 @@
     } else {
       tile("🐍", "Snake", "Eat the apples", function(){ openGame("snake"); });
       tile("🧱", "Brick Breaker", "Clear every brick", function(){ openGame("breakout"); });
-      tile("🔨", "Whack-a-mole", "30 seconds", function(){ openGame("mole"); });
+      tile("🧋", "Bubble Tea", "Make what they order", function(){ openGame("boba"); });
+      tile("🎨", "All doodles", "14 little games", DOODLES);
       tile("🕹️", "Arcade", "Just for fun - 8 games", "https://arcade.civilinitiatives.org/");
       /* The six Scratch-made games sit behind one button, rather than
          filling the panel with tiles. */
@@ -680,7 +684,7 @@
       if (level !== "learning") doodle();
       gamesHub();
       /* Old links: ?play=snake now goes to that game on the doodles site. */
-      var pm = location.search.match(/[?&]play=(snake|breakout|mole|echo|katch|pairs|fruit)\b/);
+      var pm = location.search.match(/[?&]play=(snake|breakout|mole|echo|katch|pairs|fruit|boba|hop|float|ttt|mines|stack|quick)\b/);
       if (pm) openGame(pm[1]);
     });
     watchTicks(on);
