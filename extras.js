@@ -503,7 +503,7 @@
        opened in a frame inside the same overlay. It keeps its own
        score, so the overlay doesn't show one. */
     fruit:     { name:"Fruit Slash", how:"Swipe with the mouse to slice the fruit - never the bomb.",
-                 page:"https://games.civilinitiatives.org/sg-fruit.html" }
+                 page:"https://play.civilinitiatives.org/sg-fruit.html" }
   };
   var overlay = null;
 

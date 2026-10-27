@@ -44,7 +44,7 @@ because those files hold keys, and keys belong somewhere private.
 The games aren't here either. They're in three repos of their own:
 
 - [HEH-Launchpad-Game](https://github.com/silocell/HEH-Launchpad-Game) — Gate Run, at gaterun.civilinitiatives.org
-- [HEH-Launchpad-Scratch](https://github.com/silocell/HEH-Launchpad-Scratch) — the six Scratch games, at games.civilinitiatives.org
+- [HEH-Launchpad-Scratch](https://github.com/silocell/HEH-Launchpad-Scratch) — the six Scratch games, at play.civilinitiatives.org
 - [HEH-Launchpad-Learn](https://github.com/silocell/HEH-Launchpad-Learn) — Level Up, Times Table Tycoon, Word Dragons, Battle Stories, at learn.civilinitiatives.org
 
 One sign-in covers all of them: `auth-store.js` keeps the session in a
