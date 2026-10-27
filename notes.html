@@ -456,6 +456,15 @@ body.demo #mainPanel .sec.off{ opacity:.42; pointer-events:none; user-select:non
         <p class="amsg" id="siteMsg">Closing shows everyone a maintenance notice. Remember to open it again.</p>
       </div>
 
+      <div class="sec" id="schoolSec" hidden>
+        <p class="sec-h">School account admin</p>
+        <div class="arow">
+          <span id="schoolState">Checking…</span>
+          <button type="button" class="abtn" id="schoolToggle" disabled>—</button>
+        </div>
+        <p class="amsg" id="schoolMsg">On: your school account is an admin and shows "Admin". Off: it's a helper and shows "Helper". Only this account can change it.</p>
+      </div>
+
       <div class="sec" id="gamesSec">
         <p class="sec-h">Games</p>
         <div id="gamesRows"></div>
@@ -814,7 +823,7 @@ function hideForDemo(){
    updates one card instead of stacking them. */
 /* Test results and anything about a password you have to copy stay put
    by their section, where you can read them properly. */
-var SAY_STAYS = { diagMsg:1, modMsg:1, siteMsg:1, showMsg:1, queueMsg:1, backupMsg:1, restoreMsg:1, roomMsg:1, labMsg:1, askMsg:1 };
+var SAY_STAYS = { diagMsg:1, modMsg:1, siteMsg:1, showMsg:1, queueMsg:1, backupMsg:1, restoreMsg:1, roomMsg:1, labMsg:1, askMsg:1, schoolMsg:1 };
 var RESTORE_META = { accounts:1, truncated:1, takenAt:1, tablesSaved:1 };
 function say(id, text, kind){
   var el = document.getElementById(id);
@@ -1880,6 +1889,37 @@ document.getElementById("wordForm").addEventListener("submit",function(e){
     say("wordMsg", err.message, "err");
   }).then(function(){ btn.disabled = false; });
 });
+
+/* ---------- school account admin ----------
+   Only the main admin account gets an answer from schooladmin; anyone
+   else (the school account itself included) gets 403, and the section
+   stays hidden. */
+function loadSchool(){
+  var sec = document.getElementById("schoolSec");
+  if(!sec || !canSync()) return;
+  invokeOn("schooladmin", { action:"get" }).then(function(d){
+    if(!d.email){ sec.hidden = true; return; }
+    sec.hidden = false;
+    paintSchool(d);
+  }).catch(function(){ sec.hidden = true; });
+}
+function paintSchool(d){
+  var st = document.getElementById("schoolState"), b = document.getElementById("schoolToggle");
+  st.textContent = d.email + " is " + (d.enabled ? "an admin" : "a helper");
+  b.textContent = d.enabled ? "Make it a helper" : "Make it an admin";
+  b.className = d.enabled ? "abtn quiet" : "abtn";
+  b.disabled = false;
+  b.onclick = function(){
+    b.disabled = true;
+    invokeOn("schooladmin", { action:"set", enabled: !d.enabled }).then(function(r){
+      d.enabled = r.enabled;
+      paintSchool(d);
+      say("schoolMsg", d.enabled
+        ? "Done. Your school account is an admin - it shows \u201cAdmin\u201d from its next page load."
+        : "Done. Your school account is a helper again.", "ok");
+    }).catch(function(e){ b.disabled = false; say("schoolMsg", e.message, "err"); });
+  };
+}
 
 /* ---------- games ----------
    One row per account: games on or off, and why. Every game page asks
@@ -3168,6 +3208,7 @@ applyTheme(recall(THEME_KEY,null));
         loadClaudeLog();
         loadAllows();
         loadSite();
+        loadSchool();
         loadRooms();
         loadAsks();
         loadShows();
