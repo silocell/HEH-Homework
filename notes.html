@@ -151,6 +151,12 @@ button,input,select,textarea{font:inherit;color:inherit}
 }
 .acct-name{width:150px}
 .acct-meta{font-size:.74rem;color:var(--ink-faint);margin-bottom:12px;line-height:1.5}
+.gstate{font-size:.72rem;font-weight:700;padding:2px 8px;border-radius:999px;margin-left:auto}
+.gstate.on{background:color-mix(in srgb,var(--good) 16%,transparent);color:var(--good)}
+.gstate.off{background:color-mix(in srgb,var(--margin) 14%,transparent);color:var(--margin)}
+.gstate.out{background:color-mix(in srgb,var(--warn) 16%,transparent);color:var(--warn)}
+.gwhy{flex:1;min-width:0;font:inherit;padding:8px 10px;border:1px solid var(--rule);border-radius:10px;background:var(--paper);color:var(--ink)}
+.gmeta{margin:4px 0 6px;font-size:.78rem;color:var(--ink-soft)}
 .acct-acts{display:flex;gap:9px;flex-wrap:wrap;align-items:center}
 .acct-inline{border-top:1px solid var(--rule);margin-top:13px;padding-top:13px}
 .atable{min-width:560px}
@@ -442,6 +448,15 @@ body.demo #mainPanel .sec.off{ opacity:.42; pointer-events:none; user-select:non
           <button type="button" class="abtn" id="siteToggle" disabled>—</button>
         </div>
         <p class="amsg" id="siteMsg">Closing shows everyone a maintenance notice. Remember to open it again.</p>
+      </div>
+
+      <div class="sec" id="gamesSec">
+        <p class="sec-h">Games</p>
+        <div id="gamesRows"></div>
+        <div class="arow" style="margin-top:8px">
+          <button type="button" class="abtn quiet" id="gamesLoad">Refresh</button>
+        </div>
+        <p class="amsg" id="gamesMsg">New accounts start with games off. Level Up is never switched off here.</p>
       </div>
 
       <div class="sec" id="switchSec" hidden>
@@ -900,14 +915,16 @@ function loadOutstanding(){
   }).catch(function(){ openBoard = {}; });
 }
 
+var userNames = {};   /* id -> the name set above, for the Games list */
 function loadUsers(){
   say("usersMsg","Loading…");
-  Promise.all([ call({ action:"list" }), loadOutstanding() ]).then(function(got){
+  return Promise.all([ call({ action:"list" }), loadOutstanding() ]).then(function(got){
     var d = got[0];
     var host = document.getElementById("userRows");
     host.textContent = "";
 
     (d.users||[]).forEach(function(u){
+      userNames[u.id] = u.name || "";
       var card = document.createElement("div");
       card.className = "acct";
 
@@ -1857,6 +1874,58 @@ document.getElementById("wordForm").addEventListener("submit",function(e){
     say("wordMsg", err.message, "err");
   }).then(function(){ btn.disabled = false; });
 });
+
+/* ---------- games ----------
+   One row per account: games on or off, and why. Every game page asks
+   the server (my_games) before it lets anyone play; this is where the
+   answer is set, through the gamesaccess function. Turning games off
+   asks for a reason, which they see ("Games are switched off for your
+   account: ..."), so keep it kind and short. */
+function loadGames(){
+  var host = document.getElementById("gamesRows");
+  if(!host || !canSync()) return Promise.resolve();
+  say("gamesMsg", "Loading\u2026");
+  return invokeOn("gamesaccess", { action:"list" }).then(function(d){
+    host.textContent = "";
+    var people = d.people || [];
+    people.forEach(function(u){
+      var label = userNames[u.id] || u.email;
+      var card = document.createElement("div"); card.className = "acct";
+      var top = document.createElement("div"); top.className = "acct-top";
+      var nm = document.createElement("span"); nm.className = "acct-email"; nm.textContent = label;
+      var st = document.createElement("span"); st.className = "gstate " + (u.timedOut ? "out" : u.allowed ? "on" : "off");
+      st.textContent = u.timedOut ? "Timed out today" : u.allowed ? "Games on" : (u.set ? "Games off" : "New - games off");
+      top.appendChild(nm); top.appendChild(st);
+      var meta = document.createElement("p"); meta.className = "gmeta";
+      meta.textContent = (label !== u.email ? u.email : "") +
+        (!u.allowed && u.reason ? (label !== u.email ? " \u00b7 " : "") + "Reason: " + u.reason : "");
+      var why = document.createElement("input"); why.type = "text"; why.maxLength = 200; why.className = "gwhy";
+      why.placeholder = u.allowed ? "Reason they'll see (optional)" : "Note (optional)";
+      why.setAttribute("aria-label", "Reason for " + label);
+      var b = document.createElement("button"); b.type = "button"; b.className = "abtn" + (u.allowed ? " quiet" : "");
+      b.textContent = u.allowed ? "Turn games off" : "Turn games on";
+      b.addEventListener("click", function(){
+        b.disabled = true;
+        invokeOn("gamesaccess", { action:"set", id:u.id, allowed:!u.allowed, reason: u.allowed ? why.value.trim() : "" })
+          .then(function(){
+            say("gamesMsg", (u.allowed ? "Games off for " : "Games on for ") + label + ".", "ok");
+            return loadGames();
+          })
+          .catch(function(e){ b.disabled = false; say("gamesMsg", e.message, "err"); });
+      });
+      var row = document.createElement("div"); row.className = "arow";
+      if(u.allowed) row.appendChild(why);
+      row.appendChild(b);
+      card.appendChild(top);
+      if(meta.textContent) card.appendChild(meta);
+      card.appendChild(row);
+      host.appendChild(card);
+    });
+    var on = people.filter(function(u){ return u.allowed && !u.timedOut; }).length;
+    say("gamesMsg", on + " of " + people.length + " can play right now. New accounts start with games off.");
+  }).catch(function(e){ say("gamesMsg", e.message, "err"); });
+}
+document.getElementById("gamesLoad").addEventListener("click", loadGames);
 
 /* ---------- technical helper ----------
    One box, two answerers. Quick = the admin function's "ask" (fast).
@@ -3072,7 +3141,8 @@ applyTheme(recall(THEME_KEY,null));
        with noise that hides the real faults. */
       if(!showOnly){
         peekWatch();
-        loadUsers();
+        /* games after the account list, so it can show names, not just addresses */
+        loadUsers().then(loadGames, loadGames);
         loadShared();
         loadWords();
         startDay();
