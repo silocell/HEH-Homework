@@ -11,6 +11,7 @@
      HEHAvatar.item(id)         -> the catalogue entry
      HEHAvatar.el(look, size, {initial})         -> an element
      HEHAvatar.nameEl(tag, text, look)           -> your name in its colour
+     HEHAvatar.tagEl(look or tag id)             -> your tag (a little label), or null
      HEHAvatar.applyTheme(look) -> the dashboard theme you're wearing
      HEHAvatar.emojiImg(item, px)                -> Twemoji art for an emoji item
 
@@ -24,7 +25,7 @@
   var PKG = { adventurer:"adventurer", bigEars:"big-ears", pixelArt:"pixel-art", openPeeps:"open-peeps", lorelei:"lorelei", bottts:"bottts" };
   var CAT = null, BY = {}, styleMods = {}, core = null, svgCache = {};
 
-  var ready = fetch(BASE + "shop-catalog.json?v=2", { cache:"force-cache" }).then(function(r){ return r.json(); }).then(function(c){
+  var ready = fetch(BASE + "shop-catalog.json?v=3", { cache:"force-cache" }).then(function(r){ return r.json(); }).then(function(c){
     CAT = c; c.items.forEach(function(i){ BY[i.id] = i; }); return c;
   });
 
@@ -105,6 +106,16 @@
     return e;
   }
 
+  /* A tag: a small coloured label next to a name. */
+  function tagEl(x){
+    var t = BY[typeof x === "string" ? x : (x && x.tag)];
+    if (!t || !t.v) return null;
+    var e = el("span", "hla-tag", t.v);
+    e.style.background = t.c || "#475569";
+    e.title = t.name;
+    return e;
+  }
+
   /* The dashboard theme: an accent colour, and a decoration behind the page. */
   function applyTheme(look){
     var t = look && BY[look.theme], css = document.getElementById("hlaTheme"), deco = document.getElementById("hlaDeco");
@@ -139,14 +150,16 @@
     ".hla-hat img,.hla-stk img{width:100%;height:100%;display:block}" +
     ".hla-emo-t{font-size:calc(var(--s) * .45);line-height:1}" +
     ".hla-nm.grad{background-clip:text;-webkit-background-clip:text;color:transparent;-webkit-text-fill-color:transparent}" +
-    "#hlaDeco{position:fixed;inset:0;z-index:-1;pointer-events:none}";
+    "#hlaDeco{position:fixed;inset:0;z-index:-1;pointer-events:none}" +
+    ".hla-tag{display:inline-block;padding:1px 8px;border-radius:999px;font-size:.68rem;font-weight:800;line-height:1.5;color:#fff;" +
+    "white-space:nowrap;vertical-align:middle;text-shadow:0 1px 1px rgba(0,0,0,.25);-webkit-text-fill-color:#fff;letter-spacing:.01em}";
   document.head.appendChild(css);
 
   window.HEHAvatar = {
     ready: ready,
     get catalog(){ return CAT; },
     item: function(id){ return BY[id]; },
-    el: avatar, nameEl: nameEl, applyTheme: applyTheme, emojiImg: emojiImg,
+    el: avatar, nameEl: nameEl, tagEl: tagEl, applyTheme: applyTheme, emojiImg: emojiImg,
     twemoji: TW
   };
 })();

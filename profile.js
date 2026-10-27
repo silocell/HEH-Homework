@@ -9,6 +9,11 @@
    only shows it. A copy is kept on this device so the picture appears
    straight away next time. The dashboard theme you're wearing (bought
    in the shop) is applied here too.
+
+   In the chat and on the board, every name gets that person's picture and
+   tag. The dashboard's addStaffTag() already runs for each name (it adds
+   "Admin"/"Helper"), so this wraps it. Pictures are asked for in one batch
+   ("looks": display parts only, never emails) and kept for two minutes.
    ===================================================================== */
 (function(){
   var CACHE = "hl.profile2";
@@ -29,6 +34,8 @@
   function setState(st){
     S = st; keep({ look: st.look, pts: st.pts, pounds: st.pounds, role: st.role });
     paintButton();
+    var me = user().uid;
+    if (me && st.look) { LOOKS[me] = { look: st.look, at: Date.now() }; redecorate(me); }
     if (A()) A().ready.then(function(){ A().applyTheme(S.look); });
   }
   function call(body){
@@ -99,6 +106,8 @@
     var nm = nameEl("b", user().name || "You");
     if (S && S.role) nm.appendChild(el("span", "pf-role " + S.role, S.role === "owner" ? "Founder" : "Helper"));
     who.appendChild(nm);
+    var myTag = A() && S && S.look ? A().tagEl(S.look) : null;
+    if (myTag) { var tw = el("span", "pf-mytag"); tw.appendChild(myTag); who.appendChild(tw); }
     who.appendChild(el("span", "pf-email", user().email || ""));
     if (S) {
       var bank = el("span", "pf-pts");
@@ -168,6 +177,65 @@
     sheet.appendChild(list);
   }
 
+  /* ---------- pictures and tags in the chat and on the board ---------- */
+  var LOOKS = {};            // uid -> { look, at }
+  var asking = {}, askTimer = null;
+  function decorate(whoEl, uid){
+    if (!whoEl || !uid || !A()) return;
+    var old = whoEl.querySelectorAll(".pf-mini, .pf-ctag");
+    for (var i = 0; i < old.length; i++) old[i].remove();
+    var have = LOOKS[uid];
+    if (!have || Date.now() - have.at > 120000) ask(uid);
+    if (!have) return;
+    var name = (whoEl.firstChild && whoEl.firstChild.nodeType === 3 ? whoEl.firstChild.nodeValue : whoEl.textContent || "?").trim();
+    var mini = A().el(have.look, 22, { initial: (name.charAt(0) || "?").toUpperCase() });
+    mini.classList.add("pf-mini");
+    whoEl.insertBefore(mini, whoEl.firstChild);
+    var tag = A().tagEl(have.look);
+    if (tag) {
+      tag.classList.add("pf-ctag");
+      var colon = whoEl.querySelector(".who-colon");
+      if (colon) whoEl.insertBefore(tag, colon); else whoEl.appendChild(tag);
+    }
+  }
+  function redecorate(uid){
+    var els = document.querySelectorAll('[data-uid="' + uid + '"]');
+    for (var i = 0; i < els.length; i++) decorate(els[i], uid);
+  }
+  function ask(uid){
+    if (asking[uid]) return;
+    asking[uid] = true;
+    if (!askTimer) askTimer = setTimeout(function(){
+      askTimer = null;
+      var ids = Object.keys(asking).filter(function(id){ return asking[id] === true; }).slice(0, 100);
+      ids.forEach(function(id){ asking[id] = "sent"; });
+      if (!ids.length) return;
+      Promise.all([A().ready, call({ action:"looks", ids: ids })]).then(function(x){
+        var got = (x[1] && x[1].looks) || {};
+        ids.forEach(function(id){
+          /* No picture saved yet = the starting look (their initial). */
+          LOOKS[id] = { look: got[id] || {}, at: Date.now() };
+          delete asking[id];
+          redecorate(id);
+        });
+      }, function(){
+        /* Server busy or down: leave the names plain and try again in a minute, not on every new message. */
+        ids.forEach(function(id){ asking[id] = "wait"; });
+        setTimeout(function(){ ids.forEach(function(id){ if (asking[id] === "wait") delete asking[id]; }); }, 60000);
+      });
+    }, 250);
+  }
+  function hookNames(){
+    if (window.addStaffTag && !window.addStaffTag._pf) {
+      var orig = window.addStaffTag;
+      var wrapped = function(whoEl, uid){ orig(whoEl, uid); try { decorate(whoEl, uid); } catch (e) {} };
+      wrapped._pf = true;
+      window.addStaffTag = wrapped;
+    }
+    var els = document.querySelectorAll("[data-uid]");
+    for (var i = 0; i < els.length; i++) decorate(els[i], els[i].getAttribute("data-uid"));
+  }
+
   /* ---------- styles ---------- */
   var css = el("style");
   css.textContent =
@@ -204,7 +272,10 @@
     ".pf-ach-ic{font-size:1.4rem}.pf-ach-mid{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}" +
     ".pf-ach-mid small{color:var(--ink-soft);font-size:.76rem}.pf-ach-r{font-weight:700;white-space:nowrap}" +
     ".pf-bar{display:block;height:6px;border-radius:99px;background:var(--rule);overflow:hidden}.pf-bar span{display:block;height:100%;background:var(--accent)}" +
-    ".pf-muted{color:var(--ink-soft);font-size:.8rem;margin:10px 0 0}";
+    ".pf-muted{color:var(--ink-soft);font-size:.8rem;margin:10px 0 0}" +
+    ".pf-mytag{margin-top:2px}" +
+    ".pf-mini{margin-right:6px;vertical-align:-6px}" +
+    ".pf-ctag{margin-left:5px;font-size:.6rem;padding:0 6px;vertical-align:1px}";
   document.head.appendChild(css);
 
   /* ---------- start, once a pupil is signed in ---------- */
@@ -216,6 +287,7 @@
     var u = window.currentUser;
     if (u && !u.offline && window.sb) {
       addButton();
+      hookNames();
       call({ action:"get" }).then(setState, function(){});
       return;
     }
