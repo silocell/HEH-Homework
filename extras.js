@@ -507,7 +507,24 @@
   };
   var overlay = null;
 
+  /* "learning" = this account has only the learning games switched on
+     (admin panel -> Games). Then the doodles, the doodle of the day and
+     the fun tiles stay away. Asked once, from the same my_games() the
+     game pages ask. Unknown (server not reachable) counts as "all", like
+     the games gate. */
+  var gameLevel = "all";
+  function askLevel(){
+    try {
+      if (!window.sb || !window.sb.rpc) return Promise.resolve("all");
+      return window.sb.rpc("my_games").then(function(r){
+        var d = r && r.data;
+        return d && d.allowed && d.level === "learning" ? "learning" : "all";
+      }, function(){ return "all"; });
+    } catch (e) { return Promise.resolve("all"); }
+  }
+
   function openGame(which){
+    if (gameLevel === "learning") return;
     if (overlay) overlay.close();
     var g = GAMES[which]; if (!g) return;
     var wrap = el("div", "exp-game"); wrap.setAttribute("role", "dialog"); wrap.setAttribute("aria-label", g.name);
@@ -1162,13 +1179,17 @@
     tile("✖️", "Times Table Tycoon", "60-second rounds", "https://learn.civilinitiatives.org/tables.html");
     tile("🐉", "Word Dragons", "Grow dragons with English", "https://learn.civilinitiatives.org/dragons.html");
     tile("⚔️", "Battle Stories", "Hastings, 1066", "https://learn.civilinitiatives.org/history.html");
-    tile("🐍", "Snake", "Eat the apples", function(){ openGame("snake"); });
-    tile("🧱", "Brick Breaker", "Clear every brick", function(){ openGame("breakout"); });
-    tile("🔨", "Whack-a-mole", "30 seconds", function(){ openGame("mole"); });
-    tile("🕹️", "Arcade", "Just for fun - 8 games", "arcade.html");
-    /* The six Scratch-made games sit behind one button, rather than
-       filling the panel with tiles. */
-    tile("🧩", "Scratch games", "Six games made in Scratch", "games.html#scratch");
+    if (gameLevel === "learning") {
+      tile("🧭", "Map Quest", "Capitals, maps, the compass", "https://learn.civilinitiatives.org/geo.html");
+    } else {
+      tile("🐍", "Snake", "Eat the apples", function(){ openGame("snake"); });
+      tile("🧱", "Brick Breaker", "Clear every brick", function(){ openGame("breakout"); });
+      tile("🔨", "Whack-a-mole", "30 seconds", function(){ openGame("mole"); });
+      tile("🕹️", "Arcade", "Just for fun - 8 games", "arcade.html");
+      /* The six Scratch-made games sit behind one button, rather than
+         filling the panel with tiles. */
+      tile("🧩", "Scratch games", "Six games made in Scratch", "games.html#scratch");
+    }
     p.appendChild(grid);
     var all = el("a", null, "All games \u2192"); all.href = "games.html"; all.style.cssText = "display:inline-block;margin-top:10px;font-weight:600";
     p.appendChild(all);
@@ -1178,10 +1199,17 @@
   function start(){
     if (started) return; started = true;
     var on = { sounds:1, warmup:1, plant:1, cards:1, season:1, konami:1, doodle:1, eggs:1, streak:1, cheer:1 };
-    sounds(); warmup(); plant(); flashcards(); season(); konami(); doodle(); eggs(); gamesHub();
-    /* From the Games page: ?play=snake opens that game straight away. */
-    var pm = location.search.match(/[?&]play=(snake|breakout|mole|echo|katch|pairs|fruit)\b/);
-    if (pm) setTimeout(function(){ openGame(pm[1]); }, 300);
+    sounds(); warmup(); plant(); flashcards(); season(); konami(); eggs();
+    /* The doodle and the games panel wait for one answer: which games
+       this account has. */
+    askLevel().then(function(level){
+      gameLevel = level;
+      if (level !== "learning") doodle();
+      gamesHub();
+      /* From the Games page: ?play=snake opens that game straight away. */
+      var pm = location.search.match(/[?&]play=(snake|breakout|mole|echo|katch|pairs|fruit)\b/);
+      if (pm) setTimeout(function(){ openGame(pm[1]); }, 300);
+    });
     watchTicks(on);
     paintStreak();
   }

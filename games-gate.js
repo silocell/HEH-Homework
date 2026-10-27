@@ -9,8 +9,17 @@
    to refuse, so this is the lock on their door - good enough for games
    that store nothing. If the server can't be reached at all, the page
    is left open rather than broken; a "no" is always obeyed.
+
+   Two kinds of game (27 Oct). Each page says which it is on its script
+   tag: data-kind="fun" (Scratch games, Arcade), "learning" (the default:
+   Tycoon, Word Dragons, Battle Stories, Map Quest, Gate Run) or "hub"
+   (the Games page). An account can be off, "learning" (learning games
+   only) or "all". A learning-only account is locked out of fun pages;
+   the hub stays open and hides the fun ones (GamesGate.level says which).
    ===================================================================== */
 (function(){
+  var me = document.currentScript;
+  var KIND = (me && me.getAttribute("data-kind")) || "learning";
   var LAB = (/^lab\./i.test(location.hostname) || /^\/HEH-(Homework|Launchpad)-Lab(\/|$)/i.test(location.pathname));
   var URL = LAB ? "https://hehs.duckdns.org" : "https://hehs-live.duckdns.org";
   var KEY = LAB
@@ -39,16 +48,20 @@
       "background:rgba(10,13,26,.92);color:#fff;font:16px/1.5 system-ui,-apple-system,'Segoe UI',sans-serif;text-align:center";
     var box = document.createElement("div"); box.style.maxWidth = "420px";
     var big = document.createElement("p"); big.style.cssText = "font-size:2.6rem;margin:0"; big.textContent = "🔒";
-    var h = document.createElement("p"); h.style.cssText = "font-weight:800;font-size:1.3rem;margin:8px 0"; h.textContent = "Games are locked";
+    var h = document.createElement("p"); h.style.cssText = "font-weight:800;font-size:1.3rem;margin:8px 0";
+    h.textContent = /learning games/.test(why) ? "This one's locked" : "Games are locked";
     var p = document.createElement("p"); p.style.margin = "0 0 18px"; p.textContent = why;
-    var a = document.createElement("a"); a.href = "./"; a.textContent = "Back to the Launchpad";
+    var a = document.createElement("a"); a.textContent = "Back to the Launchpad";
+    /* From games. or gaterun., "./" would be that site's own front page. */
+    a.href = /(^|\.)civilinitiatives\.org$/i.test(location.hostname) && !/^(civilinitiatives\.org|lab\.civilinitiatives\.org)$/i.test(location.hostname)
+      ? (LAB ? "https://lab.civilinitiatives.org/" : "https://civilinitiatives.org/") : "./";
     a.style.cssText = "display:inline-block;background:#fff;color:#111827;font-weight:700;padding:10px 18px;border-radius:12px;text-decoration:none";
     box.appendChild(big); box.appendChild(h); box.appendChild(p); box.appendChild(a); cover.appendChild(box);
     (document.body || document.documentElement).appendChild(cover);
     document.documentElement.style.overflow = "hidden";
     setTimeout(function(){ a.focus(); }, 50);
   }
-  window.GamesGate = { ready: null };
+  window.GamesGate = { ready: null, level: null };
   if (!token) {
     var show = function(){ block("Sign in on the Launchpad first, then come back to play."); };
     if (document.body) show(); else document.addEventListener("DOMContentLoaded", show);
@@ -85,10 +98,18 @@
     if (r.status === 401) return { allowed: false, why: "Open the Launchpad and sign in again, then come back to play." };
     return r.ok ? r.json() : null;
   }).then(function(d){
-    if (d && d.allowed === false) {
-      var go = function(){ block(d.why || "Games are switched off for your account."); };
+    function shut(why){
+      var go = function(){ block(why); };
       if (document.body) go(); else document.addEventListener("DOMContentLoaded", go);
       return false;
+    }
+    if (d && d.allowed === false) { window.GamesGate.level = "off"; return shut(d.why || "Games are switched off for your account."); }
+    /* An older server doesn't say a level: that means every game. */
+    var level = (d && d.level === "learning") ? "learning" : "all";
+    window.GamesGate.level = level;
+    if (level === "learning") {
+      document.documentElement.classList.add("learning-only");
+      if (KIND === "fun") return shut("Only the learning games are switched on for your account. Try Level Up, Times Table Tycoon or Map Quest.");
     }
     return true;
   }).catch(function(){ return true; });

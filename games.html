@@ -42,7 +42,7 @@ h2{font-size:.85rem;text-transform:uppercase;letter-spacing:.07em;color:var(--so
 .xbtn:focus-visible{outline:3px solid #fde68a;outline-offset:2px}
 </style>
 <script src="auth-store.js?b=20261026a"></script>
-<script src="games-gate.js?b=20261027a"></script>
+<script src="games-gate.js?b=20261027g" data-kind="hub"></script>
 </head>
 <body>
 <div class="labbar">Lab — things here are being tried out and may break <a href="./">back to the Launchpad</a></div>
@@ -99,7 +99,10 @@ GAMES.forEach(function(g){
     /* "Scratch games" -> id="scratch", so the dashboard button can
        link straight to this group. */
     head.id = g.group.toLowerCase().split(" ")[0];
-    list.appendChild(head); grid = h("div", "grid"); list.appendChild(grid); last = g.group;
+    grid = h("div", "grid");
+    /* The fun groups disappear for an account with only the learning games on. */
+    if (g.group !== "Learn while you play") { head.className = "fun"; grid.className += " fun"; }
+    list.appendChild(head); list.appendChild(grid); last = g.group;
   }
   var a = h("a", "game"); a.href = g.url;
   /* Lab testers get Gate Run with the ghost race switched on. */
@@ -109,6 +112,12 @@ GAMES.forEach(function(g){
   var tags = h("span", "tags"); g.tags.forEach(function(t){ tags.appendChild(h("span", "tag", t)); });
   if (LAB) tags.appendChild(h("span", "tag " + g.where, g.where === "live" ? "On the real site" : "Lab only"));
   w.appendChild(tags); a.appendChild(w); grid.appendChild(a);
+});
+if (window.GamesGate && GamesGate.ready) GamesGate.ready.then(function(){
+  if (GamesGate.level !== "learning") return;
+  document.querySelectorAll("#list .fun").forEach(function(e){ e.hidden = true; });
+  var note = h("p", "muted", "Only the learning games are switched on for your account.");
+  list.insertBefore(note, list.firstChild);
 });
 })();
 </script>
