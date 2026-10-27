@@ -358,6 +358,7 @@ body.demo #mainPanel .sec.off{ opacity:.42; pointer-events:none; user-select:non
   background:rgba(17,20,27,.78);color:#fff;backdrop-filter:blur(6px);
 }
 :fullscreen{position:relative}
+#claudeQ{width:100%;font:inherit;padding:10px;border:1px solid var(--rule);border-radius:10px;background:var(--paper);color:var(--ink);resize:vertical}
 </style>
 <link rel="stylesheet" href="polish.css?b=20261021194235">
 
@@ -578,6 +579,21 @@ body.demo #mainPanel .sec.off{ opacity:.42; pointer-events:none; user-select:non
         <div class="ask-out" id="askOut"></div>
         <p class="ex-left" id="askLeft" style="margin-top:10px"></p>
         <p class="amsg" id="askMsg"></p>
+      </div>
+
+      <div class="sec" id="claudeSec">
+        <p class="sec-h">Ask Claude</p>
+        <form id="claudeForm">
+          <textarea id="claudeQ" rows="4" maxlength="2000" aria-label="What's wrong"
+                    placeholder="e.g. Level Up says ‘Couldn’t get a question’ every time"></textarea>
+          <div class="arow" style="justify-content:space-between;align-items:center;margin-top:8px">
+            <label style="font-size:.86rem"><input type="checkbox" id="claudeErrs" checked> Include errors from this browser</label>
+            <button type="submit" class="abtn" id="claudeGo">Ask Claude</button>
+          </div>
+        </form>
+        <div class="ask-out" id="claudeOut"></div>
+        <p class="amsg" id="claudeMsg">Never sees pupils’ messages.</p>
+        <details id="claudeOld" style="margin-top:10px"><summary>Earlier answers</summary><div id="claudeLog"></div></details>
       </div>
 
       <div class="sec">
@@ -1856,6 +1872,54 @@ function setAskLeft(remaining, limit){
     ? "" : remaining + " of " + limit + " questions left today";
 }
 
+/* ---------- Ask Claude ----------
+   A function of its own on the server (askclaude): it asks the admin
+   function whether this is the owner, takes one from the shared Claude
+   allowance, and gives Claude the project briefing plus this question.
+   Browser errors from this page go along too - they're usually the clue. */
+var pageErrs = [];
+window.addEventListener("error", function(e){
+  pageErrs.push(new Date().toTimeString().slice(0, 8) + " " + String(e.message || "error").slice(0, 200) +
+                (e.filename ? " @ " + e.filename.split("/").pop() + ":" + e.lineno : ""));
+  if (pageErrs.length > 20) pageErrs.shift();
+});
+window.addEventListener("unhandledrejection", function(e){
+  pageErrs.push(new Date().toTimeString().slice(0, 8) + " promise: " + String(e.reason && e.reason.message || e.reason).slice(0, 200));
+  if (pageErrs.length > 20) pageErrs.shift();
+});
+function claudeEntry(r){
+  var w = document.createElement("div"); w.style.marginTop = "12px";
+  var t = document.createElement("div"); t.className = "amsg"; t.textContent = new Date(r.at).toLocaleString("en-GB");
+  var q = document.createElement("div"); q.style.fontWeight = "600"; q.textContent = r.question;
+  var a = document.createElement("div"); a.className = "ask-out"; a.style.whiteSpace = "pre-wrap"; a.textContent = r.answer || "";
+  w.appendChild(t); w.appendChild(q); w.appendChild(a);
+  return w;
+}
+function loadClaudeLog(){
+  if(!canSync()) return;
+  invokeOn("askclaude", { action:"askclaudelog" }).then(function(d){
+    var box = document.getElementById("claudeLog"); if(!box) return;
+    box.textContent = "";
+    (d.log || []).forEach(function(r){ box.appendChild(claudeEntry(r)); });
+    if(!(d.log || []).length){ var p = document.createElement("p"); p.className = "amsg"; p.textContent = "None yet."; box.appendChild(p); }
+  }).catch(function(){});
+}
+document.getElementById("claudeForm").addEventListener("submit", function(e){
+  e.preventDefault();
+  var q = document.getElementById("claudeQ"), go = document.getElementById("claudeGo"), out = document.getElementById("claudeOut");
+  var text = q.value.trim();
+  if(text.length < 5){ say("claudeMsg", "Say what's wrong first.", "err"); return; }
+  if(!canSync()){ say("claudeMsg", "Sign in first.", "err"); return; }
+  go.disabled = true; go.textContent = "Asking\u2026"; out.textContent = ""; say("claudeMsg", "");
+  var ctx = document.getElementById("claudeErrs").checked ? pageErrs.slice(-15).join("\n") : "";
+  invokeOn("askclaude", { action:"askclaude", question:text, context:ctx }).then(function(d){
+    out.style.whiteSpace = "pre-wrap"; out.textContent = d.answer || "(no answer)";
+    say("claudeMsg", "Claude can't see the code. If something needs changing, bring this answer to the main Claude chat.");
+    loadClaudeLog();
+  }).catch(function(err){ say("claudeMsg", err.message, "err"); })
+    .then(function(){ go.disabled = false; go.textContent = "Ask Claude"; });
+});
+
 function refreshAskAllowance(){
   call({ action:"ask", check:true }).then(function(d){
     if(typeof d.remaining === "number") setAskLeft(d.remaining, d.limit);
@@ -2992,6 +3056,7 @@ applyTheme(recall(THEME_KEY,null));
         cacheStats();
         loadSwitches();
         refreshAskAllowance();
+        loadClaudeLog();
         loadAllows();
         loadSite();
         loadRooms();
