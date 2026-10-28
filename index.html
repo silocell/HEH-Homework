@@ -1167,6 +1167,10 @@ footer{
   opacity:.55;
 }
 .playcard:hover{transform:translateY(-2px)}
+.shopcard{background:linear-gradient(110deg,#b45309 0%,#db2777 55%,#7c3aed 100%);box-shadow:0 10px 30px -12px rgba(219,39,119,.7)}
+.shopicon{flex:0 0 auto;z-index:1;font-size:2rem;line-height:1;filter:drop-shadow(0 3px 0 rgba(0,0,0,.18))}
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]) .shopcard{background:linear-gradient(110deg,#78350f 0%,#831843 55%,#4c1d95 100%)} }
+:root[data-theme="dark"] .shopcard{background:linear-gradient(110deg,#78350f 0%,#831843 55%,#4c1d95 100%)}
 .playcard{transition:transform .14s}
 .playwords{display:flex;flex-direction:column;gap:3px;min-width:0;flex:1 1 auto;z-index:1}
 .playwords strong{font-family:var(--font-display);font-size:1.4rem;letter-spacing:-.02em;line-height:1}
@@ -1364,6 +1368,15 @@ footer{
     <span class="playgo">Play</span>
   </a>
 
+  <a class="playcard shopcard" id="shopCard" href="https://shop.civilinitiatives.org/">
+    <span class="shopicon" aria-hidden="true">🛍️</span>
+    <span class="playwords">
+      <strong>Launchpad Shop</strong>
+      <span id="shopBal">Spend your pence and Pounds, trade with friends and see your wallet.</span>
+    </span>
+    <span class="playgo">Shop</span>
+  </a>
+
   <nav id="jumpBar" aria-label="Jump to a section" hidden></nav>
 
   <div class="panel reader" id="reader" hidden>
@@ -1549,8 +1562,8 @@ footer{
 <script src="polish.js?b=20261021194235"></script>
 <script src="level-practice.js?b=20261024a"></script>
 <script src="extras.js?b=20261027r"></script>
-<script src="avatar.js?b=20261028c"></script>
-<script src="profile.js?b=20261028e"></script>
+<script src="avatar.js?b=20261028d"></script>
+<script src="profile.js?b=20261028f"></script>
 <script>
 /* ?v=<number> is how a reload dodges the cache - after an update, or when
    the site opens or closes. By the time anyone can see the page it has

@@ -1,6 +1,6 @@
 /* =====================================================================
    Your profile, in the top bar of the dashboard: your picture, name,
-   account email, points, Launchpad Pounds and achievements - and the
+   account email, pence, Launchpad Pounds and achievements - and the
    way into the Launchpad Shop (shop.civilinitiatives.org), where you
    buy and wear things.
 
@@ -34,6 +34,8 @@
   function setState(st){
     S = st; keep({ look: st.look, pts: st.pts, pounds: st.pounds, role: st.role });
     paintButton();
+    var sb2 = document.getElementById("shopBal");
+    if (sb2 && st.pts != null) sb2.textContent = "You have " + Number(st.pts).toLocaleString() + "p and 🪙 " + Number(st.pounds || 0).toLocaleString() + " - spend, trade, or check your wallet.";
     var me = user().uid;
     if (me && st.look) { LOOKS[me] = { look: st.look, at: Date.now() }; redecorate(me); }
     if (A()) A().ready.then(function(){ A().applyTheme(S.look); });
@@ -111,7 +113,7 @@
     who.appendChild(el("span", "pf-email", user().email || ""));
     if (S) {
       var bank = el("span", "pf-pts");
-      bank.appendChild(el("span", null, "⭐ " + (S.pts || 0).toLocaleString() + " points"));
+      bank.appendChild(el("span", null, (S.pts || 0).toLocaleString() + "p"));
       bank.appendChild(el("span", "pf-lp", "🪙 " + (S.pounds || 0) + " Launchpad Pound" + (S.pounds === 1 ? "" : "s")));
       who.appendChild(bank);
     }
@@ -141,21 +143,20 @@
   }
 
   function paintEarning(sheet){
-    var r = S.rules || { perPound:20, subjectCap:2, dayCap:5 };
     var today = S.today || [];
-    var got = today.reduce(function(n, t){ return n + t.pounds; }, 0);
     var box = el("div", "pf-today");
-    box.appendChild(el("b", null, "Today: 🪙 " + Math.min(got, r.dayCap) + " of " + r.dayCap));
-    box.appendChild(el("p", null, "Every " + r.perPound + " right answers in a subject earns a Launchpad Pound - up to " + r.subjectCap +
-      " per subject and " + r.dayCap + " a day. Level Up, Word Dragons, Times Table Tycoon, Map Quest, Battle Stories and flash cards all count."));
+    var right = today.reduce(function(n, t){ return n + t.correct; }, 0);
+    box.appendChild(el("b", null, "Today: " + right + " right answer" + (right === 1 ? "" : "s") + " = " + right + "p"));
+    box.appendChild(el("p", null, "Pence (p): 1p for every right answer in the learning games (Level Up, Word Dragons, Times Table Tycoon, Map Quest, Battle Stories, flash cards), " +
+      "and 1-3p a round in the Arcade and Scratch games (up to 10p per game a day)."));
+    box.appendChild(el("p", null, "🪙 Launchpad Pounds are rare: every right answer has a small lucky chance of one (up to 3 a day), and achievements always pay them. The fun games never do."));
     today.forEach(function(t){
       var row = el("div", "pf-subj");
       row.appendChild(el("span", null, t.subject.charAt(0).toUpperCase() + t.subject.slice(1)));
-      var n = t.pounds >= r.subjectCap ? "done for today" : (r.perPound - t.correct % r.perPound) + " more right for the next 🪙";
-      row.appendChild(el("small", null, t.correct + " right · " + n));
+      row.appendChild(el("small", null, t.correct + " right today"));
       box.appendChild(row);
     });
-    var lu = el("a", "pf-earn", "⭐ Earn points in Level Up →"); lu.href = LEVELUP;
+    var lu = el("a", "pf-earn", "Earn pence in Level Up →"); lu.href = LEVELUP;
     box.appendChild(lu);
     sheet.appendChild(box);
   }

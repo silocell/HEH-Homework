@@ -3,7 +3,7 @@
    dashboard, the shop (shop.civilinitiatives.org) and anywhere else a
    picture appears.
 
-   A look is: style ("emoji" or a DiceBear style) + that style's parts,
+   A look is: style ("emoji", "photo" or a DiceBear style) + that style's parts,
    background, pattern, frame, hat, sticker, name colour and theme. The catalogue (shop-catalog.json, built from
    shop-build/gen.mjs) says what each item id looks like.
 
@@ -25,7 +25,7 @@
   var PKG = { adventurer:"adventurer", bigEars:"big-ears", pixelArt:"pixel-art", openPeeps:"open-peeps", lorelei:"lorelei", bottts:"bottts" };
   var CAT = null, BY = {}, styleMods = {}, core = null, svgCache = {};
 
-  var ready = fetch(BASE + "shop-catalog.json?v=3", { cache:"force-cache" }).then(function(r){ return r.json(); }).then(function(c){
+  var ready = fetch(BASE + "shop-catalog.json?v=4", { cache:"force-cache" }).then(function(r){ return r.json(); }).then(function(c){
     CAT = c; c.items.forEach(function(i){ BY[i.id] = i; }); return c;
   });
 
@@ -79,7 +79,11 @@
     var base = bg && bg.v ? bg.v : "linear-gradient(135deg,#60a5fa,#2563eb)";
     disc.style.background = pat && pat.v ? pat.v + "," + base : base;
     var style = look.style || "emoji";
-    if (style !== "emoji" && PKG[style] && look.chars && look.chars[style]) {
+    /* An uploaded photo (only sent once the owner has approved it). */
+    if (style === "photo" && typeof look.photo === "string" && /^data:image\/(jpeg|png|webp);base64,/.test(look.photo)) {
+      var ph = el("img", "hla-char hla-photo"); ph.alt = ""; ph.draggable = false; ph.src = look.photo;
+      disc.appendChild(ph);
+    } else if (style !== "emoji" && PKG[style] && look.chars && look.chars[style]) {
       var ch = el("img", "hla-char"); ch.alt = "";
       disc.appendChild(ch);
       charSvg(style, look.chars[style]).then(function(uri){ ch.src = uri; }, function(){
@@ -145,6 +149,7 @@
     ".hla-init{font-weight:800;font-size:calc(var(--s) * .44);line-height:1;font-family:var(--font-display,system-ui);text-shadow:0 1px 2px rgba(0,0,0,.25)}" +
     ".hla-disc .hla-emo{width:62%;height:62%}" +
     ".hla-char{width:100%;height:100%;display:block}" +
+    ".hla-photo{object-fit:cover}" +
     ".hla-hat{position:absolute;left:50%;top:calc(var(--s) * -.30);transform:translateX(-50%) rotate(-8deg);width:calc(var(--s) * .5);height:calc(var(--s) * .5);pointer-events:none}" +
     ".hla-stk{position:absolute;right:calc(var(--s) * -.08);bottom:calc(var(--s) * -.06);width:calc(var(--s) * .36);height:calc(var(--s) * .36);pointer-events:none;filter:drop-shadow(0 1px 1px rgba(0,0,0,.35))}" +
     ".hla-hat img,.hla-stk img{width:100%;height:100%;display:block}" +
