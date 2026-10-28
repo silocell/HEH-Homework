@@ -430,13 +430,28 @@ button,input,select,textarea{font:inherit;color:inherit}
 
 /* ---------- SHELL ---------- */
 .shell{max-width:1120px;margin:0 auto;padding:28px 20px 72px}
+/* The top bar floats: a rounded, frosted strip with soft pill buttons
+   rather than a ruled-off row of outlined boxes. */
 .topbar{
-  padding-top:12px;padding-bottom:12px;
-  background:var(--paper);
-  border-bottom:1px solid var(--rule);
-
+  padding:8px 8px 8px 18px;
+  background:color-mix(in srgb, var(--card) 80%, transparent);
+  -webkit-backdrop-filter:saturate(1.5) blur(14px);backdrop-filter:saturate(1.5) blur(14px);
+  border:1px solid color-mix(in srgb, var(--rule) 65%, transparent);
+  border-radius:20px;
+  box-shadow:0 10px 30px -20px rgba(15,23,42,.55),0 1px 2px rgba(15,23,42,.05);
   display:flex;align-items:center;justify-content:space-between;
-  gap:16px;flex-wrap:wrap;margin-bottom:26px;
+  gap:12px;flex-wrap:wrap;margin-bottom:26px;
+}
+.topbar .ghost-btn,.topbar .sync{
+  border-color:transparent;border-radius:999px;
+  background:color-mix(in srgb, var(--ink) 6%, transparent);
+}
+.topbar .ghost-btn{padding:7px 14px;font-weight:600;transition:background .15s,color .15s}
+.topbar .ghost-btn:hover{background:var(--accent-soft);color:var(--accent);border-color:transparent}
+.topbar .ghost-btn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media (max-width:480px){
+  .topbar{padding:8px 8px 8px 14px;border-radius:16px;gap:8px}
+  .topbar .ghost-btn{padding:6px 11px}
 }
 .brand{
   font-family:var(--font-display);
@@ -738,7 +753,7 @@ body.gsc-overflow-hidden{overflow:auto!important}
    would sit on a fifth of the screen for ever; the top is one flick of
    the thumb away there anyway. */
 @media (min-width:900px){
-  .topbar{position:sticky;top:0;z-index:50}
+  .topbar{position:sticky;top:10px;z-index:50}
 }
 
 /* Two tiles across on a phone instead of a single column eleven long. */
