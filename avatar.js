@@ -25,7 +25,7 @@
   var PKG = { adventurer:"adventurer", bigEars:"big-ears", pixelArt:"pixel-art", openPeeps:"open-peeps", lorelei:"lorelei", bottts:"bottts" };
   var CAT = null, BY = {}, styleMods = {}, core = null, svgCache = {};
 
-  var ready = fetch(BASE + "shop-catalog.json?v=9", { cache:"force-cache" }).then(function(r){ return r.json(); }).then(function(c){
+  var ready = fetch(BASE + "shop-catalog.json?v=10", { cache:"force-cache" }).then(function(r){ return r.json(); }).then(function(c){
     CAT = c; c.items.forEach(function(i){ BY[i.id] = i; }); return c;
   });
 
