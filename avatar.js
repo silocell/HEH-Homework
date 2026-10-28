@@ -25,7 +25,7 @@
   var PKG = { adventurer:"adventurer", bigEars:"big-ears", pixelArt:"pixel-art", openPeeps:"open-peeps", lorelei:"lorelei", bottts:"bottts" };
   var CAT = null, BY = {}, styleMods = {}, core = null, svgCache = {};
 
-  var ready = fetch(BASE + "shop-catalog.json?v=11", { cache:"force-cache" }).then(function(r){ return r.json(); }).then(function(c){
+  var ready = fetch(BASE + "shop-catalog.json?v=12", { cache:"force-cache" }).then(function(r){ return r.json(); }).then(function(c){
     CAT = c; c.items.forEach(function(i){ BY[i.id] = i; }); return c;
   });
 
@@ -70,14 +70,34 @@
     var bg = BY[look.bg], pat = BY[look.pattern], frame = BY[look.frame], hat = BY[look.hat], stk = BY[look.sticker];
     var wrap = el("span", "hla"); wrap.style.setProperty("--s", size + "px"); wrap.setAttribute("aria-hidden", "true");
     var ring = el("span", "hla-ring");
-    if (frame && frame.v) {
+    var f3 = frame && frame.v && frame.v.indexOf("3d:") === 0 ? frame.v.slice(3).split("|") : null;
+    if (f3) {
+      /* 3D frames: "3d:orbit|ring|colour", "3d:atom|ring|colour", "3d:holo|ring|colour" */
+      ring.classList.add("on"); ring.style.background = f3[1];
+      wrap.classList.add("hla-3d", "hla-k-" + f3[0]); wrap.style.setProperty("--oc", f3[2] || "#fde68a");
+      var rings = f3[0] === "atom" ? 3 : f3[0] === "orbit" ? 1 : 0;
+      /* Each orbit is drawn twice: the whole ring behind the picture, and its
+         near half again in front - so the ring really goes round it. */
+      for (var oi = 0; oi < rings * 2; oi++) {
+        var front = oi >= rings, k = oi % rings;
+        var orb = el("span", "hla-orbit" + (front ? " front" : "")); orb.style.setProperty("--tilt", (k * 60 - (rings > 1 ? 0 : 18)) + "deg");
+        var mv = el("b"); mv.style.animationDelay = (-k * 1.1) + "s"; mv.appendChild(el("i")); orb.appendChild(mv);
+        wrap.appendChild(orb);
+      }
+    } else if (frame && frame.v) {
       ring.classList.add("on");
       if (frame.v.indexOf("spin:") === 0) { var sp = el("span", "hla-spin"); sp.style.background = frame.v.slice(5); ring.appendChild(sp); }
       else ring.style.background = frame.v;
     }
     var disc = el("span", "hla-disc");
     var base = bg && bg.v ? bg.v : "linear-gradient(135deg,#60a5fa,#2563eb)";
-    disc.style.background = pat && pat.v ? pat.v + "," + base : base;
+    if (base.indexOf("3d:planet|") === 0) {
+      /* A 3D planet: a map that rolls round behind a shaded ball. */
+      disc.style.background = "#020617";
+      var pl = el("span", "hla-layer hla-planet"); pl.style.backgroundImage = base.split("|")[1]; disc.appendChild(pl);
+      disc.appendChild(el("span", "hla-layer hla-shade"));
+    } else disc.style.background = pat && pat.v ? pat.v + "," + base : base;
+    if (f3 && f3[0] === "holo") disc.appendChild(el("span", "hla-layer hla-scan"));
     var style = look.style || "emoji";
     /* An uploaded photo (only sent once the owner has approved it). */
     if (style === "photo" && typeof look.photo === "string" && /^data:image\/(jpeg|png|webp);base64,/.test(look.photo)) {
@@ -144,7 +164,21 @@
     ".hla-ring.on{padding:calc(var(--s) * .07)}" +
     ".hla-spin{position:absolute;inset:-25%;animation:hlaspin 4s linear infinite}" +
     "@keyframes hlaspin{to{transform:rotate(1turn)}}" +
-    "@media (prefers-reduced-motion:reduce){.hla-spin{animation:none}}" +
+    ".hla-disc>*{position:relative;z-index:1}.hla-disc>.hla-layer{position:absolute;inset:0;z-index:0;pointer-events:none}" +
+    ".hla-planet{background-size:calc(var(--s) * 2) 100%;background-repeat:repeat-x;animation:hlaroll 14s linear infinite}" +
+    "@keyframes hlaroll{to{background-position:calc(var(--s) * -2) 0}}" +
+    ".hla-shade{border-radius:50%;background:radial-gradient(circle at 34% 30%,rgba(255,255,255,.35),transparent 38%),radial-gradient(circle,transparent 52%,rgba(2,6,23,.85) 100%);box-shadow:inset 0 0 calc(var(--s) * .08) rgba(125,211,252,.8)}" +
+    ".hla-disc>.hla-scan{z-index:2;background:repeating-linear-gradient(0deg,rgba(103,232,249,.28) 0 1px,transparent 1px 4px);animation:hlascan 1.6s linear infinite}" +
+    "@keyframes hlascan{to{background-position:0 calc(var(--s) * .2)}}" +
+    ".hla-3d .hla-ring{z-index:1}" +
+    ".hla-orbit{position:absolute;inset:-16%;border-radius:50%;border:calc(var(--s) * .03 + 1px) solid var(--oc);box-shadow:0 0 calc(var(--s) * .08) var(--oc);pointer-events:none;" +
+    "z-index:0;transform:perspective(calc(var(--s) * 4)) rotateZ(var(--tilt)) rotateX(72deg)}" +
+    ".hla-orbit.front{z-index:2;clip-path:inset(50% -20% -20% -20%)}" +
+    ".hla-orbit b{position:absolute;inset:0;animation:hlaorb 3.4s linear infinite}@keyframes hlaorb{to{transform:rotate(1turn)}}" +
+    ".hla-orbit i{position:absolute;left:50%;top:0;width:18%;height:18%;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle at 35% 35%,#fff,var(--oc) 50%,rgba(0,0,0,.6))}" +
+    ".hla-k-holo{animation:hlaholo 5s ease-in-out infinite}.hla-k-holo .hla-ring{box-shadow:0 0 calc(var(--s) * .14) var(--oc)}" +
+    "@keyframes hlaholo{0%,100%{transform:perspective(calc(var(--s) * 3)) rotateY(-24deg) rotateX(6deg)}50%{transform:perspective(calc(var(--s) * 3)) rotateY(24deg) rotateX(-6deg)}}" +
+    "@media (prefers-reduced-motion:reduce){.hla-spin,.hla-planet,.hla-scan,.hla-orbit b,.hla-k-holo{animation:none}}" +
     ".hla-disc{position:relative;display:grid;place-items:center;width:100%;height:100%;border-radius:50%;overflow:hidden;color:#fff}" +
     ".hla-init{font-weight:800;font-size:calc(var(--s) * .44);line-height:1;font-family:var(--font-display,system-ui);text-shadow:0 1px 2px rgba(0,0,0,.25)}" +
     ".hla-disc .hla-emo{width:62%;height:62%}" +
