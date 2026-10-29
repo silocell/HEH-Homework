@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Get the Launchpad app</title>
+<meta name="description" content="Homework Launchpad as an app for Android, iPhone, iPad, Mac, Windows and Linux.">
+<link rel="icon" type="image/png" href="../favicon.png">
+<style>
+:root{
+  --bg:#f6f5f1; --card:#ffffff; --ink:#151827; --soft:#5b6178; --line:#e4e2da;
+  --brand:#3730a3; --brand2:#4f46e5; --amber:#f59e0b; --pink:#ec4899; --chip:#eef2ff;
+}
+@media (prefers-color-scheme:dark){
+  :root{ --bg:#11141b; --card:#1a1e29; --ink:#eef1ff; --soft:#a5adcf; --line:#2a3040; --chip:#252b45; }
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+a{color:var(--brand2)}
+.wrap{max-width:980px;margin:0 auto;padding:0 16px 60px}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 0}
+header a.back{font-weight:700;text-decoration:none;padding:8px 14px;border:1px solid var(--line);border-radius:999px;color:var(--ink);background:var(--card)}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800}
+.brand img{width:34px;height:34px;border-radius:9px}
+.hero{border-radius:28px;padding:38px 28px;margin:6px 0 26px;color:#fff;background:radial-gradient(120% 140% at 85% 0%,#7c3aed 0%,#3730a3 45%,#1e1b4b 100%);position:relative;overflow:hidden}
+.hero h1{margin:0 0 8px;font-size:clamp(1.9rem,5vw,2.8rem);letter-spacing:-.02em;line-height:1.1}
+.hero p{margin:0;max-width:560px;color:#c7d2fe;font-size:1.05rem}
+.hero .rocket{position:absolute;right:24px;bottom:-6px;font-size:110px;opacity:.9;transform:rotate(-12deg)}
+@media (max-width:620px){ .hero .rocket{display:none} }
+.mine{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-top:22px}
+.big{display:inline-flex;align-items:center;gap:10px;padding:14px 22px;border-radius:16px;font-weight:800;font-size:1.05rem;color:#fff;text-decoration:none;background:linear-gradient(90deg,var(--amber),var(--pink));box-shadow:0 12px 30px -12px var(--pink)}
+.mine small{color:#c7d2fe}
+h2{font-size:1.25rem;margin:30px 0 12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;align-items:start}
+.card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:18px 18px 16px;display:flex;flex-direction:column;gap:10px}
+.card.you{outline:3px solid var(--amber);outline-offset:-1px}
+.card h3{margin:0;display:flex;align-items:center;gap:10px;font-size:1.1rem}
+.card h3 .ico{font-size:1.5rem}
+.card .tag{margin-left:auto;font-size:.72rem;font-weight:800;padding:3px 9px;border-radius:999px;background:var(--chip);color:var(--brand2)}
+.card.you .tag{background:var(--amber);color:#fff}
+.card p{margin:0;color:var(--soft);font-size:.92rem}
+.dl{display:flex;flex-wrap:wrap;gap:8px;margin-top:auto}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:10px 14px;border-radius:12px;font-weight:700;text-decoration:none;background:var(--brand);color:#fff;font-size:.92rem}
+.btn.alt{background:var(--chip);color:var(--brand2)}
+.btn small{font-weight:600;opacity:.75}
+details{border-top:1px solid var(--line);padding-top:8px}
+summary{cursor:pointer;font-weight:700;font-size:.9rem;color:var(--brand2)}
+details ol{margin:8px 0 0;padding-left:20px;color:var(--soft);font-size:.9rem}
+details li{margin:4px 0}
+code{background:var(--chip);padding:1px 6px;border-radius:6px;font-size:.85em;word-break:break-all}
+.note{margin-top:28px;padding:16px 18px;border-radius:16px;background:var(--card);border:1px solid var(--line);color:var(--soft);font-size:.9rem}
+footer{margin-top:24px;color:var(--soft);font-size:.82rem;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand"><img src="../favicon.png" alt="">Homework Launchpad</div>
+    <a class="back" href="../">← Back to the Launchpad</a>
+  </header>
+
+  <section class="hero">
+    <h1>Get the Launchpad app</h1>
+    <p>Your homework, learning games, the shop and Rocket Rush 3D in their own app, with no browser around them. The same account and the same pence as on the website.</p>
+    <div class="mine" id="mine"></div>
+    <div class="rocket" aria-hidden="true">🚀</div>
+  </section>
+
+  <h2>All the apps</h2>
+  <div class="grid" id="grid"></div>
+
+  <div class="note">
+    <b>Why does my device warn me?</b> These apps aren't in the App Store, Google Play or the Microsoft Store yet, so your device shows a warning the first time. That's normal for apps you download straight from a website. The steps under each download show how to say "yes, open it".
+  </div>
+  <footer>© 2026 silocell. All rights reserved.</footer>
+</div>
+
+<script>
+(function(){
+  var V = "2.1";
+  var APPS = [
+    { id:"android", ico:"🤖", name:"Android", sub:"Phones and tablets",
+      files:[{ href:"HomeworkLaunchpad.apk", label:"Download APK", size:"1.5 MB" }],
+      blurb:"Rocket Rush is built right into the app: lighter on phones, extra sparkly on tablets.",
+      steps:["Tap <b>Download APK</b>, then open the file.","If Android asks, allow your browser to <b>install unknown apps</b>.","Tap <b>Install</b>, then <b>Open</b>."] },
+    { id:"ios", ico:"📱", name:"iPhone & iPad", sub:"Sideload with a computer",
+      files:[{ href:"HomeworkLaunchpad.ipa", label:"Download IPA", size:"1.7 MB" }],
+      blurb:"Apple only lets apps outside the App Store in through a computer. It takes about 5 minutes the first time.",
+      steps:["On a Windows PC or Mac, install <b>Sideloadly</b> from sideloadly.io (on Windows also iTunes and iCloud from apple.com, not the Microsoft Store).","Download the IPA onto that computer and plug in the iPhone or iPad. Tap <b>Trust</b> on it.","In Sideloadly drag in the IPA, type an Apple ID and press <b>Start</b>.","On the device: <b>Settings → Privacy &amp; Security → Developer Mode → On</b> (it restarts).","Then <b>Settings → General → VPN &amp; Device Management</b> → your Apple ID → <b>Trust</b>.","With a free Apple ID it lasts 7 days: plug in and press Start again to renew."] },
+    { id:"mac", ico:"💻", name:"Mac", sub:"macOS 11 or newer",
+      files:[{ href:"HomeworkLaunchpad.dmg", label:"Download DMG", size:"1.5 MB" }],
+      blurb:"The same app as on iPad, made for the Mac, with the rich version of Rocket Rush.",
+      steps:["Open the DMG and drag <b>Homework Launchpad</b> into Applications.","Open it once. macOS will say it can't check it. Press <b>Done</b>.","Go to <b>System Settings → Privacy &amp; Security</b>, scroll down and press <b>Open Anyway</b>."] },
+    { id:"windows", ico:"🪟", name:"Windows", sub:"Windows 10 and 11",
+      files:[{ href:"HomeworkLaunchpad.exe", label:"Download EXE", size:"1.4 MB" }],
+      blurb:"One small file, nothing to install. Rocket Rush runs at its highest quality on PCs.",
+      steps:["Download and open <b>HomeworkLaunchpad.exe</b>.","If a blue <b>Windows protected your PC</b> box appears, press <b>More info → Run anyway</b>.","Tip: right-click it on the taskbar and choose <b>Pin to taskbar</b>."] },
+    { id:"linux", ico:"🐧", name:"Linux", sub:"Ubuntu, Debian and others",
+      files:[{ href:"homework-launchpad_2.0_amd64.deb", label:".deb", size:"Ubuntu / Debian" },
+             { href:"HomeworkLaunchpad-x86_64.AppImage", label:"AppImage", size:"any Linux" },
+             { href:"homework-launchpad_2.0_amd64.snap", label:"Snap", size:"" }],
+      blurb:"For 64-bit PCs. Pick the .deb on Ubuntu and Debian, or the AppImage anywhere else.",
+      steps:[".deb: <code>sudo apt install ./homework-launchpad_2.0_amd64.deb</code>","AppImage: <code>chmod +x HomeworkLaunchpad-x86_64.AppImage</code> then double-click it (needs WebKitGTK 4.1, already on most desktops).","Snap: <code>sudo snap install --dangerous ./homework-launchpad_2.0_amd64.snap</code>"] }
+  ];
+
+  var ua = navigator.userAgent, plat = navigator.platform || "";
+  var mine = /Android/i.test(ua) ? "android"
+    : (/iPhone|iPad|iPod/.test(ua) || (/Mac/.test(plat) && navigator.maxTouchPoints > 1)) ? "ios"
+    : /Mac/.test(plat) ? "mac"
+    : /Win/.test(plat) ? "windows"
+    : /Linux|X11/.test(plat + ua) ? "linux" : "";
+
+  function esc(s){ return String(s).replace(/[&<>"]/g, function(c){ return { "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" }[c]; }); }
+  var grid = document.getElementById("grid"), html = "";
+  APPS.sort(function(a, b){ return (b.id === mine) - (a.id === mine); }).forEach(function(a){
+    html += '<article class="card' + (a.id === mine ? " you" : "") + '" id="' + a.id + '">' +
+      '<h3><span class="ico">' + a.ico + '</span>' + esc(a.name) + '<span class="tag">' + (a.id === mine ? "Your device" : esc(a.sub)) + '</span></h3>' +
+      '<p>' + esc(a.blurb) + '</p>' +
+      '<div class="dl">' + a.files.map(function(f, i){
+        return '<a class="btn' + (i ? " alt" : "") + '" href="' + f.href + '" download>⬇ ' + esc(f.label) + (f.size ? ' <small>' + esc(f.size) + '</small>' : "") + '</a>';
+      }).join("") + '</div>' +
+      '<details' + (a.id === mine ? " open" : "") + '><summary>How to install</summary><ol>' + a.steps.map(function(s){ return "<li>" + s + "</li>"; }).join("") + '</ol></details>' +
+      '</article>';
+  });
+  grid.innerHTML = html;
+
+  var m = document.getElementById("mine");
+  var me = APPS.filter(function(a){ return a.id === mine; })[0];
+  if (me) m.innerHTML = '<a class="big" href="' + me.files[0].href + '" download>⬇ Download for ' + esc(me.name) + '</a><small>Version ' + V + ' · <a href="#' + me.id + '" style="color:#fde68a">how to install</a></small>';
+  else m.innerHTML = '<small>Pick your device below.</small>';
+  if (window.LaunchpadApp) m.innerHTML = '<small>You already have the app. 🎉 Grab it for your other devices below.</small>';
+})();
+</script>
+</body>
+</html>
