@@ -1630,6 +1630,70 @@ try{
   }
 }catch(e){ sb = null; }
 
+/* ==================================================================
+   The Launchpad apps (Android, Windows, iPad/iPhone).
+   Google won't let anyone sign in inside an app's own web view, so an
+   app opens this page in the real browser as
+     ?applogin=google|azure&ret=android|ios|win
+   We note that, start the sign-in here, and when the browser comes back
+   signed in, hand the sign-in to the app: on Android through an intent
+   that can only reach our app, elsewhere through hehlaunchpad://.
+   The app then opens ?appsession=1#at=...&rt=... inside itself, and the
+   sign-in is saved there. Then this browser forgets it (only here - the
+   app stays signed in).
+   ================================================================== */
+(function(){
+  if(!sb) return;
+  var q; try{ q = new URLSearchParams(location.search); }catch(e){ return; }
+  var KEY = "hehAppLogin";
+  var want = q.get("applogin"), ret = q.get("ret");
+  if(want === "google" || want === "azure"){
+    window.__appLoginBusy = true;
+    try{ localStorage.setItem(KEY, JSON.stringify({ at:Date.now(), ret:(ret === "ios" || ret === "win") ? ret : "android" })); }catch(e){}
+    var opts = { redirectTo: location.origin + "/" };
+    if(want === "azure") opts.scopes = "email";
+    sb.auth.signInWithOAuth({ provider:want, options:opts });
+    return;
+  }
+  if(q.get("appsession") && location.hash.length > 1){
+    var h = new URLSearchParams(location.hash.slice(1)), at = h.get("at"), rt = h.get("rt");
+    try{ history.replaceState(null, "", "/"); }catch(e){}
+    if(at && rt){
+      window.__appLoginBusy = true;
+      sb.auth.setSession({ access_token:at, refresh_token:rt }).then(function(){ location.replace("/"); }, function(){ location.replace("/"); });
+    }
+    return;
+  }
+  var pend = null;
+  try{ pend = JSON.parse(localStorage.getItem(KEY) || "null"); }catch(e){}
+  if(!pend || Date.now() - pend.at > 15 * 60000) return;
+  sb.auth.getSession().then(function(r){
+    var s = r && r.data && r.data.session;
+    if(!s) return;
+    try{ localStorage.removeItem(KEY); }catch(e){}
+    var at = encodeURIComponent(s.access_token), rt = encodeURIComponent(s.refresh_token);
+    var href = pend.ret === "android"
+      ? "intent://login#Intent;scheme=hehlaunchpad;package=org.civilinitiatives.launchpad;S.at=" + at + ";S.rt=" + rt + ";end"
+      : "hehlaunchpad://login#at=" + at + "&rt=" + rt;
+    var box = document.createElement("div");
+    box.style.cssText = "position:fixed;inset:0;z-index:100000;display:grid;place-items:center;background:rgba(10,12,30,.92);padding:24px;font-family:system-ui,sans-serif";
+    box.innerHTML = '<div style="max-width:380px;text-align:center;color:#fff"><div style="font-size:3rem">🚀</div>' +
+      '<h2 style="margin:8px 0">You\'re signed in</h2><p style="color:#c7d2fe">Tap below to go back to the Homework Launchpad app.</p>' +
+      '<a id="appBack" style="display:inline-block;margin-top:12px;padding:14px 24px;border-radius:14px;background:linear-gradient(90deg,#f59e0b,#ec4899);color:#fff;font-weight:800;text-decoration:none">Back to the app</a>' +
+      '<p id="appDone" style="color:#a5b4fc;font-size:.9rem;margin-top:16px"></p></div>';
+    document.body.appendChild(box);
+    var a = document.getElementById("appBack");
+    a.href = href;
+    a.addEventListener("click", function(){
+      setTimeout(function(){
+        sb.auth.signOut({ scope:"local" }).catch(function(){});
+        document.getElementById("appDone").textContent = "Done - you can close this tab.";
+      }, 1500);
+    });
+    if(pend.ret === "ios") location.href = href;      /* the iOS sign-in sheet catches this by itself */
+  });
+})();
+
 
 
 /* ==================================================================

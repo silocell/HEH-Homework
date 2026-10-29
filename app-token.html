@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><title>Launchpad app</title>
+<meta name="robots" content="noindex">
+<!-- Used only inside the Launchpad apps: hands the app a fresh sign-in token
+     for its native screens (like the Rocket Rush game). Shows nothing. -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.0/dist/umd/supabase.js"></script>
+<script src="auth-store.js?b=20261026a"></script>
+</head><body>
+<script>
+(function(){
+  var sb = window.supabase.createClient("https://hehs-live.duckdns.org",
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzkyODMyMjkwLCJleHAiOjIxMDgxOTIyOTB9.7gFhQa5RBwVtiOPLO7Qf2-aVEbkd5xgpLiN1J06Gybo",
+    { auth:{ persistSession:true, autoRefreshToken:true, storage:(window.HEHAuth && window.HEHAuth.storage) || undefined } });
+  function post(msg){
+    try{
+      if(window.LaunchpadApp && window.LaunchpadApp.token) window.LaunchpadApp.token(msg);
+      else if(window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.launchpad) window.webkit.messageHandlers.launchpad.postMessage(msg);
+      else if(window.chrome && window.chrome.webview) window.chrome.webview.postMessage(msg);
+    }catch(e){}
+  }
+  function send(){
+    sb.auth.getSession().then(function(r){
+      var s = r && r.data && r.data.session;
+      post(s ? JSON.stringify({ at:s.access_token, exp:s.expires_at || 0 }) : "null");
+    }, function(){ post("null"); });
+  }
+  send();
+  setInterval(send, 4 * 60 * 1000);
+  window.appTokenNow = send;
+})();
+</script>
+</body></html>
