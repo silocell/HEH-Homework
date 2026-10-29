@@ -1,0 +1,4 @@
+{
+  "windows": { "version": "2.1.0", "url": "https://civilinitiatives.org/app/HomeworkLaunchpad.exe", "sha256": "b9e83b9e53a8db1fccdfdebc96c550bb826a8f68a3c287b420364c0d4ebf9d65" },
+  "android": { "version": "2.1.0", "code": 5, "url": "https://civilinitiatives.org/app/HomeworkLaunchpad.apk" }
+}
