@@ -2322,6 +2322,22 @@ if(location.hash === "#spare"){
   var spare = document.getElementById("spareWrap");
   if(spare) spare.hidden = false;
 }
+/* The same spare door without typing #spare (the apps have no address
+   bar): tap the "Homework Launchpad" title 5 times within 3 seconds. */
+(function(){
+  var h = document.querySelector("#gate .gate-card h1"), taps = [];
+  if(!h) return;
+  h.style.webkitUserSelect = "none"; h.style.userSelect = "none";
+  h.addEventListener("click", function(){
+    var now = Date.now();
+    taps = taps.filter(function(t){ return now - t < 3000; }); taps.push(now);
+    if(taps.length >= 5){
+      taps = [];
+      var w = document.getElementById("spareWrap");
+      if(w){ w.hidden = false; var g = document.getElementById("googleBtn"); if(g) g.focus(); }
+    }
+  });
+})();
 
 var msBtn = document.getElementById("msBtn");
 if(msBtn) msBtn.addEventListener("click", function(){
