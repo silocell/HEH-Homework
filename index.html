@@ -1622,7 +1622,7 @@ footer{
 
   <footer>
     Word of the day changes at midnight.
-    <span> · <a href="sandbox/">🎮 Game Maker</a></span>
+    <span> · <a href="https://sandbox.civilinitiatives.org/">🎮 Game Maker</a></span>
     <span id="getApp"> · <a href="app/">📲 Get the Launchpad app</a></span>
     <script>if(window.LaunchpadApp||/LaunchpadApp\//.test(navigator.userAgent))document.getElementById("getApp").hidden=true;</script>
   </footer>
@@ -5297,7 +5297,7 @@ function gameNews(){
     d.ready.forEach(function(g){
       toast("\ud83c\udfae Your game \u201c" + g.title + "\u201d is ready in the Game Maker library!", "ok", {
         key: "game-" + g.id, action: "Play",
-        onAction: function(){ location.href = "/sandbox/#play=" + g.id; }
+        onAction: function(){ location.href = "https://sandbox.civilinitiatives.org/#play=" + g.id; }
       });
     });
   }, function(){});
