@@ -1622,6 +1622,7 @@ footer{
 
   <footer>
     Word of the day changes at midnight.
+    <span> · <a href="sandbox/">🎮 Game Maker</a></span>
     <span id="getApp"> · <a href="app/">📲 Get the Launchpad app</a></span>
     <script>if(window.LaunchpadApp||/LaunchpadApp\//.test(navigator.userAgent))document.getElementById("getApp").hidden=true;</script>
   </footer>
@@ -3172,6 +3173,7 @@ function openDashboard(who, supaUser){
   showOwnerButton();
   startChat();
   startBoard();
+  gameNews();
   /* Not on a phone: focusing a box there opens the keyboard over the page. */
   if(!(window.matchMedia && window.matchMedia("(pointer: coarse)").matches)){
     document.getElementById("searchInput").focus();
@@ -5283,6 +5285,22 @@ function chatOnScreen(){
   if(!p || p.hidden || document.hidden) return false;
   var r = p.getBoundingClientRect();
   return r.bottom > 60 && r.top < innerHeight - 60;
+}
+
+/* The Game Maker: a game finished while you were away (from the queue,
+   or built after the owner overruled the safeguard) - say so once. */
+function gameNews(){
+  if(!sb || !currentUser || currentUser.offline || !window.toast) return;
+  sb.functions.invoke("gamemaker", { body:{ action:"news" } }).then(function(r){
+    var d = r && r.data;
+    if(!d || !d.ready) return;
+    d.ready.forEach(function(g){
+      toast("\ud83c\udfae Your game \u201c" + g.title + "\u201d is ready in the Game Maker library!", "ok", {
+        key: "game-" + g.id, action: "Play",
+        onAction: function(){ location.href = "/sandbox/#play=" + g.id; }
+      });
+    });
+  }, function(){});
 }
 
 /* A new message somewhere you aren't looking: a notification that

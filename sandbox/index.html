@@ -65,6 +65,7 @@ textarea{min-height:140px;resize:vertical}
 .st{font-size:.8rem;font-weight:800;border-radius:999px;padding:3px 10px;white-space:nowrap}
 .st.queued{background:color-mix(in srgb,var(--gold) 20%,transparent);color:var(--gold)}
 .st.done{background:color-mix(in srgb,var(--good) 18%,transparent);color:var(--good)}
+.st.blocked{background:color-mix(in srgb,var(--bad) 15%,transparent);color:var(--bad)}
 .st.failed{background:color-mix(in srgb,var(--bad) 15%,transparent);color:var(--bad)}
 .note{background:color-mix(in srgb,var(--a1) 8%,var(--card));border:1px solid var(--rule);border-radius:14px;padding:12px 14px;font-size:.92rem;margin-top:14px}
 .banned{background:color-mix(in srgb,var(--bad) 10%,var(--card));border-color:color-mix(in srgb,var(--bad) 40%,var(--rule))}
@@ -208,14 +209,18 @@ function drawMake(box, base){
   if (INFO.pounds < price) { msg.className = "msg err"; msg.textContent = "You need " + (price - INFO.pounds) + " more Pounds. Earn them in the learning games (Level Up, Times Tables…) and from achievements."; }
   var note = h("div", "note");
   note.appendChild(h("b", null, "How it works: "));
-  note.appendChild(document.createTextNode(INFO.model + " builds it in the slow queue, which costs half as much. It's usually ready within the hour, sometimes longer. You can close this page, and it'll be waiting in My games. If it can't be made, you get your Pounds back. Games anyone reports get checked, and a game that gets taken down means no game making for a month."));
+  note.appendChild(document.createTextNode("First a safeguard reads your idea. If it's not OK for school - swearing (even disguised), real people, rude jokes and so on - it's blocked and you DON'T get your Pounds back; the owner checks every blocked idea. Then " + INFO.model + " builds it in the slow queue, which costs half as much: usually ready within the hour. You can close this page; you'll be told when it's ready. If it can't be built, you get your Pounds back. A game that gets reported and taken down means no game making for a month."));
   c.appendChild(note);
   go.onclick = function(){
     go.disabled = true; msg.className = "msg"; msg.textContent = "Checking your idea…";
     api({ action:"make", title:title.value, idea:idea.value, base: base ? base.id : undefined }).then(function(r){
       INFO.pounds = r.pounds; setBal(r.pounds);
       TAB = "mine"; BASE = null; draw();
-    }).catch(function(e){ msg.className = "msg err"; msg.textContent = e.message; go.disabled = false; });
+    }).catch(function(e){
+      msg.className = "msg err"; msg.textContent = e.message; go.disabled = false;
+      /* A blocked idea has been paid for: show the new balance. */
+      api({ action:"info" }).then(function(i){ INFO = i; setBal(i.pounds); }, function(){});
+    });
   };
   box.appendChild(c);
 }
@@ -230,17 +235,17 @@ function drawMine(box){
       var list = h("div", "mine"), waiting = false;
       d.games.forEach(function(g){
         var r = h("div", "mrow");
-        r.appendChild(h("span", "st " + g.status, g.status === "queued" ? "Being made…" : g.status === "done" ? "Ready" : "Didn't work"));
+        r.appendChild(h("span", "st " + g.status, g.status === "queued" ? "Being made…" : g.status === "done" ? "Ready" : g.status === "blocked" ? (g.review === "upheld" ? "Blocked" : "Blocked · being checked") : "Didn't work"));
         var w = h("div", "what"); w.appendChild(h("b", null, g.title));
         w.appendChild(h("div", "muted", g.status === "queued" ? "Started " + ago(g.created_at) + ". Usually ready within the hour." :
-          g.status === "failed" ? (g.note || "It couldn't be made.") : g.plays + " play" + (g.plays === 1 ? "" : "s") + " by others"));
+          g.status === "failed" || g.status === "blocked" ? (g.note || "It couldn't be made.") : g.plays + " play" + (g.plays === 1 ? "" : "s") + " by others"));
         r.appendChild(w);
         if (g.status === "queued") waiting = true;
         if (g.status === "done") {
           var p = h("button", "btn", "▶ Play"); p.type = "button"; p.onclick = function(){ play(g.id); }; r.appendChild(p);
           var ch = h("button", "ghost", "Change it"); ch.type = "button"; ch.onclick = function(){ TAB = "make"; BASE = g; draw(); }; r.appendChild(ch);
         }
-        if (g.status !== "queued") {
+        if (g.status === "done" || g.status === "failed") {
           var del = h("button", "ghost", "Delete"); del.type = "button";
           del.onclick = function(){
             if (del.dataset.armed !== "1") { del.dataset.armed = "1"; del.textContent = "Sure? Delete"; setTimeout(function(){ del.dataset.armed = ""; del.textContent = "Delete"; }, 4000); return; }
