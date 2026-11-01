@@ -1092,6 +1092,23 @@ body.gsc-overflow-hidden{overflow:auto!important}
   cursor:pointer;font-size:.9rem;line-height:1;padding:1px 5px;border-radius:5px;
 }
 .msg-del:hover{color:var(--margin);background:var(--card)}
+/* report: a small flag on other people's messages, posts and replies */
+.msg-rep{flex:none;background:none;border:none;color:var(--ink-faint);cursor:pointer;font-size:.72rem;line-height:1;padding:2px 5px;border-radius:5px;opacity:0;transition:opacity .15s}
+.msg:hover .msg-rep,.msg-rep:focus-visible,.reply:hover .msg-rep{opacity:1}
+@media (hover:none){ .msg-rep{opacity:.55} }
+.msg-rep:hover{color:var(--margin);background:var(--card)}
+.rep-back{position:fixed;inset:0;z-index:1000;background:rgba(10,12,24,.45);display:grid;place-items:center;padding:16px}
+.rep-card{width:100%;max-width:400px;background:var(--card);color:var(--ink);border:1px solid var(--rule);border-radius:16px;padding:18px 18px 14px;box-shadow:0 24px 60px -20px rgba(0,0,0,.5)}
+.rep-card h3{margin:0 0 4px;font-size:1.05rem}
+.rep-card p{margin:0 0 12px;font-size:.84rem;color:var(--ink-faint);line-height:1.45}
+.rep-quote{font-size:.85rem;padding:8px 10px;border-left:3px solid var(--rule);background:var(--paper);border-radius:6px;margin:0 0 12px;overflow-wrap:anywhere;max-height:90px;overflow:auto}
+.rep-card label{display:flex;gap:8px;align-items:center;font-size:.88rem;padding:5px 0;cursor:pointer}
+.rep-card textarea{width:100%;margin-top:8px;min-height:56px;border:1px solid var(--rule);border-radius:10px;padding:8px 10px;font:inherit;font-size:.85rem;background:var(--paper);color:var(--ink);resize:vertical}
+.rep-btns{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
+.rep-btns button{border:0;border-radius:10px;padding:9px 14px;font:inherit;font-weight:700;cursor:pointer}
+.rep-btns .go{background:var(--margin);color:#fff}
+.rep-btns .no{background:transparent;color:var(--ink-faint)}
+.rep-msg{font-size:.82rem;margin-top:8px;min-height:1em}
 .chat-empty{color:var(--ink-faint);font-size:.85rem;margin:auto;text-align:center;line-height:1.5}
 .chat-form{display:flex;gap:8px;margin-top:12px}
 .chat-form input{
@@ -5123,6 +5140,8 @@ function addMessage(m, atTop, fresh){
 
   row.appendChild(who); row.appendChild(body); row.appendChild(time);
 
+  if(currentUser && m.user_id && m.user_id !== currentUser.uid) row.appendChild(reportBtn("message", m.id, m.name, m.body));
+
   if(isOwner()){
     var del = document.createElement("button");
     del.className = "msg-del";
@@ -5145,6 +5164,68 @@ function addMessage(m, atTop, fresh){
 
   if(atTop) log.insertBefore(row, log.firstChild);
   else log.appendChild(row);
+}
+
+/* ---------- reporting ----------
+   Anyone can report a message, post or reply someone else wrote. It goes
+   to the Launchpad's owner and helpers (the report function), who remove
+   it or let it stand. The person reported is never told who reported them. */
+function reportBtn(kind, id, name, text){
+  var b = document.createElement("button");
+  b.type = "button"; b.className = "msg-rep"; b.textContent = "\u2691";
+  b.title = "Report this"; b.setAttribute("aria-label", "Report this " + (kind === "message" ? "message" : kind));
+  b.addEventListener("click", function(){ openReport(kind, id, name, text); });
+  return b;
+}
+function openReport(kind, id, name, text){
+  if(!sb || !currentUser) return;
+  var back = document.createElement("div"); back.className = "rep-back";
+  var card = document.createElement("div"); card.className = "rep-card";
+  card.setAttribute("role", "dialog"); card.setAttribute("aria-modal", "true"); card.setAttribute("aria-label", "Report");
+  var h = document.createElement("h3"); h.textContent = "Report this " + (kind === "message" ? "message" : kind === "post" ? "post" : "reply");
+  var p = document.createElement("p"); p.textContent = "It goes privately to the Launchpad's owner and helpers. " + (name || "They") + " won't be told who reported it.";
+  var q = document.createElement("div"); q.className = "rep-quote"; q.textContent = text || "";
+  card.appendChild(h); card.appendChild(p); card.appendChild(q);
+  var reasons = [["unkind","Unkind or bullying"],["rude","Rude or inappropriate"],["personal","Sharing personal information"],["spam","Spam"],["other","Something else"]];
+  var picked = null;
+  reasons.forEach(function(r){
+    var l = document.createElement("label"); var i = document.createElement("input");
+    i.type = "radio"; i.name = "repReason"; i.value = r[0];
+    i.addEventListener("change", function(){ picked = r[0]; go.disabled = false; });
+    l.appendChild(i); l.appendChild(document.createTextNode(r[1])); card.appendChild(l);
+  });
+  var note = document.createElement("textarea"); note.maxLength = 300; note.placeholder = "Anything else they should know? (optional)";
+  card.appendChild(note);
+  var msg = document.createElement("div"); msg.className = "rep-msg"; msg.setAttribute("role", "status");
+  var btns = document.createElement("div"); btns.className = "rep-btns";
+  var no = document.createElement("button"); no.type = "button"; no.className = "no"; no.textContent = "Cancel";
+  var go = document.createElement("button"); go.type = "button"; go.className = "go"; go.textContent = "Send report"; go.disabled = true;
+  btns.appendChild(no); btns.appendChild(go);
+  card.appendChild(msg); card.appendChild(btns); back.appendChild(card);
+  function close(){ back.remove(); document.removeEventListener("keydown", esc); }
+  function esc(e){ if(e.key === "Escape") close(); }
+  document.addEventListener("keydown", esc);
+  back.addEventListener("click", function(e){ if(e.target === back) close(); });
+  no.addEventListener("click", close);
+  go.addEventListener("click", function(){
+    if(!picked) return;
+    go.disabled = true; msg.textContent = "Sending…";
+    sb.functions.invoke("report", { body:{ action:"report", kind:kind, id:id, reason:picked, note:note.value } }).then(function(r){
+      var err = r.error ? ((r.data && r.data.error) || "Couldn't send the report.") : (r.data && r.data.error);
+      if(err && r.error && r.error.context && r.error.context.json){
+        return r.error.context.json().then(function(j){ throw new Error((j && j.error) || err); });
+      }
+      if(err) throw new Error(err);
+      card.innerHTML = "";
+      var t = document.createElement("h3"); t.textContent = "Thanks for telling us";
+      var m2 = document.createElement("p"); m2.textContent = (r.data && r.data.already) ? "This has already been reported - it will be looked at soon." : "The owner and helpers will look at it soon. If someone is upsetting you, you can also tell a teacher or a grown-up you trust.";
+      var ok = document.createElement("button"); ok.type = "button"; ok.className = "go"; ok.textContent = "OK"; ok.addEventListener("click", close);
+      var bb = document.createElement("div"); bb.className = "rep-btns"; bb.appendChild(ok);
+      card.appendChild(t); card.appendChild(m2); card.appendChild(bb); ok.focus();
+    }).catch(function(e){ msg.textContent = e.message || "Couldn't send the report."; go.disabled = false; });
+  });
+  document.body.appendChild(back);
+  var first = card.querySelector("input"); if(first) first.focus();
 }
 
 function atBottom(log){
@@ -5694,6 +5775,8 @@ function replyEl(r, mine){
   body.textContent = r.body;
   row.appendChild(body);
 
+  if(!mine && r.user_id) row.appendChild(reportBtn("reply", r.id, r.name, r.body));
+
   if(mine || isOwner()){
     var x = document.createElement("button");
     x.type = "button";
@@ -5811,6 +5894,10 @@ function postEl(p, replies, meId){
       boardCall({ action:"solve", id:p.id, solved: !p.solved_at })
         .then(loadBoard, function(err){ boardSay(err.message, true); });
     }));
+  }
+
+  if(!mine && p.user_id){
+    acts.appendChild(actBtn("Report", function(){ openReport("post", p.id, p.name, p.body); }));
   }
 
   if(mine || isOwner()){
