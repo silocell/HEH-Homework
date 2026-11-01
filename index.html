@@ -1039,7 +1039,12 @@ body.gsc-overflow-hidden{overflow:auto!important}
 }
 .reply{display:flex;gap:9px;align-items:flex-start;font-size:.85rem;min-width:0}
 .reply-who{font-weight:600;flex:none;color:var(--ink-soft)}
-.reply-body{flex:1 1 auto;min-width:0;overflow-wrap:anywhere;line-height:1.5}
+.reply-body{flex:1 1 auto;min-width:0;overflow-wrap:break-word;line-height:1.5}
+@media (max-width:600px){
+  .reply{flex-wrap:wrap;gap:2px 8px}
+  .reply-who{flex:1 1 auto;min-width:0}
+  .reply-body{order:5;flex:1 0 100%}
+}
 .reply-x{
   flex:none;border:none;background:none;color:var(--ink-faint);
   cursor:pointer;font-size:.9rem;line-height:1;padding:0 2px;
@@ -1082,7 +1087,18 @@ body.gsc-overflow-hidden{overflow:auto!important}
   line-height:1.6;vertical-align:1px;letter-spacing:.02em;white-space:nowrap}
 .staff-tag.admin{background:var(--accent);color:#fff}
 .staff-tag.helper{background:color-mix(in srgb,var(--good) 18%,transparent);color:var(--good)}
-.msg-body{flex:1;min-width:0;font-size:.87rem;line-height:1.5;overflow-wrap:anywhere}
+.msg-body{flex:1 1 120px;min-width:0;font-size:.87rem;line-height:1.5;overflow-wrap:break-word;word-break:normal}
+/* A long name never squeezes the message: it may take at most 40%. */
+.msg-who{flex-shrink:1;max-width:40%;overflow-wrap:anywhere}
+/* Phones: name, time and buttons on one line, the message on its own
+   full-width line under them - otherwise the message was squeezed to one
+   letter wide and read H / E / L / L / O down the screen. */
+@media (max-width:600px){
+  .msg{flex-wrap:wrap;gap:2px 8px}
+  .msg-who{max-width:none;min-width:0}
+  .msg-body{order:5;flex:1 0 100%}
+  .msg-time{margin-left:auto}
+}
 .msg-time{
   font-family:var(--font-mono);font-size:.66rem;color:var(--ink-faint);
   flex:none;font-variant-numeric:tabular-nums;

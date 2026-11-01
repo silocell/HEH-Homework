@@ -128,6 +128,11 @@ footer{margin-top:24px;color:var(--soft);font-size:.82rem;text-align:center}
   var me = APPS.filter(function(a){ return a.id === mine; })[0];
   if (me) m.innerHTML = '<a class="big" href="' + me.files[0].href + '" download>⬇ Download for ' + esc(me.name) + '</a><small>Version ' + V + ' · <a href="#' + me.id + '" style="color:#fde68a">how to install</a></small>';
   else m.innerHTML = '<small>Pick your device below.</small>';
+  /* An IPA can't be opened on the iPhone or iPad itself - it has to go
+     through a computer. On the device, the quick way is the home-screen app. */
+  if (mine === "ios" && !window.LaunchpadApp)
+    m.innerHTML = '<small style="display:block;max-width:520px;margin:0 auto 10px">On this iPhone or iPad, tap <b>Share</b> (the square with an arrow) → <b>Add to Home Screen</b> on <a href="/" style="color:#fde68a">the Launchpad</a>. It opens like an app.<br>The IPA download below is for putting the full app on with a computer.</small>' +
+      '<a class="big" href="' + me.files[0].href + '" download>⬇ Download IPA (for a computer)</a>';
   if (window.LaunchpadApp) m.innerHTML = '<small>You already have the app. 🎉 Grab it for your other devices below.</small>';
 })();
 </script>
