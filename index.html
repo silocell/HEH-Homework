@@ -1235,6 +1235,9 @@ footer{
 }
 .playcard:hover{transform:translateY(-2px)}
 .shopcard{background:linear-gradient(110deg,#b45309 0%,#db2777 55%,#7c3aed 100%);box-shadow:0 10px 30px -12px rgba(219,39,119,.7)}
+.makercard{background:linear-gradient(110deg,#0f766e 0%,#0891b2 50%,#4f46e5 100%);box-shadow:0 10px 30px -12px rgba(8,145,178,.7)}
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]) .makercard{background:linear-gradient(110deg,#134e4a 0%,#155e75 50%,#312e81 100%)} }
+:root[data-theme="dark"] .makercard{background:linear-gradient(110deg,#134e4a 0%,#155e75 50%,#312e81 100%)}
 .shopicon{flex:0 0 auto;z-index:1;font-size:2rem;line-height:1;filter:drop-shadow(0 3px 0 rgba(0,0,0,.18))}
 @media (prefers-color-scheme:dark){ :root:not([data-theme="light"]) .shopcard{background:linear-gradient(110deg,#78350f 0%,#831843 55%,#4c1d95 100%)} }
 :root[data-theme="dark"] .shopcard{background:linear-gradient(110deg,#78350f 0%,#831843 55%,#4c1d95 100%)}
@@ -1298,7 +1301,7 @@ footer{
 }
 :fullscreen{position:relative}
 </style>
-<link rel="stylesheet" href="polish.css?b=20261021194235">
+<link rel="stylesheet" href="polish.css?b=20261102091427">
 </head>
 <body>
 
@@ -1433,6 +1436,15 @@ footer{
       <span>Every game in one place - the ones that teach you something, and the ones that don't.</span>
     </span>
     <span class="playgo">Play</span>
+  </a>
+
+  <a class="playcard makercard" id="makerCard" href="https://sandbox.civilinitiatives.org/">
+    <span class="shopicon" aria-hidden="true">🎮</span>
+    <span class="playwords">
+      <strong>Game Maker</strong>
+      <span>Describe a game and Claude builds it for you - then everyone can play it. Your first one is free.</span>
+    </span>
+    <span class="playgo">Make</span>
   </a>
 
   <a class="playcard shopcard" id="shopCard" href="https://shop.civilinitiatives.org/">
@@ -1631,7 +1643,7 @@ footer{
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.0/dist/umd/supabase.js"></script>
 <script src="auth-store.js?b=20261026a"></script>
 <script>if("serviceWorker" in navigator && !/LaunchpadApp\//.test(navigator.userAgent)) addEventListener("load", function(){ navigator.serviceWorker.register("/sw.js").catch(function(){}); });</script>
-<script src="polish.js?b=20261021194235"></script>
+<script src="polish.js?b=20261102091427"></script>
 <script src="level-practice.js?b=20261024a"></script>
 <script src="extras.js?b=20261027r"></script>
 <script src="avatar.js?b=20261028m"></script>
