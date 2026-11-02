@@ -1728,7 +1728,9 @@ try{
   if(q.get("appsession") && location.hash.length > 1){
     var h = new URLSearchParams(location.hash.slice(1)), at = h.get("at"), rt = h.get("rt");
     try{ history.replaceState(null, "", "/"); }catch(e){}
-    if(at && rt){
+    /* Only the apps open this. In an ordinary browser it would let a link
+       sign someone in as whoever made the link, so it is ignored there. */
+    if(at && rt && (window.LaunchpadApp || /LaunchpadApp\//.test(navigator.userAgent))){
       window.__appLoginBusy = true;
       sb.auth.setSession({ access_token:at, refresh_token:rt }).then(function(){ location.replace("/"); }, function(){ location.replace("/"); });
     }
