@@ -1,0 +1,131 @@
+/* ==================================================================
+   LIQUID GLASS - shared by every Launchpad site and app
+
+   Most of the school is on iPhones and Macs, so the Launchpad borrows
+   Apple's Liquid Glass: a soft, colourful light behind the page, and
+   cards, bars and menus made of frosted glass with a bright edge, so
+   the colour glows through them. Buttons become pills.
+
+   Each site keeps its own colours: the glass is mixed from that site's
+   --card (or --bar) colour, so light and dark themes both work.
+   Game play areas (canvas, iframes, maps) are never made see-through.
+
+   Link it LAST in <head>, after the page's own <style>, so it wins:
+   <link rel="stylesheet" href="https://civilinitiatives.org/glass.css?b=1">
+   ================================================================== */
+
+:root{
+  --lg-blur:22px;
+  --lg-sat:185%;
+  --lg-tint:62%;                                   /* how much of the card colour stays */
+  --lg-edge:rgba(255,255,255,.62);                 /* the bright rim */
+  --lg-edge2:rgba(255,255,255,.18);
+  --lg-shade:0 10px 30px -12px rgba(20,24,48,.28), 0 2px 6px -2px rgba(20,24,48,.10);
+  --lg-shine:inset 0 1px 0 rgba(255,255,255,.75), inset 0 -1px 0 rgba(255,255,255,.12);
+  --lg-glow1:rgba(99,132,255,.42);                 /* the light behind the page */
+  --lg-glow2:rgba(236,96,180,.32);
+  --lg-glow3:rgba(56,210,190,.32);
+  --lg-glow4:rgba(255,186,90,.28);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --lg-tint:55%;
+    --lg-edge:rgba(255,255,255,.22);
+    --lg-edge2:rgba(255,255,255,.06);
+    --lg-shade:0 12px 34px -12px rgba(0,0,0,.6), 0 2px 6px -2px rgba(0,0,0,.35);
+    --lg-shine:inset 0 1px 0 rgba(255,255,255,.18), inset 0 -1px 0 rgba(255,255,255,.04);
+    --lg-glow1:rgba(80,110,255,.30); --lg-glow2:rgba(200,70,160,.22);
+    --lg-glow3:rgba(30,170,160,.22); --lg-glow4:rgba(230,150,60,.14);
+  }
+}
+:root[data-theme="dark"]{
+  --lg-tint:55%;
+  --lg-edge:rgba(255,255,255,.22);
+  --lg-edge2:rgba(255,255,255,.06);
+  --lg-shade:0 12px 34px -12px rgba(0,0,0,.6), 0 2px 6px -2px rgba(0,0,0,.35);
+  --lg-shine:inset 0 1px 0 rgba(255,255,255,.18), inset 0 -1px 0 rgba(255,255,255,.04);
+  --lg-glow1:rgba(80,110,255,.30); --lg-glow2:rgba(200,70,160,.22);
+  --lg-glow3:rgba(30,170,160,.22); --lg-glow4:rgba(230,150,60,.14);
+}
+
+/* ---- the light behind everything ---- */
+body::before{
+  content:""; position:fixed; inset:-10vmax; z-index:-1; pointer-events:none;
+  background:
+    radial-gradient(38vmax 38vmax at 12% 8%,  var(--lg-glow1), transparent 70%),
+    radial-gradient(34vmax 34vmax at 92% 18%, var(--lg-glow2), transparent 70%),
+    radial-gradient(40vmax 40vmax at 78% 92%, var(--lg-glow3), transparent 70%),
+    radial-gradient(30vmax 30vmax at 8% 86%,  var(--lg-glow4), transparent 70%);
+  animation:lg-drift 40s ease-in-out infinite alternate;
+}
+@keyframes lg-drift{ to{ transform:translate3d(3vmax,-2vmax,0) scale(1.06) } }
+body.lg-solid::before{ display:none }          /* a page can opt out */
+
+/* ---- glass: cards, panels, tiles ---- */
+.card, .panel, .tile, .gate-card, .stat, .modal, .sheet, .menu, .popover, .dialog, dialog{
+  background:color-mix(in srgb, var(--card, #fff) var(--lg-tint), transparent) !important;
+  -webkit-backdrop-filter:blur(var(--lg-blur)) saturate(var(--lg-sat));
+  backdrop-filter:blur(var(--lg-blur)) saturate(var(--lg-sat));
+  border:1px solid var(--lg-edge) !important;
+  box-shadow:var(--lg-shine), var(--lg-shade) !important;
+}
+.card, .panel, .gate-card, .modal, .sheet, .dialog, dialog{ border-radius:24px !important }
+.tile, .stat{ border-radius:18px !important }
+.tile{ transition:transform .2s cubic-bezier(.2,.8,.2,1), box-shadow .2s }
+@media (hover:hover){ .tile:hover{ transform:translateY(-2px) } }
+
+/* ---- the top bar: dark glass, floating ---- */
+.top{
+  background:color-mix(in srgb, var(--bar, #141a33) 70%, transparent) !important;
+  -webkit-backdrop-filter:blur(26px) saturate(190%);
+  backdrop-filter:blur(26px) saturate(190%);
+  border-bottom:1px solid rgba(255,255,255,.14);
+  box-shadow:inset 0 -1px 0 rgba(255,255,255,.06), 0 8px 24px -14px rgba(0,0,0,.45);
+}
+
+/* ---- buttons: pills with a shine ---- */
+.btn, .abtn{
+  border-radius:999px !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.38), 0 4px 14px -6px rgba(20,24,48,.35);
+  transition:transform .15s cubic-bezier(.2,.8,.2,1), filter .15s, box-shadow .15s;
+}
+.btn:active, .abtn:active{ transform:scale(.97) }
+@media (hover:hover){ .btn:hover, .abtn:hover{ filter:brightness(1.06) } }
+.abtn.quiet, .abtn.ghost, .btn.ghost, .btn.quiet{
+  background:color-mix(in srgb, var(--card, #fff) 45%, transparent) !important;
+  -webkit-backdrop-filter:blur(14px) saturate(170%); backdrop-filter:blur(14px) saturate(170%);
+  border:1px solid var(--lg-edge) !important;
+}
+
+/* ---- inputs: frosted wells ---- */
+input[type=text], input[type=search], input[type=email], input[type=number], input:not([type]), textarea, select{
+  background-color:color-mix(in srgb, var(--card, #fff) 70%, transparent);
+  border-radius:14px;
+}
+
+/* ---- keep play areas solid and sharp ---- */
+canvas, iframe, video, .stage, .board, .map, .game, #game, #stage{
+  -webkit-backdrop-filter:none !important; backdrop-filter:none !important;
+}
+.card:has(> canvas), .panel:has(> canvas), .card:has(> iframe), .panel:has(> iframe){
+  background:var(--card, #fff) !important;
+}
+
+/* ---- glass you can't see through ----
+   Older browsers, and anyone who asked their device for less
+   transparency, get solid cards with the same shapes. */
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+  .card, .panel, .tile, .gate-card, .stat, .modal, .sheet, .menu, .popover, .dialog, dialog{ background:var(--card, #fff) !important }
+  .top{ background:var(--bar, #141a33) !important }
+}
+@media (prefers-reduced-transparency:reduce){
+  .card, .panel, .tile, .gate-card, .stat, .modal, .sheet, .menu, .popover, .dialog, dialog{
+    background:var(--card, #fff) !important; -webkit-backdrop-filter:none; backdrop-filter:none;
+  }
+  .top{ background:var(--bar, #141a33) !important; -webkit-backdrop-filter:none; backdrop-filter:none }
+  body::before{ display:none }
+}
+@media (prefers-reduced-motion:reduce){
+  body::before{ animation:none }
+  .tile, .btn, .abtn{ transition:none }
+}
