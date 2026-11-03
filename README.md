@@ -31,6 +31,7 @@ instead of six tabs and a planner I'd left in my locker.
 - **Look it up** — Simple English Wikipedia first, then full Wikipedia.
   Free, and it doesn't use up your ten.
 - **Word of the day**, shortcuts, themes, and a font that's easier to read.
+- Customization- Launchpad Shop
 
 ## What's in this repository
 
@@ -51,6 +52,7 @@ The games aren't here either. They're in repos of their own:
 - [HEH-Doodles](https://github.com/silocell/HEH-Doodles) — the doodle games, at doodles.civilinitiatives.org (GPL-3.0)
 - HEH-Sandbox
   This is where students can ask ai to make dream games for a cost of course.
+  - HEH-Shop- The customisation and stuff traded, bought etc.
 
 
 One sign-in covers all of them: `auth-store.js` keeps the session in a
