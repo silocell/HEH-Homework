@@ -1238,6 +1238,19 @@ footer{
 .makercard{background:linear-gradient(110deg,#0f766e 0%,#0891b2 50%,#4f46e5 100%);box-shadow:0 10px 30px -12px rgba(8,145,178,.7)}
 @media (prefers-color-scheme:dark){ :root:not([data-theme="light"]) .makercard{background:linear-gradient(110deg,#134e4a 0%,#155e75 50%,#312e81 100%)} }
 :root[data-theme="dark"] .makercard{background:linear-gradient(110deg,#134e4a 0%,#155e75 50%,#312e81 100%)}
+/* Write, Grid, Present and Notebook - the Launchpad's own office apps */
+.officerow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:0 0 18px}
+.officerow a{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:var(--radius);text-decoration:none;color:#fff;position:relative;overflow:hidden;transition:transform .14s;min-width:0}
+.officerow a:hover{transform:translateY(-2px)}
+.officerow a b{display:block;font-size:1rem}
+.officerow a small{display:block;opacity:.85;font-size:.78rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.officerow a span{min-width:0}
+.officerow i{font-style:normal;font-size:1.6rem;flex:none}
+.officerow .ow{background:linear-gradient(120deg,#1d4ed8,#2563eb);box-shadow:0 8px 22px -12px rgba(37,99,235,.8)}
+.officerow .og{background:linear-gradient(120deg,#15803d,#16a34a);box-shadow:0 8px 22px -12px rgba(22,163,74,.8)}
+.officerow .op{background:linear-gradient(120deg,#c2410c,#ea580c);box-shadow:0 8px 22px -12px rgba(234,88,12,.8)}
+.officerow .on{background:linear-gradient(120deg,#6d28d9,#7c3aed);box-shadow:0 8px 22px -12px rgba(124,58,237,.8)}
+@media (max-width:760px){ .officerow{grid-template-columns:repeat(2,minmax(0,1fr))} }
 .shopicon{flex:0 0 auto;z-index:1;font-size:2rem;line-height:1;filter:drop-shadow(0 3px 0 rgba(0,0,0,.18))}
 @media (prefers-color-scheme:dark){ :root:not([data-theme="light"]) .shopcard{background:linear-gradient(110deg,#78350f 0%,#831843 55%,#4c1d95 100%)} }
 :root[data-theme="dark"] .shopcard{background:linear-gradient(110deg,#78350f 0%,#831843 55%,#4c1d95 100%)}
@@ -1447,6 +1460,13 @@ footer{
     </span>
     <span class="playgo">Make</span>
   </a>
+
+  <nav class="officerow" aria-label="Office apps">
+    <a class="ow" href="/write/"><i aria-hidden="true">✍️</i><span><b>Write</b><small>Documents &amp; essays</small></span></a>
+    <a class="og" href="/grid/"><i aria-hidden="true">📊</i><span><b>Grid</b><small>Spreadsheets &amp; charts</small></span></a>
+    <a class="op" href="/present/"><i aria-hidden="true">🎞️</i><span><b>Present</b><small>Slides &amp; shows</small></span></a>
+    <a class="on" href="/notebook/"><i aria-hidden="true">📓</i><span><b>Notebook</b><small>Notes &amp; to-dos</small></span></a>
+  </nav>
 
   <a class="playcard shopcard" id="shopCard" href="https://shop.civilinitiatives.org/">
     <span class="shopicon" aria-hidden="true">🛍️</span>
