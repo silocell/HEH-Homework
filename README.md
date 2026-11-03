@@ -49,6 +49,9 @@ The games aren't here either. They're in repos of their own:
 - [HEH-Play](https://github.com/silocell/HEH-Play) — the games page (every game in one place), at play.civilinitiatives.org
 - [HEH-Arcade](https://github.com/silocell/HEH-Arcade) — the Arcade, at arcade.civilinitiatives.org (GPL-3.0)
 - [HEH-Doodles](https://github.com/silocell/HEH-Doodles) — the doodle games, at doodles.civilinitiatives.org (GPL-3.0)
+- HEH-Sandbox
+  This is where students can ask ai to make dream games for a cost of course.
+
 
 One sign-in covers all of them: `auth-store.js` keeps the session in a
 cookie for `.civilinitiatives.org`, because each subdomain is a separate
@@ -102,16 +105,11 @@ copies with the backups.
   me — I hold the keys — and every room says so on its header.
 - Signing in with Microsoft shows an "unverified" warning. That's because
   publisher verification needs a registered company and I'm not one.
-- Nothing here is a secret. My email address is in this code. Email
-  addresses aren't passwords, and the real secrets live in Supabase.
 
 ## Built with
 
 Plain HTML, CSS and JavaScript — no framework. Supabase for the database,
-sign-in and server functions. Groq and Cloudflare for the AI. GitHub Pages
-for hosting, on civilinitiatives.org.
-
-Built with a lot of help from Claude, which argued with me about several
-of the decisions above, and was right about some of them.
+sign-in and server functions. Groq,Claude, Gemini and Cloudflare for the AI. GitHub Pages
+for hosting, on civilinitiatives.org
 
 — Shiv
