@@ -1739,7 +1739,7 @@ try{
   var want = q.get("applogin"), ret = q.get("ret");
   if(want === "google" || want === "azure"){
     window.__appLoginBusy = true;
-    try{ localStorage.setItem(KEY, JSON.stringify({ at:Date.now(), ret:(ret === "ios" || ret === "win") ? ret : "android" })); }catch(e){}
+    try{ localStorage.setItem(KEY, JSON.stringify({ at:Date.now(), ret:(ret === "ios" || ret === "win" || ret === "suitewin" || ret === "suiteandroid") ? ret : "android" })); }catch(e){}
     var opts = { redirectTo: location.origin + "/" };
     if(want === "azure") opts.scopes = "email";
     sb.auth.signInWithOAuth({ provider:want, options:opts });
@@ -1752,7 +1752,9 @@ try{
        sign someone in as whoever made the link, so it is ignored there. */
     if(at && rt && (window.LaunchpadApp || /LaunchpadApp\//.test(navigator.userAgent))){
       window.__appLoginBusy = true;
-      sb.auth.setSession({ access_token:at, refresh_token:rt }).then(function(){ location.replace("/"); }, function(){ location.replace("/"); });
+      /* the Suite apps go back to the Suite once signed in */
+      var home = /LaunchpadSuite\//.test(navigator.userAgent) ? "https://suite.civilinitiatives.org/" : "/";
+      sb.auth.setSession({ access_token:at, refresh_token:rt }).then(function(){ location.replace(home); }, function(){ location.replace(home); });
     }
     return;
   }
@@ -1766,6 +1768,9 @@ try{
     var at = encodeURIComponent(s.access_token), rt = encodeURIComponent(s.refresh_token);
     var href = pend.ret === "android"
       ? "intent://login#Intent;scheme=hehlaunchpad;package=org.civilinitiatives.launchpad;S.at=" + at + ";S.rt=" + rt + ";end"
+      : pend.ret === "suiteandroid"
+      ? "intent://login#Intent;scheme=hehsuite;package=org.civilinitiatives.suite;S.at=" + at + ";S.rt=" + rt + ";end"
+      : pend.ret === "suitewin" ? "hehsuite://login#at=" + at + "&rt=" + rt
       : "hehlaunchpad://login#at=" + at + "&rt=" + rt;
     var box = document.createElement("div");
     box.style.cssText = "position:fixed;inset:0;z-index:100000;display:grid;place-items:center;background:rgba(10,12,30,.92);padding:24px;font-family:system-ui,sans-serif";
