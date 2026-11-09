@@ -6308,6 +6308,22 @@ applyFont(recall(FONT_KEY,null));
 paintModes();
 
 /* ---------- boot ---------- */
+/* The Shop and the Game Maker can be switched off by the Launchpad's admins
+   (for everyone, or for one person): their cards go when they are. */
+function featureCards(){
+  if(!sb) return;
+  sb.auth.getSession().then(function(r){
+    if(!r || !r.data || !r.data.session) return;
+    return sb.rpc("my_features").then(function(fr){
+      var f = fr && !fr.error && fr.data; if(!f) return;
+      var sc = document.getElementById("shopCard"), mc = document.getElementById("makerCard");
+      if(sc) sc.hidden = f.shop === false;
+      if(mc) mc.hidden = f.gamemaker === false;
+      document.querySelectorAll('a[href^="https://sandbox.civilinitiatives.org"]').forEach(function(a){ if(a !== mc && a.parentNode) a.parentNode.hidden = f.gamemaker === false; });
+    });
+  }).catch(function(){});
+}
+setTimeout(featureCards, 1500);
 (function boot(){
   var emailBox = document.getElementById("email");
   var hint = recall(SESSION_HINT, null);
