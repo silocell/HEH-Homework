@@ -1685,6 +1685,7 @@ body.gsc-overflow-hidden{overflow:auto!important}
         <h3>Make &amp; play</h3>
         <ul>
           <li><a href="https://suite.civilinitiatives.org/">🧰 Launchpad Suite</a></li>
+          <li><a href="https://suite.civilinitiatives.org/chat/">💬 Homework Chat</a></li>
           <li><a href="games.html">🕹 Games</a></li>
           <li><a href="https://sandbox.civilinitiatives.org/">🎮 Game Maker</a></li>
           <li><a href="https://shop.civilinitiatives.org/">🛍 Launchpad Shop</a></li>
@@ -6374,6 +6375,7 @@ function featureCards(){
       document.querySelectorAll('a[href^="https://sandbox.civilinitiatives.org"]').forEach(function(a){ if(a !== mc && a.parentNode) a.parentNode.hidden = f.gamemaker === false; });
       document.querySelectorAll('.site-foot a[href^="https://shop.civilinitiatives.org"]').forEach(function(a){ a.parentNode.hidden = f.shop === false; });
       var ft = document.getElementById("siteFoot"); if(ft) ft.hidden = f.footer === false;
+      document.querySelectorAll('.site-foot a[href*="/chat/"]').forEach(function(a){ a.parentNode.hidden = f.hwchat === false; });
     });
   }).catch(function(){});
 }
