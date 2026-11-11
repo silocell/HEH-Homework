@@ -9,6 +9,7 @@ try{ var m = document.cookie.match(/(?:^|; )hl_theme=(dark|light|system)/), t = 
      if(t === "dark" || t === "light") document.documentElement.setAttribute("data-theme", t); }catch(e){}
 </script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="/site.js?b=20261111a"></script>
 <meta name="robots" content="noindex, nofollow">
 <link rel="icon" type="image/png" href="/favicon.png">
 <link rel="manifest" href="manifest.webmanifest">
@@ -1448,6 +1449,7 @@ body.gsc-overflow-hidden{overflow:auto!important}
       <a class="ghost-btn" id="moreBtn" hidden></a>
       <button class="ghost-btn" id="labBtn" type="button" hidden>Lab</button>
       <button class="ghost-btn" id="themeBtn" type="button">Dark mode</button>
+      <button class="ghost-btn" id="fastBtn" type="button" title="Fast mode turns off the glass and animations so pages scroll smoothly on slower devices. It switches on by itself when a device is struggling.">Fast mode</button>
       <button class="ghost-btn" id="switchBtn" type="button">Sign out</button>
     </div>
   </div>
@@ -6433,6 +6435,15 @@ setTimeout(featureCards, 1500);
   });
 })();
 
+</script>
+<script>
+/* Fast mode (site.js decides it automatically; this lets anyone choose). */
+(function(){
+  var b = document.getElementById("fastBtn"); if(!b || !window.HEHLite) return;
+  function show(){ var on = HEHLite.on(); b.textContent = on ? "Fast mode: on" : "Fast mode: off"; b.setAttribute("aria-pressed", on ? "true" : "false"); }
+  b.addEventListener("click", function(){ HEHLite.set(!HEHLite.on()); show(); });
+  show(); setTimeout(show, 6000);   // it may switch on by itself in the first few seconds
+})();
 </script>
 </body>
 </html>
