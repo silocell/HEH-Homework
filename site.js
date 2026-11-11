@@ -165,8 +165,8 @@
         "#hehSuiteBar span{flex:1;min-width:200px}#hehSuiteBar a{background:#6366f1;color:#fff;border-radius:10px;padding:7px 12px;text-decoration:none;font-weight:600}" +
         "#hehSuiteBar button{border:0;background:transparent;color:#94a3b8;font-size:1.2rem;cursor:pointer;padding:2px 6px}");
       var bar = document.createElement("div"); bar.id = "hehSuiteBar"; bar.setAttribute("role", "status");
-      bar.innerHTML = "<span><b>The Suite is blocked on this network.</b> Write, Grid, Present and the other Suite apps won't open here in the browser. Use the Launchpad app instead.</span>" +
-        "<a href=\"/app/\">Get the app</a><button type=\"button\" aria-label=\"Hide for today\">✕</button>";
+      bar.innerHTML = "<span><b>You're on the school network, where the Suite is blocked.</b> Write, Grid, Present and the other Suite apps won't open in the browser here. Install the Launchpad app instead.</span>" +
+        "<a href=\"/app/\">Install the app</a><button type=\"button\" aria-label=\"Hide for today\">✕</button>";
       bar.querySelector("button").onclick = function () { bar.remove(); ls("hl.suitebar.off", new Date().toDateString()); };
       document.body.appendChild(bar);
     };
