@@ -22,7 +22,7 @@
   var API = "https://hehs-live.duckdns.org";
   var KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzkyODMyMjkwLCJleHAiOjIxMDgxOTIyOTB9.7gFhQa5RBwVtiOPLO7Qf2-aVEbkd5xgpLiN1J06Gybo";
   var OWNER_HASH = "747e511bdf6129b4347b4d4e0292c64db92d3e7ab2f41da57de0968becb8d0a9";
-  var CLOSED_OK = ["fd804b4f914bd60f44b2e14460ff9e6c98639bf7152ba7e62fda4c1c11baca8b","1fdacb3e13cc7c7fc71b8c92deba6fc3f2211179918c863af09a0213eee1f96f","21639513153d5858f6f5aa97b49c5caa8663cd513dc52081b66ce35b310b7c97"];
+  var CLOSED_OK = ["fd804b4f914bd60f44b2e14460ff9e6c98639bf7152ba7e62fda4c1c11baca8b","21639513153d5858f6f5aa97b49c5caa8663cd513dc52081b66ce35b310b7c97"];
   var html = document.documentElement;
   var inApp = /LaunchpadApp\//.test(navigator.userAgent);
   function ls(k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } }

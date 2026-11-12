@@ -9,7 +9,7 @@ try{ var m = document.cookie.match(/(?:^|; )hl_theme=(dark|light|system)/), t = 
      if(t === "dark" || t === "light") document.documentElement.setAttribute("data-theme", t); }catch(e){}
 </script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<script src="/site.js?b=20261112c"></script>
+<script src="/site.js?b=20261112d"></script>
 <meta name="robots" content="noindex, nofollow">
 <link rel="icon" type="image/png" href="/favicon.png">
 <link rel="manifest" href="manifest.webmanifest">
@@ -3077,7 +3077,7 @@ var siteOpen = true;
 
 /* These accounts also get in while it's closed. Stored as SHA-256 of the
    part of the address before the @, so the names aren't in the page. */
-var CLOSED_OK = ["fd804b4f914bd60f44b2e14460ff9e6c98639bf7152ba7e62fda4c1c11baca8b","1fdacb3e13cc7c7fc71b8c92deba6fc3f2211179918c863af09a0213eee1f96f","21639513153d5858f6f5aa97b49c5caa8663cd513dc52081b66ce35b310b7c97"];
+var CLOSED_OK = ["fd804b4f914bd60f44b2e14460ff9e6c98639bf7152ba7e62fda4c1c11baca8b","21639513153d5858f6f5aa97b49c5caa8663cd513dc52081b66ce35b310b7c97"];
 function letInWhenClosed(email){
   if(isOwnerEmail(email)) return true;
   var local = String(email || "").trim().toLowerCase().split("@")[0];
