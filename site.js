@@ -86,6 +86,59 @@
     auto: function () { try { localStorage.removeItem("hl.lite"); localStorage.removeItem("hl.lite.seen"); } catch (e) {} }
   };
 
+  /* ---------------- 4. the look: Glass or Notebook ----------------
+     Notebook is the exercise book from chausima.com: squared paper, a red
+     margin line, solid white cards with biro-blue edges, notebook-shaped
+     buttons. Chosen in "Make it yours" on the Launchpad; a cookie shares it
+     with every *.civilinitiatives.org site. Glass is the default. Games
+     that fill the screen keep their own look. */
+  var NB_SKIP = /^(gaterun)\./i.test(location.hostname);
+  var NB_CSS =
+    ":root.nb{--nb-paper:#fdfdf8;--nb-grid:#d5e4f5;--nb-grid2:#b9d1ee;--nb-margin:#e2474b;--nb-ink:#1f3a93;--nb-card:#ffffff;--nb-line:#c9d6e8;--nb-text:#262a33;--nb-soft:#5b6170;--nb-hl:#ffe94a}" +
+    ":root.nb[data-theme=dark]{--nb-paper:#1d2a24;--nb-grid:rgba(255,255,255,.05);--nb-grid2:rgba(255,255,255,.09);--nb-margin:#f07a7d;--nb-ink:#f3f1e4;--nb-card:#22302a;--nb-line:rgba(255,255,255,.16);--nb-text:#ecebe2;--nb-soft:#aab4ad;--nb-hl:#e8d34a}" +
+    "@media (prefers-color-scheme:dark){:root.nb:not([data-theme=light]){--nb-paper:#1d2a24;--nb-grid:rgba(255,255,255,.05);--nb-grid2:rgba(255,255,255,.09);--nb-margin:#f07a7d;--nb-ink:#f3f1e4;--nb-card:#22302a;--nb-line:rgba(255,255,255,.16);--nb-text:#ecebe2;--nb-soft:#aab4ad;--nb-hl:#e8d34a}}" +
+    /* the sites' own colour names, pointed at the notebook (the #nb keeps these ahead of each page's own) */
+    ":root.nb:not(#nb){--paper:var(--nb-paper);--bg:var(--nb-paper);--card:var(--nb-card);--chip:var(--nb-card);--rule:var(--nb-line);--line:var(--nb-line);--margin:var(--nb-margin);--lg-tint:100%;--lg-blur:0px}" +
+    ":root.nb:not([data-accent]):not(#nb){--accent:var(--nb-ink);--a1:var(--nb-ink)}" +
+    "html.nb body{background-color:var(--nb-paper)!important;background-image:linear-gradient(var(--nb-grid2) 1px,transparent 1px),linear-gradient(90deg,var(--nb-grid2) 1px,transparent 1px),linear-gradient(var(--nb-grid) 1px,transparent 1px),linear-gradient(90deg,var(--nb-grid) 1px,transparent 1px)!important;background-size:120px 120px,120px 120px,24px 24px,24px 24px!important}" +
+    "html.nb body::before{content:''!important;display:block!important;position:fixed!important;top:0!important;bottom:0!important;right:auto!important;left:max(10px,calc(50vw - 650px))!important;width:2px!important;height:auto!important;inset:auto;background:var(--nb-margin)!important;opacity:.55!important;filter:none!important;animation:none!important;transform:none!important;pointer-events:none!important;z-index:0!important}" +
+    "html.nb .card,html.nb .panel,html.nb .tile,html.nb .stat,html.nb .sheet,html.nb .modal,html.nb .sec,html.nb dialog{background:var(--nb-card)!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;border:1.5px solid var(--nb-line)!important;border-radius:4px 4px 14px 4px!important;box-shadow:3px 3px 0 color-mix(in srgb,var(--nb-ink) 10%,transparent)!important}" +
+    "html.nb .topbar{background:var(--nb-card)!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;border:2px solid var(--nb-ink)!important;border-radius:4px 4px 16px 4px!important;box-shadow:4px 4px 0 color-mix(in srgb,var(--nb-ink) 14%,transparent)!important}" +
+    "html.nb .top{background:var(--nb-ink)!important;color:var(--nb-paper)!important;-webkit-backdrop-filter:none!important;backdrop-filter:none!important;box-shadow:none!important}" +
+    "html.nb .top a,html.nb .top b,html.nb .top button{color:inherit}" +
+    "html.nb .btn,html.nb .abtn{border-radius:4px 4px 12px 4px!important;box-shadow:2px 2px 0 color-mix(in srgb,var(--nb-ink) 20%,transparent)!important}" +
+    "html.nb .ghost-btn,html.nb .mode-btn,html.nb .chip-btn{border-radius:4px 4px 10px 4px!important}" +
+    "html.nb input[type=text],html.nb input[type=search],html.nb input[type=email],html.nb input[type=password],html.nb input:not([type]),html.nb textarea,html.nb select{border-radius:4px 4px 10px 4px!important;background-color:var(--nb-card)}" +
+    "html.nb h1{font-family:'Bricolage Grotesque',system-ui,sans-serif;color:var(--nb-ink);letter-spacing:-.03em}" +
+    "html.nb .panel-title,html.nb .eyebrow,html.nb .kicker,html.nb .guide-kicker{font-family:'Kalam','Comic Sans MS',cursive!important;color:var(--nb-margin)!important;text-transform:none!important;letter-spacing:0!important;font-size:1.02rem!important;font-weight:700!important}" +
+    "html.nb ::selection{background:color-mix(in srgb,var(--nb-hl) 75%,transparent)}";
+  function lookNow() {
+    var m = document.cookie.match(/(?:^|; )hl_look=(glass|notebook)/);
+    return m ? m[1] : (ls("hl.look") === "notebook" ? "notebook" : "glass");
+  }
+  var nbStyle = null;
+  function applyLook(l) {
+    var on = l === "notebook" && !NB_SKIP;
+    if (on && !nbStyle) {
+      nbStyle = document.createElement("style"); nbStyle.id = "hehNotebook"; nbStyle.textContent = NB_CSS; (document.head || html).appendChild(nbStyle);
+      var f = document.createElement("link"); f.rel = "stylesheet";
+      f.href = "https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Kalam:wght@400;700&display=swap";
+      (document.head || html).appendChild(f);
+    }
+    html.classList.toggle("nb", on);
+  }
+  applyLook(lookNow());
+  window.HEHLook = {
+    get: lookNow,
+    set: function (l) {
+      l = l === "notebook" ? "notebook" : "glass";
+      ls("hl.look", l);
+      if (/(^|\.)civilinitiatives\.org$/.test(location.hostname))
+        document.cookie = "hl_look=" + l + "; domain=.civilinitiatives.org; path=/; max-age=34560000; secure; samesite=lax";
+      applyLook(l);
+    }
+  };
+
   /* ---------------- 2. maintenance on every subdomain ---------------- */
   function cookies() {
     var out = {}, all = document.cookie ? document.cookie.split("; ") : [];

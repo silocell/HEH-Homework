@@ -9,7 +9,7 @@ try{ var m = document.cookie.match(/(?:^|; )hl_theme=(dark|light|system)/), t = 
      if(t === "dark" || t === "light") document.documentElement.setAttribute("data-theme", t); }catch(e){}
 </script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<script src="/site.js?b=20261112a"></script>
+<script src="/site.js?b=20261112b"></script>
 <meta name="robots" content="noindex, nofollow">
 <link rel="icon" type="image/png" href="/favicon.png">
 <link rel="manifest" href="manifest.webmanifest">
@@ -1749,6 +1749,10 @@ body.gsc-overflow-hidden{overflow:auto!important}
         <div class="modes" id="modes">
           <button type="button" class="mode-btn" data-mode="dark">Dark</button>
           <button type="button" class="mode-btn" data-mode="system">Match my device</button>
+        </div>
+        <div class="modes" id="looks" role="group" aria-label="Look">
+          <button type="button" class="mode-btn" data-look="glass">Glass</button>
+          <button type="button" class="mode-btn" data-look="notebook">Notebook</button>
         </div>
         <div class="modes" id="fonts">
           <button type="button" class="mode-btn" data-font="">Normal text</button>
@@ -6515,6 +6519,24 @@ function paintFonts(){
     b.setAttribute("aria-pressed", (b.dataset.font || "") === now ? "true" : "false");
   });
 }
+
+/* The look (Glass or Notebook) lives in site.js, so every Launchpad site
+   follows it; this just shows which one is on and switches it. */
+function paintLooks(){
+  var host = document.getElementById("looks"), now = window.HEHLook ? window.HEHLook.get() : "glass";
+  if(!host) return;
+  if(!window.HEHLook){ host.hidden = true; return; }
+  Array.prototype.forEach.call(host.children, function(b){ b.setAttribute("aria-pressed", b.dataset.look === now ? "true" : "false"); });
+}
+(function(){
+  var host = document.getElementById("looks");
+  if(!host) return;
+  host.addEventListener("click", function(e){
+    var b = e.target.closest("[data-look]"); if(!b || !window.HEHLook) return;
+    window.HEHLook.set(b.dataset.look); paintLooks();
+  });
+  paintLooks();
+})();
 
 function setFont(id){
   applyFont(id);
