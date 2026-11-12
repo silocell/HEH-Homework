@@ -18,7 +18,7 @@ try{ var m = document.cookie.match(/(?:^|; )hl_theme=(dark|light|system)/), t = 
 <title>Homework Launchpad</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Public+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Public+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Kalam:wght@400;700&display=swap">
 <style>
 /* ============================================================
    LAYOUT: a squared-exercise-book sheet. Faint grid ground,
@@ -1355,6 +1355,88 @@ body.gsc-overflow-hidden{overflow:auto!important}
   background:rgba(17,20,27,.78);color:#fff;backdrop-filter:blur(6px);
 }
 :fullscreen{position:relative}
+
+/* ---------- SIGN-IN SCREEN: the exercise book (matches chausima.com) ----------
+   Squared paper with the red margin line, the name in big biro-blue ink,
+   pencil notes in the margin. Only the sign-in screens use this. */
+.gate{
+  --nb-paper:#fdfdf8;--nb-grid:#d5e4f5;--nb-grid2:#b9d1ee;--nb-margin:#e2474b;--nb-ink:#1f3a93;
+  --nb-text:#262a33;--nb-soft:#5b6170;--nb-card:#ffffff;--nb-line:#c9d6e8;--nb-hl:#ffe94a;
+  --nb-hand:"Kalam","Comic Sans MS",cursive;--nb-m:96px;
+  position:relative;padding:40px 24px 40px calc(var(--nb-m) + 28px);color:var(--nb-text);
+  background-color:var(--nb-paper);
+  background-image:linear-gradient(var(--nb-grid2) 1px,transparent 1px),linear-gradient(90deg,var(--nb-grid2) 1px,transparent 1px),
+    linear-gradient(var(--nb-grid) 1px,transparent 1px),linear-gradient(90deg,var(--nb-grid) 1px,transparent 1px);
+  background-size:120px 120px,120px 120px,24px 24px,24px 24px;
+}
+.gate::before{content:"";position:absolute;top:0;bottom:0;left:var(--nb-m);width:2px;background:var(--nb-margin);opacity:.75;pointer-events:none}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .gate{
+  --nb-paper:#1d2a24;--nb-grid:rgba(255,255,255,.05);--nb-grid2:rgba(255,255,255,.09);--nb-margin:#f07a7d;--nb-ink:#f3f1e4;
+  --nb-text:#ecebe2;--nb-soft:#aab4ad;--nb-card:#22302a;--nb-line:rgba(255,255,255,.14);--nb-hl:#e8d34a}}
+:root[data-theme="dark"] .gate{
+  --nb-paper:#1d2a24;--nb-grid:rgba(255,255,255,.05);--nb-grid2:rgba(255,255,255,.09);--nb-margin:#f07a7d;--nb-ink:#f3f1e4;
+  --nb-text:#ecebe2;--nb-soft:#aab4ad;--nb-card:#22302a;--nb-line:rgba(255,255,255,.14);--nb-hl:#e8d34a}
+.gate > .gate-card{margin:auto!important;max-width:440px;text-align:center}
+.gate-book{margin:auto;width:100%;max-width:900px;display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);gap:28px 44px;align-items:start}
+/* glass.css frosts every card and turns buttons into pills, with !important; the notebook keeps its own look */
+.gate .gate-card{max-width:none;margin:0;background:transparent!important;border:0!important;border-radius:0!important;box-shadow:none!important;-webkit-backdrop-filter:none;backdrop-filter:none;padding:0}
+.gate-hand{font-family:var(--nb-hand);color:var(--nb-margin);font-size:1.15rem;line-height:1.2;margin:0 0 4px;transform:rotate(-2deg);transform-origin:left}
+.gate .gate-card h1{font-size:clamp(2.4rem,6vw,3.6rem);line-height:.98;letter-spacing:-.035em;color:var(--nb-ink);margin:2px 0 14px;text-wrap:balance}
+.gate .gate-card .sub{font-size:1rem;color:var(--nb-soft);margin:0 0 22px}
+.gate .btn{border-radius:4px 4px 12px 4px!important;font-family:var(--font-display);font-weight:600;font-size:1rem;padding:13px 18px;
+  background:var(--nb-ink);color:var(--nb-paper);border:2px solid var(--nb-ink);box-shadow:3px 3px 0 color-mix(in srgb,var(--nb-ink) 22%,transparent)!important}
+.gate .btn:hover{filter:none;transform:translate(-1px,-1px);box-shadow:4px 4px 0 color-mix(in srgb,var(--nb-ink) 28%,transparent)!important}
+.gate .btn:active{transform:translate(1px,1px);box-shadow:1px 1px 0 color-mix(in srgb,var(--nb-ink) 22%,transparent)!important}
+.gate .field input{border-radius:4px 4px 10px 4px!important}
+.gate .btn.ms{display:flex;align-items:center;justify-content:center;gap:10px;background:var(--nb-card);color:var(--nb-ink)}
+.gate .btn.ms svg{width:18px;height:18px;flex:none}
+.gate .btn.google{background:var(--nb-card);color:var(--nb-ink)}
+.gate .field label{color:var(--nb-soft)}
+.gate .field input{background:var(--nb-card);border:2px solid var(--nb-line);border-radius:4px 4px 10px 4px;color:var(--nb-text)}
+.gate .field input:focus{border-color:var(--nb-ink);box-shadow:none}
+.gate .otherlink{color:var(--nb-soft);opacity:1;font-size:.86rem;text-decoration:underline;text-decoration-color:var(--nb-line);text-underline-offset:3px}
+.gate .gate-error{color:var(--nb-margin)}
+.gate .about{border-top:1px dashed var(--nb-line);color:var(--nb-soft)}
+.gate .about summary{color:var(--nb-soft)}
+.gate .about a{color:var(--nb-ink)}
+/* quick sign-in: a card pinned to the page with a strip of tape */
+.quick{position:relative;background:var(--nb-card);border:2px solid var(--nb-ink);border-radius:4px 4px 16px 4px;padding:26px 24px 18px;margin-top:30px;box-shadow:5px 5px 0 color-mix(in srgb,var(--nb-ink) 14%,transparent)}
+.quick::before{content:"";position:absolute;top:-13px;left:50%;width:96px;height:24px;margin-left:-48px;transform:rotate(-3deg);background:color-mix(in srgb,var(--nb-hl) 70%,transparent);opacity:.9}
+.quick h2{font-family:var(--font-display);font-weight:800;color:var(--nb-ink);font-size:1.6rem;letter-spacing:-.02em;margin:0 0 6px}
+.q-sub{color:var(--nb-soft);font-size:.92rem;margin:0 0 16px;line-height:1.5}
+.q-row{display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin:4px 0 12px}
+.q-code{display:flex;gap:4px}
+.q-code span{width:36px;height:48px;display:grid;place-items:center;font-family:var(--nb-hand);font-weight:700;font-size:2rem;color:var(--nb-ink);
+  border:1.5px solid var(--nb-grid2);background:var(--nb-paper)}
+.q-code span:nth-child(3){margin-right:10px}
+.q-qr{width:112px;height:112px;background:#fff;padding:6px;border:1.5px solid var(--nb-line);border-radius:6px;flex:none}
+.q-qr svg,.q-qr img{width:100%;height:100%;display:block}
+.q-steps{margin:0 0 10px;padding-left:1.2em;font-size:.88rem;line-height:1.55;color:var(--nb-text)}
+.q-steps li{margin:3px 0}
+.q-time{font-size:.84rem;color:var(--nb-soft);margin:0;display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.q-time .linkish{color:var(--nb-ink);font-size:.84rem}
+.q-done{font-family:var(--nb-hand);color:var(--nb-margin);font-size:1.4rem}
+@media (max-width:760px){
+  .gate{--nb-m:18px;padding:28px 18px 32px 36px}
+  .gate-book{grid-template-columns:1fr;gap:8px}
+  .quick{margin-top:22px}
+  .q-qr{display:none}
+}
+@media (max-width:380px){ .q-code span{width:31px;height:42px;font-size:1.7rem} }
+/* the box a signed-in pupil types a code into */
+.qa-veil{position:fixed;inset:0;z-index:2147483100;background:rgba(10,14,30,.5);display:flex;align-items:center;justify-content:center;padding:16px}
+.qa-card{width:min(440px,100%);background:var(--card);color:var(--ink);border-radius:18px;padding:22px 22px 18px;box-shadow:0 24px 70px -20px rgba(0,0,0,.5);border:1px solid var(--rule)}
+.qa-card h2{font-family:var(--font-display);font-weight:800;margin:0 0 6px;font-size:1.35rem}
+.qa-card p{margin:0 0 12px;color:var(--ink-soft);font-size:.92rem;line-height:1.5}
+.qa-code{width:100%;font:700 1.8rem var(--font-mono,monospace);letter-spacing:.35em;text-align:center;padding:10px;border:2px solid var(--rule);border-radius:12px;background:var(--paper);color:var(--ink)}
+.qa-code:focus{border-color:var(--accent);outline:none}
+.qa-warn{background:color-mix(in srgb,var(--margin) 10%,var(--card));border:1px solid color-mix(in srgb,var(--margin) 40%,transparent);border-radius:12px;padding:10px 12px;font-size:.88rem;line-height:1.5;margin:0 0 12px}
+.qa-dev{font-size:1.05rem;font-weight:700;color:var(--ink);margin:0 0 4px}
+.qa-row{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:6px}
+.qa-row button{font:inherit;font-weight:600;border-radius:10px;padding:9px 16px;cursor:pointer;border:1px solid var(--rule);background:var(--card);color:var(--ink)}
+.qa-row .go{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.qa-row .no{color:var(--margin)}
+.qa-err{color:var(--margin);font-size:.88rem;min-height:1.2em;margin:8px 0 0}
 </style>
 <link rel="stylesheet" href="polish.css?b=20261102091427">
 <link rel="stylesheet" href="https://civilinitiatives.org/glass.css?b=20261102a">
@@ -1365,7 +1447,9 @@ body.gsc-overflow-hidden{overflow:auto!important}
      LOGIN SCREEN
      ============================================================ -->
 <div class="gate" id="gate">
+  <div class="gate-book">
   <div class="gate-card">
+    <p class="gate-hand" aria-hidden="true">for Hatch End High pupils</p>
     <h1>Homework Launchpad</h1>
     <p class="sub" id="gateSub">Sign in to pick up where you left off.</p>
     <button type="button" class="btn ms" id="msBtn">
@@ -1409,6 +1493,29 @@ body.gsc-overflow-hidden{overflow:auto!important}
       <p>A homework site built by a Year 7 pupil at Hatch End High School, for pupils there. Sign in with your school Microsoft login.</p>
       <p>No adverts, nothing to buy, no tracking. The code is readable at <a href="https://github.com/silocell/HEH-Homework" rel="noopener">github.com/silocell/HEH-Homework</a>; the games are open source.</p>
     </details>
+  </div>
+
+  <!-- Quick sign-in, like Roblox: this device shows a code; a device that's
+       already signed in types it (or scans the QR) and approves. -->
+  <section class="quick" id="quickBox" aria-labelledby="quickTitle">
+    <p class="gate-hand" aria-hidden="true">signed in on your phone?</p>
+    <h2 id="quickTitle">Quick sign-in</h2>
+    <p class="q-sub">Get a code here, then approve it on a phone or computer where you're already signed in. No password needed.</p>
+    <button type="button" class="btn q-go" id="qStart">Show a code</button>
+    <div class="q-live" id="qLive" hidden>
+      <div class="q-row">
+        <div class="q-code" id="qCode" role="img" aria-label="Your code"></div>
+        <div class="q-qr" id="qQr"></div>
+      </div>
+      <ol class="q-steps">
+        <li>On your other device, open the Launchpad, tap <b>Menu</b> and then <b>Quick sign-in</b>.</li>
+        <li>Type this code there, or scan the QR code with that device's camera.</li>
+        <li>Check it names this device, then tap <b>Approve</b>. This page signs in by itself.</li>
+      </ol>
+      <p class="q-time"><span id="qTime"></span> <button type="button" class="linkish" id="qNew">New code</button></p>
+    </div>
+    <p class="gate-error" id="qErr" role="status"></p>
+  </section>
   </div>
 </div>
 
@@ -1471,6 +1578,7 @@ body.gsc-overflow-hidden{overflow:auto!important}
       <button class="ghost-btn" id="labBtn" type="button" hidden>Lab</button>
       <button class="ghost-btn" id="themeBtn" type="button">Dark mode</button>
       <button class="ghost-btn" id="fastBtn" type="button" title="Fast mode turns off the glass and animations so pages scroll smoothly on slower devices. It switches on by itself when a device is struggling.">Fast mode</button>
+      <button class="ghost-btn" id="quickBtn" type="button" title="Sign in another device with a code">Quick sign-in</button>
       <button class="ghost-btn" id="switchBtn" type="button">Sign out</button>
     </div>
   </div>
@@ -2638,6 +2746,159 @@ document.getElementById("loginForm").addEventListener("submit",function(e){
   });
 });
 
+
+/* ---------- QUICK SIGN-IN (like Roblox) ----------
+   Not signed in: "Show a code" asks the quicklogin server function for a
+   6-digit code and a secret. The code shows here (and as a QR code); this
+   page asks every few seconds whether someone has approved it. Once they
+   have, it gets a one-time sign-in token and swaps it for a session.
+   Signed in: Menu > Quick sign-in, type the code (or scan the QR, which
+   opens ?quick=123456), check which device is asking, approve. */
+var quick = { poll:null, code:null, until:0, timer:null, qrLib:null };
+function quickCall(body){
+  return sb.functions.invoke("quicklogin", { body: body }).then(function(r){
+    if(r.data) return r.data;
+    var ctx = r.error && r.error.context;
+    return (ctx && ctx.json ? ctx.json() : Promise.resolve(null)).then(function(x){ return x || { error:"Can't reach the server. Check your connection." }; }, function(){ return { error:"Can't reach the server. Check your connection." }; });
+  }, function(){ return { error:"Can't reach the server. Check your connection." }; });
+}
+function quickStop(){ clearTimeout(quick.timer); quick.timer = null; quick.poll = null; }
+function quickShow(code){
+  var box = document.getElementById("qCode"); box.textContent = "";
+  box.setAttribute("aria-label", "Your code: " + code.split("").join(" "));
+  code.split("").forEach(function(d){ var sp = document.createElement("span"); sp.textContent = d; box.appendChild(sp); });
+  var qr = document.getElementById("qQr"); qr.textContent = "";
+  var link = "https://civilinitiatives.org/?quick=" + code;
+  function draw(){ try{ var q = window.qrcode(0, "M"); q.addData(link); q.make(); qr.innerHTML = q.createSvgTag({ cellSize:4, margin:0, scalable:true }); qr.hidden = false; }catch(e){ qr.hidden = true; } }
+  if(window.qrcode) draw();
+  else if(!quick.qrLib){
+    quick.qrLib = document.createElement("script");
+    quick.qrLib.src = "https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js";
+    quick.qrLib.onload = draw; quick.qrLib.onerror = function(){ qr.hidden = true; };
+    document.head.appendChild(quick.qrLib);
+  } else quick.qrLib.addEventListener("load", draw);
+}
+function quickStart(){
+  var err = document.getElementById("qErr"), go = document.getElementById("qStart");
+  err.textContent = ""; quickStop();
+  if(!sb){ err.textContent = "Can't reach the server. Check your connection."; return; }
+  go.disabled = true; go.textContent = "Getting a code…";
+  quickCall({ action:"start" }).then(function(d){
+    go.disabled = false; go.textContent = "Show a code";
+    if(!d || !d.code){ err.textContent = (d && d.error) || "Quick sign-in isn't working just now - sign in the normal way."; return; }
+    quick.poll = d.poll; quick.code = d.code; quick.until = Date.now() + (d.expires_in || 300) * 1000;
+    go.hidden = true; document.getElementById("qLive").hidden = false;
+    quickShow(d.code); quickTick();
+  });
+}
+function quickTick(){
+  if(!quick.poll) return;
+  var gate = document.getElementById("gate"), left = Math.round((quick.until - Date.now()) / 1000);
+  if(gate.hidden){ quickStop(); return; }
+  if(left <= 0){
+    quickStop(); document.getElementById("qCode").textContent = "";
+    document.getElementById("qTime").textContent = "That code ran out.";
+    document.getElementById("qQr").textContent = "";
+    return;
+  }
+  document.getElementById("qTime").textContent = "Runs out in " + Math.floor(left / 60) + ":" + String(left % 60).padStart(2, "0");
+  if(document.hidden){ quick.timer = setTimeout(quickTick, 2500); return; }
+  var mine = quick.poll;
+  quickCall({ action:"poll", poll:mine }).then(function(d){
+    if(quick.poll !== mine) return;
+    if(d && d.status === "approved" && d.token_hash){ quickStop(); quickFinish(d.token_hash); return; }
+    if(d && d.status === "denied"){ quickStop(); document.getElementById("qLive").hidden = true; document.getElementById("qStart").hidden = false;
+      document.getElementById("qErr").textContent = "That code was turned down on the other device."; return; }
+    if(d && (d.status === "expired" || d.status === "failed")){ quickStop(); document.getElementById("qTime").textContent = d.error || "That code ran out."; return; }
+    quick.timer = setTimeout(quickTick, 2500);
+  });
+}
+function quickFinish(hash){
+  document.getElementById("qTime").innerHTML = '<span class="q-done">Approved! Signing you in…</span>';
+  function done(r){
+    var u = r && r.data && r.data.user;
+    if(!u){ document.getElementById("qTime").textContent = "Signing in didn't work - get a new code or sign in the normal way."; return; }
+    store(SESSION_HINT, u.email);
+    openDashboard({ name:displayName(u.email), email:u.email, uid:u.id, offline:false }, u);
+  }
+  sb.auth.verifyOtp({ token_hash:hash, type:"magiclink" }).then(function(r){
+    if(r && r.error) return sb.auth.verifyOtp({ token_hash:hash, type:"email" }).then(done);
+    done(r);
+  }, function(){ done(null); });
+}
+document.getElementById("qStart").addEventListener("click", quickStart);
+document.getElementById("qNew").addEventListener("click", function(){
+  document.getElementById("qLive").hidden = true; document.getElementById("qStart").hidden = false; quickStart();
+});
+document.addEventListener("visibilitychange", function(){ if(!document.hidden && quick.poll){ clearTimeout(quick.timer); quickTick(); } });
+(function(){   /* opened a quick sign-in link while signed out: say what to do */
+  var c = new URLSearchParams(location.search).get("quick");
+  if(c && /^\d{6}$/.test(c)) document.getElementById("qErr").textContent = "To approve code " + c + ", sign in on this device first.";
+})();
+
+/* the signed-in side: type the code, check the device, approve */
+function quickApprove(prefill){
+  var old = document.querySelector(".qa-veil"); if(old) old.remove();
+  var veil = document.createElement("div"); veil.className = "qa-veil";
+  var card = document.createElement("div"); card.className = "qa-card"; card.setAttribute("role", "dialog"); card.setAttribute("aria-modal", "true"); card.setAttribute("aria-labelledby", "qaTitle");
+  veil.appendChild(card); document.body.appendChild(veil);
+  var back = document.activeElement;
+  function close(){ veil.remove(); document.removeEventListener("keydown", key); if(back && back.focus) back.focus(); }
+  function key(e){ if(e.key === "Escape") close(); }
+  document.addEventListener("keydown", key);
+  veil.addEventListener("click", function(e){ if(e.target === veil) close(); });
+  function step1(msg){
+    card.innerHTML = '<h2 id="qaTitle">Quick sign-in</h2><p>Sign in another device: type the 6-digit code it shows.</p>' +
+      '<input class="qa-code" id="qaCode" inputmode="numeric" autocomplete="one-time-code" maxlength="7" aria-label="6-digit code" placeholder="000000">' +
+      '<p class="qa-err" id="qaErr" role="status"></p><div class="qa-row"><button type="button" data-x>Cancel</button><button type="button" class="go" data-go>Continue</button></div>';
+    var inp = card.querySelector("#qaCode"), errEl = card.querySelector("#qaErr");
+    if(msg) errEl.textContent = msg;
+    inp.value = prefill || ""; prefill = null;
+    inp.addEventListener("input", function(){ inp.value = inp.value.replace(/\D/g, "").slice(0, 6); });
+    function go(){
+      var c = inp.value.replace(/\D/g, "");
+      if(c.length !== 6){ errEl.textContent = "Codes are 6 numbers."; return; }
+      errEl.textContent = "Checking…";
+      quickCall({ action:"lookup", code:c }).then(function(d){ if(d && d.device) step2(c, d); else errEl.textContent = (d && d.error) || "That didn't work."; });
+    }
+    card.querySelector("[data-go]").onclick = go;
+    card.querySelector("[data-x]").onclick = close;
+    inp.addEventListener("keydown", function(e){ if(e.key === "Enter") go(); });
+    inp.focus();
+    if(inp.value.length === 6) go();
+  }
+  function step2(code, d){
+    var ago = d.ago < 60 ? "just now" : Math.round(d.ago / 60) + " min ago";
+    card.innerHTML = '<h2 id="qaTitle">Sign in this device?</h2><p class="qa-dev"></p><p>Asked ' + ago + '. It will be signed in as you.</p>' +
+      '<div class="qa-warn"><b>Only approve a device that is in front of you right now.</b> Never type in a code that someone sent you or asked you for - they would get into your account.</div>' +
+      '<p class="qa-err" id="qaErr" role="status"></p><div class="qa-row"><button type="button" class="no" data-no>No, that\'s not me</button><button type="button" class="go" data-yes>Approve</button></div>';
+    card.querySelector(".qa-dev").textContent = d.device;
+    var errEl = card.querySelector("#qaErr");
+    card.querySelector("[data-yes]").onclick = function(){
+      this.disabled = true; errEl.textContent = "Approving…";
+      quickCall({ action:"approve", code:code }).then(function(r){
+        if(r && r.ok) done("✅ Done. " + (r.device || "That device") + " is signing in now.");
+        else { errEl.textContent = (r && r.error) || "That didn't work."; }
+      });
+    };
+    card.querySelector("[data-no]").onclick = function(){ quickCall({ action:"deny", code:code }); done("Turned down. That device won't be signed in."); };
+    card.querySelector("[data-yes]").focus();
+  }
+  function done(msg){
+    card.innerHTML = '<h2 id="qaTitle">Quick sign-in</h2><p></p><div class="qa-row"><button type="button" class="go" data-x>Done</button></div>';
+    card.querySelector("p").textContent = msg;
+    card.querySelector("[data-x]").onclick = close; card.querySelector("[data-x]").focus();
+  }
+  step1();
+}
+document.getElementById("quickBtn").addEventListener("click", function(){ quickApprove(); });
+function quickFromLink(){
+  var q = new URLSearchParams(location.search), c = q.get("quick");
+  if(!c) return;
+  q.delete("quick"); history.replaceState(null, "", location.pathname + (q.toString() ? "?" + q : "") + location.hash);
+  if(/^\d{6}$/.test(c)) quickApprove(c);
+}
+
 function signOutTeardown(){ document.getElementById("switchBtn").click(); }
 document.getElementById("switchBtn").addEventListener("click",function(){
   guideReset();
@@ -3279,6 +3540,7 @@ function openDashboard(who, supaUser){
 
   document.getElementById("gate").hidden = true;
   document.getElementById("dash").hidden = false;
+  setTimeout(quickFromLink, 400);   /* opened from a quick sign-in QR code */
 
   if(supaUser && supaUser.user_metadata && supaUser.user_metadata.theme){
     var t = supaUser.user_metadata.theme;
