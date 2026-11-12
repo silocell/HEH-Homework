@@ -40,6 +40,18 @@
   function addStyle(css) { var s = document.createElement("style"); s.textContent = css; (document.head || html).appendChild(s); }
   addStyle(LITE_CSS);
 
+  /* Phones: tapping something quickly (five taps on a title, a game button)
+     must not double-tap-zoom the page in and out - in the app that looked
+     like the page glitching and reloading. Pinch zoom still works. Also
+     stops phones blowing text up on their own when turned sideways. */
+  addStyle("html{touch-action:manipulation;-webkit-text-size-adjust:100%;text-size-adjust:100%}" +
+    "a,button,[role=button],summary,label{-webkit-tap-highlight-color:transparent}");
+  /* A page that forgot to say how wide it is would show zoomed out on a phone. */
+  if (!document.querySelector("meta[name=viewport]")) {
+    var vp = document.createElement("meta"); vp.name = "viewport"; vp.content = "width=device-width, initial-scale=1";
+    (document.head || html).appendChild(vp);
+  }
+
   function weakDevice() {
     var n = navigator, c = n.connection || {};
     if (c.saveData) return true;
