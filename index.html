@@ -1280,19 +1280,28 @@ body.gsc-overflow-hidden{overflow:auto!important}
 .makercard{background:linear-gradient(110deg,#0f766e 0%,#0891b2 50%,#4f46e5 100%);box-shadow:0 10px 30px -12px rgba(8,145,178,.7)}
 @media (prefers-color-scheme:dark){ :root:not([data-theme="light"]) .makercard{background:linear-gradient(110deg,#134e4a 0%,#155e75 50%,#312e81 100%)} }
 :root[data-theme="dark"] .makercard{background:linear-gradient(110deg,#134e4a 0%,#155e75 50%,#312e81 100%)}
-/* Write, Grid, Present and Notebook - the Launchpad's own office apps */
-.officerow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:0 0 18px}
-.officerow a{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:var(--radius);text-decoration:none;color:#fff;position:relative;overflow:hidden;transition:transform .14s;min-width:0}
-.officerow a:hover{transform:translateY(-2px)}
-.officerow a b{display:block;font-size:1rem}
-.officerow a small{display:block;opacity:.85;font-size:.78rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.officerow a span{min-width:0}
-.officerow i{font-style:normal;font-size:1.6rem;flex:none}
-.officerow .ow{background:linear-gradient(120deg,#1d4ed8,#2563eb);box-shadow:0 8px 22px -12px rgba(37,99,235,.8)}
-.officerow .og{background:linear-gradient(120deg,#15803d,#16a34a);box-shadow:0 8px 22px -12px rgba(22,163,74,.8)}
-.officerow .op{background:linear-gradient(120deg,#c2410c,#ea580c);box-shadow:0 8px 22px -12px rgba(234,88,12,.8)}
-.officerow .on{background:linear-gradient(120deg,#6d28d9,#7c3aed);box-shadow:0 8px 22px -12px rgba(124,58,237,.8)}
-@media (max-width:760px){ .officerow{grid-template-columns:repeat(2,minmax(0,1fr))} }
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]) .playcard.makercard{background:linear-gradient(110deg,#134e4a 0%,#155e75 50%,#312e81 100%)}
+  :root:not([data-theme="light"]) .playcard.shopcard{background:linear-gradient(110deg,#78350f 0%,#831843 55%,#4c1d95 100%)}
+  :root:not([data-theme="light"]) .playcard.aicard{background:linear-gradient(110deg,#312e81 0%,#4c1d95 55%,#701a75 100%)}
+  :root:not([data-theme="light"]) .playcard.suitecard{background:linear-gradient(110deg,#1e3a8a 0%,#164e63 55%,#14532d 100%)}
+}
+:root[data-theme="dark"] .playcard.makercard{background:linear-gradient(110deg,#134e4a 0%,#155e75 50%,#312e81 100%)}
+:root[data-theme="dark"] .playcard.shopcard{background:linear-gradient(110deg,#78350f 0%,#831843 55%,#4c1d95 100%)}
+:root[data-theme="dark"] .playcard.aicard{background:linear-gradient(110deg,#312e81 0%,#4c1d95 55%,#701a75 100%)}
+:root[data-theme="dark"] .playcard.suitecard{background:linear-gradient(110deg,#1e3a8a 0%,#164e63 55%,#14532d 100%)}
+/* Launchpad AI, and the Suite (Write, Grid, Present, Notebook and the rest) in one card */
+.aicard{background:linear-gradient(110deg,#4338ca 0%,#7c3aed 55%,#c026d3 100%);box-shadow:0 10px 30px -12px rgba(124,58,237,.75)}
+.aimark{font-size:2.3rem;color:#fff;text-shadow:0 0 18px rgba(255,255,255,.55)}
+.suitecard{background:linear-gradient(110deg,#1d4ed8 0%,#0e7490 55%,#15803d 100%);box-shadow:0 10px 30px -12px rgba(14,116,144,.75)}
+.suitecard .stretch{color:inherit;text-decoration:none}
+.suitecard .stretch::before{content:"";position:absolute;inset:0}
+.suitecard .stretch:focus-visible{outline:none}
+.suitecard:focus-within{outline:3px solid #fff;outline-offset:2px}
+.suiteapps{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;position:relative;z-index:2}
+.suiteapps a{font-size:.78rem;font-weight:700;color:#fff;text-decoration:none;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.3);padding:4px 10px;border-radius:999px;line-height:1.3}
+.suiteapps a:hover,.suiteapps a:focus-visible{background:rgba(255,255,255,.3);outline:none}
+.suitecard a.playgo{text-decoration:none}
 .shopicon{flex:0 0 auto;z-index:1;font-size:2rem;line-height:1;filter:drop-shadow(0 3px 0 rgba(0,0,0,.18))}
 @media (prefers-color-scheme:dark){ :root:not([data-theme="light"]) .shopcard{background:linear-gradient(110deg,#78350f 0%,#831843 55%,#4c1d95 100%)} }
 :root[data-theme="dark"] .shopcard{background:linear-gradient(110deg,#78350f 0%,#831843 55%,#4c1d95 100%)}
@@ -1623,6 +1632,15 @@ body.gsc-overflow-hidden{overflow:auto!important}
     <span class="playgo">Play</span>
   </a>
 
+  <a class="playcard aicard" id="aiCard" href="https://ai.civilinitiatives.org/">
+    <span class="shopicon aimark" aria-hidden="true">✦</span>
+    <span class="playwords">
+      <strong>Launchpad AI</strong>
+      <span>Ask anything: homework help, writing, maths and code. Use Launchpad AI, Claude and more.</span>
+    </span>
+    <span class="playgo">Ask</span>
+  </a>
+
   <a class="playcard makercard" id="makerCard" href="https://sandbox.civilinitiatives.org/">
     <span class="shopicon" aria-hidden="true">🎮</span>
     <span class="playwords">
@@ -1632,12 +1650,20 @@ body.gsc-overflow-hidden{overflow:auto!important}
     <span class="playgo">Make</span>
   </a>
 
-  <nav class="officerow" aria-label="Office apps">
-    <a class="ow" href="https://suite.civilinitiatives.org/write/"><i aria-hidden="true">✍️</i><span><b>Write</b><small>Documents &amp; essays</small></span></a>
-    <a class="og" href="https://suite.civilinitiatives.org/grid/"><i aria-hidden="true">📊</i><span><b>Grid</b><small>Spreadsheets &amp; charts</small></span></a>
-    <a class="op" href="https://suite.civilinitiatives.org/present/"><i aria-hidden="true">🎞️</i><span><b>Present</b><small>Slides &amp; shows</small></span></a>
-    <a class="on" href="https://suite.civilinitiatives.org/notebook/"><i aria-hidden="true">📓</i><span><b>Notebook</b><small>Notes &amp; to-dos</small></span></a>
-  </nav>
+  <div class="playcard suitecard" id="suiteCard">
+    <span class="shopicon" aria-hidden="true">🗂️</span>
+    <span class="playwords">
+      <strong><a class="stretch" href="https://suite.civilinitiatives.org/">Launchpad Suite</a></strong>
+      <span>Documents, spreadsheets, slides and notes, saved to your account.</span>
+      <span class="suiteapps" aria-label="Open an app">
+        <a href="https://suite.civilinitiatives.org/write/">✍️ Write</a>
+        <a href="https://suite.civilinitiatives.org/grid/">📊 Grid</a>
+        <a href="https://suite.civilinitiatives.org/present/">🎞️ Present</a>
+        <a href="https://suite.civilinitiatives.org/notebook/">📓 Notebook</a>
+      </span>
+    </span>
+    <a class="playgo" href="https://suite.civilinitiatives.org/" tabindex="-1" aria-hidden="true">Open</a>
+  </div>
 
   <a class="playcard shopcard" id="shopCard" href="https://shop.civilinitiatives.org/">
     <span class="shopicon" aria-hidden="true">🛍️</span>
@@ -6769,6 +6795,7 @@ function featureCards(){
       document.querySelectorAll('.site-foot a[href^="https://shop.civilinitiatives.org"]').forEach(function(a){ a.parentNode.hidden = f.shop === false; });
       var ft = document.getElementById("siteFoot"); if(ft) ft.hidden = f.footer === false;
       document.querySelectorAll('.site-foot a[href*="/chat/"]').forEach(function(a){ a.parentNode.hidden = f.hwchat === false; });
+      var ac = document.getElementById("aiCard"); if(ac) ac.hidden = f.hwchat === false;
     });
   }).catch(function(){});
 }
