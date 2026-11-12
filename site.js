@@ -22,6 +22,7 @@
   var API = "https://hehs-live.duckdns.org";
   var KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzkyODMyMjkwLCJleHAiOjIxMDgxOTIyOTB9.7gFhQa5RBwVtiOPLO7Qf2-aVEbkd5xgpLiN1J06Gybo";
   var OWNER_HASH = "747e511bdf6129b4347b4d4e0292c64db92d3e7ab2f41da57de0968becb8d0a9";
+  var CLOSED_OK = ["fd804b4f914bd60f44b2e14460ff9e6c98639bf7152ba7e62fda4c1c11baca8b","1fdacb3e13cc7c7fc71b8c92deba6fc3f2211179918c863af09a0213eee1f96f","21639513153d5858f6f5aa97b49c5caa8663cd513dc52081b66ce35b310b7c97"];
   var html = document.documentElement;
   var inApp = /LaunchpadApp\//.test(navigator.userAgent);
   function ls(k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v); } catch (e) { return null; } }
@@ -169,7 +170,13 @@
     if (!email || !window.crypto || !crypto.subtle) return Promise.resolve(false);
     return crypto.subtle.digest("SHA-256", new TextEncoder().encode(String(email).trim().toLowerCase())).then(function (b) {
       var h = Array.prototype.map.call(new Uint8Array(b), function (x) { return ("0" + x.toString(16)).slice(-2); }).join("");
-      return h === OWNER_HASH;
+      if (h === OWNER_HASH) return true;
+      /* also let in while closed (SHA-256 of the part before the @, so the names aren't here) */
+      var local = String(email).trim().toLowerCase().split("@")[0];
+      return crypto.subtle.digest("SHA-256", new TextEncoder().encode(local)).then(function (b2) {
+        var h2 = Array.prototype.map.call(new Uint8Array(b2), function (x) { return ("0" + x.toString(16)).slice(-2); }).join("");
+        return CLOSED_OK.indexOf(h2) !== -1;
+      });
     }, function () { return false; });
   }
   function readStatus() {
