@@ -1437,6 +1437,25 @@ body.gsc-overflow-hidden{overflow:auto!important}
 .qa-row .go{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
 .qa-row .no{color:var(--margin)}
 .qa-err{color:var(--margin);font-size:.88rem;min-height:1.2em;margin:8px 0 0}
+
+/* the Rules and Privacy box on first sign-in */
+.agree-veil{position:fixed;inset:0;z-index:2147483200;background:rgba(10,14,30,.6);display:flex;align-items:center;justify-content:center;padding:16px;overflow:auto}
+.agree-card{width:min(560px,100%);max-height:calc(100vh - 32px);overflow:auto;background:var(--card);color:var(--ink);border:1px solid var(--rule);border-left:5px solid var(--margin);border-radius:18px;padding:24px 24px 18px;box-shadow:0 30px 80px -24px rgba(0,0,0,.55)}
+.agree-card h2{font-family:var(--font-display);font-weight:800;font-size:1.6rem;letter-spacing:-.02em;margin:0 0 6px}
+.agree-sub{color:var(--ink-soft);margin:0 0 10px;font-size:.95rem}
+.agree-list{margin:0 0 12px;padding-left:1.1em;font-size:.93rem;line-height:1.55}
+.agree-list li{margin:6px 0}
+.agree-links{font-size:.92rem;margin:0 0 14px}
+.agree-links a{color:var(--accent);font-weight:600}
+.agree-tick{display:flex;gap:10px;align-items:flex-start;font-weight:600;font-size:.95rem;padding:12px;border:1px solid var(--rule);border-radius:12px;cursor:pointer}
+.agree-tick input{width:20px;height:20px;flex:none;margin:1px 0 0;accent-color:var(--accent)}
+.agree-young{font-size:.82rem;color:var(--ink-soft);margin:8px 0 0}
+.agree-err{color:var(--margin);font-size:.88rem;min-height:1.2em;margin:6px 0 0}
+.agree-row{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:4px}
+.agree-row button{font:inherit;font-weight:600;border-radius:10px;padding:10px 16px;cursor:pointer;border:1px solid var(--rule);background:var(--card);color:var(--ink)}
+.agree-row .agree-yes{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.agree-row .agree-yes:disabled{opacity:.45;cursor:default}
+.agree-row .agree-no{color:var(--ink-soft)}
 </style>
 <link rel="stylesheet" href="polish.css?b=20261102091427">
 <link rel="stylesheet" href="https://civilinitiatives.org/glass.css?b=20261102a">
@@ -1843,7 +1862,7 @@ body.gsc-overflow-hidden{overflow:auto!important}
     </div>
     <div class="foot-base">
       <span>© 2026 Homework Launchpad · civilinitiatives.org</span>
-      <span><a href="privacy.html">Privacy</a></span>
+      <span><a href="terms.html">Rules</a> · <a href="privacy.html">Privacy</a></span>
     </div>
     <script>if(window.LaunchpadApp||/LaunchpadApp\//.test(navigator.userAgent))document.getElementById("getApp").hidden=true;</script>
   </footer>
@@ -2751,6 +2770,54 @@ document.getElementById("loginForm").addEventListener("submit",function(e){
 });
 
 
+
+/* ---------- THE RULES AND PRIVACY: agreed the first time you sign in ----------
+   Kept on the account (user_metadata), so it's asked once per account, not
+   once per device. Change AGREE_V when the Rules or Privacy page changes in
+   a way that matters, and everyone is asked again. */
+var AGREE_V = "2026-11-12", agreePending = false, guideAfterAgree = false;
+function checkAgreement(u){
+  if(!u || !sb || document.querySelector(".agree-veil")) return;
+  var md = u.user_metadata || {};
+  if(md.agreed === AGREE_V) return;
+  agreePending = true;
+  var veil = document.createElement("div"); veil.className = "agree-veil";
+  veil.innerHTML =
+    '<div class="agree-card" role="dialog" aria-modal="true" aria-labelledby="agreeTitle">' +
+      '<h2 id="agreeTitle">Before you start</h2>' +
+      '<p class="agree-sub">The Launchpad has a few rules, and a page about what it keeps. Here is the short version:</p>' +
+      '<ul class="agree-list">' +
+        '<li><b>Be kind.</b> No bullying, rude or hateful posts. Report anything wrong.</li>' +
+        '<li><b>Keep personal things private</b>, yours and other people\'s. Never type them into the AI.</li>' +
+        '<li><b>Look after your account.</b> Don\'t share it, and only approve quick sign-ins for devices in front of you.</li>' +
+        '<li><b>AI can be wrong.</b> Check important things, and follow your school\'s rules on AI.</li>' +
+        '<li><b>What we keep:</b> your sign-in, homework list, progress and what you make or post. No adverts, no tracking, nothing sold. AI messages go to AI companies to be answered.</li>' +
+      '</ul>' +
+      '<p class="agree-links">Read them in full: <a href="terms.html" target="_blank" rel="noopener">Rules</a> · <a href="privacy.html" target="_blank" rel="noopener">Privacy</a></p>' +
+      '<label class="agree-tick"><input type="checkbox" id="agreeTick"> I have read the Rules and Privacy, and I agree to them.</label>' +
+      '<p class="agree-young">Under 13? Check with a parent or carer that it\'s OK first.</p>' +
+      '<p class="agree-err" id="agreeErr" role="status"></p>' +
+      '<div class="agree-row"><button type="button" class="agree-no" id="agreeNo">I don\'t agree - sign out</button><button type="button" class="agree-yes" id="agreeYes" disabled>Agree and start</button></div>' +
+    '</div>';
+  document.body.appendChild(veil);
+  var tick = document.getElementById("agreeTick"), yes = document.getElementById("agreeYes");
+  tick.addEventListener("change", function(){ yes.disabled = !tick.checked; });
+  tick.focus();
+  document.getElementById("agreeNo").addEventListener("click", function(){
+    veil.remove(); agreePending = false; guideAfterAgree = false;
+    document.getElementById("switchBtn").click();
+  });
+  yes.addEventListener("click", function(){
+    yes.disabled = true; yes.textContent = "Saving…";
+    sb.auth.updateUser({ data:{ agreed:AGREE_V, agreed_at:new Date().toISOString() } }).then(function(r){
+      if(r && r.error){ yes.disabled = false; yes.textContent = "Agree and start";
+        document.getElementById("agreeErr").textContent = "Couldn't save that - check your connection and try again."; return; }
+      veil.remove(); agreePending = false;
+      if(guideAfterAgree){ guideAfterAgree = false; maybeGuide("welcome"); }
+    }, function(){ yes.disabled = false; yes.textContent = "Agree and start";
+      document.getElementById("agreeErr").textContent = "Couldn't save that - check your connection and try again."; });
+  });
+}
 /* ---------- QUICK SIGN-IN (like Roblox) ----------
    Not signed in: "Show a code" asks the quicklogin server function for a
    6-digit code and a secret. The code shows here (and as a QR code); this
@@ -3306,6 +3373,7 @@ function guideMarkSeen(name){
 }
 
 function maybeGuide(name){
+  if(agreePending){ guideAfterAgree = true; return; }   /* the Rules box comes first */
   if(!GUIDE[name] || guideSeen[name]) return;
   if(guideName === name || guideQueue.indexOf(name) > -1) return;
   guideQueue.push(name);
@@ -3552,6 +3620,7 @@ function openDashboard(who, supaUser){
   document.getElementById("gate").hidden = true;
   document.getElementById("dash").hidden = false;
   setTimeout(quickFromLink, 400);   /* opened from a quick sign-in QR code */
+  checkAgreement(supaUser);
 
   if(supaUser && supaUser.user_metadata && supaUser.user_metadata.theme){
     var t = supaUser.user_metadata.theme;
