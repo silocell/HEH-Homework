@@ -356,7 +356,10 @@ body.dragging .win .shield{display:block}
       var h = document.createElement("iframe"); h.title = a.name;
       h.setAttribute("sandbox", "allow-scripts allow-modals allow-pointer-lock allow-downloads");
       h.setAttribute("allow", "fullscreen; autoplay; gamepad");
-      h.srcdoc = a.html; h.onload = function () { var l = body.querySelector(".load"); if (l) l.remove(); };
+      // walled-off apps can't keep data, so games that save with localStorage get a stand-in that lasts until the window closes
+      var shim = "<script>(function(){function M(){var d={};return{getItem:function(k){return Object.prototype.hasOwnProperty.call(d,k)?d[k]:null},setItem:function(k,v){d[k]=String(v)},removeItem:function(k){delete d[k]},clear:function(){d={}},key:function(i){return Object.keys(d)[i]||null},get length(){return Object.keys(d).length}}}" +
+        "['localStorage','sessionStorage'].forEach(function(n){try{window[n].length}catch(e){try{Object.defineProperty(window,n,{value:M(),configurable:true})}catch(x){}}})})()<\/script>";
+      h.srcdoc = shim + a.html; h.onload = function () { var l = body.querySelector(".load"); if (l) l.remove(); };
       body.insertBefore(h, body.querySelector(".shield"));
     } else if (id === "runner") { body.querySelector(".load").remove(); body.insertBefore(runnerPane(), body.querySelector(".shield")); }
     else if (id === "settings") { var l0 = body.querySelector(".load"); l0.remove(); body.insertBefore(settingsPane(), body.querySelector(".shield")); }
