@@ -148,6 +148,10 @@ body.dragging .win .shield{display:block}
 .seg button{border:0;background:transparent;padding:7px 14px;border-radius:9px;cursor:pointer;font-weight:600}
 .seg button[aria-pressed="true"]{background:var(--indigo);color:#fff}
 
+.runner .drop{margin-top:12px;padding:18px;border:2px dashed var(--rule);border-radius:14px;color:var(--soft);text-align:center}
+#toast{position:fixed;left:50%;bottom:calc(var(--shelf-h) + 16px);transform:translate(-50%,10px);max-width:calc(100vw - 32px);padding:11px 16px;border-radius:14px;background:#0f172a;color:#fff;font-weight:600;opacity:0;pointer-events:none;transition:.2s;z-index:10001}
+#toast.on{opacity:1;transform:translate(-50%,0)}
+
 /* ---------- phone: one app at a time, full screen ---------- */
 @media (max-width:700px){
   :root{--shelf-h:64px}
@@ -214,6 +218,7 @@ body.dragging .win .shield{display:block}
     { id: "arcade",  name: "Arcade",        ic: "🕹", app: "#ca8a04", url: "https://arcade.civilinitiatives.org/", grp: "Learn and play", keys: "games" },
     { id: "maker",   name: "Game Maker",    ic: "🛠", app: "#65a30d", url: "https://sandbox.civilinitiatives.org/", grp: "Learn and play", keys: "make game sandbox" },
     { id: "shop",    name: "Shop",          ic: "🛍", app: "#c026d3", url: "https://shop.civilinitiatives.org/", grp: "Learn and play", keys: "items avatar trade" },
+    { id: "runner",  name: "Run a file",    ic: "▶️", app: "#0f766e", grp: "HWL OS", keys: "open html app game apk run file" },
     { id: "settings",name: "Settings",      ic: "⚙️", app: "#475569", grp: "HWL OS", keys: "wallpaper theme dark light" }
   ];
   var BY = {}; APPS.forEach(function (a) { BY[a.id] = a; });
@@ -259,7 +264,7 @@ body.dragging .win .shield{display:block}
     var box = $("pins"); box.textContent = "";
     var ids = pins.slice(); Object.keys(wins).forEach(function (id) { if (ids.indexOf(id) < 0) ids.push(id); });
     ids.forEach(function (id) {
-      var a = BY[id], b = document.createElement("button");
+      var a = BY[id], b = document.createElement("button"); if (!a) return;
       b.type = "button"; b.className = "sbtn" + (wins[id] ? " run" : "") + (front === id && wins[id] && !wins[id].el.hidden ? " front" : "");
       b.title = a.name; b.setAttribute("aria-label", a.name + (wins[id] ? " (open)" : ""));
       b.innerHTML = '<span class="ic" style="--app:' + a.app + '">' + a.ic + "</span>";
@@ -345,7 +350,16 @@ body.dragging .win .shield{display:block}
       f.src = a.url; f.title = a.name; f.setAttribute("allow", "clipboard-read; clipboard-write; fullscreen; microphone; camera; autoplay; display-capture");
       f.onload = function () { var l = body.querySelector(".load"); if (l) l.remove(); };
       body.insertBefore(f, body.querySelector(".shield"));
-    } else if (id === "settings") { var l0 = body.querySelector(".load"); l0.remove(); body.insertBefore(settingsPane(), body.querySelector(".shield")); }
+    } else if (a.html != null) {
+      // a web app from your own device runs walled off: its own blank origin, so it can't see your
+      // Launchpad sign-in, this page or other windows, and can't send forms or open pop-ups
+      var h = document.createElement("iframe"); h.title = a.name;
+      h.setAttribute("sandbox", "allow-scripts allow-modals allow-pointer-lock allow-downloads");
+      h.setAttribute("allow", "fullscreen; autoplay; gamepad");
+      h.srcdoc = a.html; h.onload = function () { var l = body.querySelector(".load"); if (l) l.remove(); };
+      body.insertBefore(h, body.querySelector(".shield"));
+    } else if (id === "runner") { body.querySelector(".load").remove(); body.insertBefore(runnerPane(), body.querySelector(".shield")); }
+    else if (id === "settings") { var l0 = body.querySelector(".load"); l0.remove(); body.insertBefore(settingsPane(), body.querySelector(".shield")); }
     $("desk").appendChild(el);
     wins[id] = { el: el, a: a };
     wire(id, el);
@@ -355,6 +369,7 @@ body.dragging .win .shield{display:block}
   function close(id) {
     var w = wins[id]; if (!w) return;
     w.el.remove(); delete wins[id];
+    if (BY[id] && BY[id].temp) delete BY[id];
     if (front === id) { front = null; var top = topmost(); if (top) focus(top); }
     drawShelf(); remember();
   }
@@ -366,9 +381,9 @@ body.dragging .win .shield{display:block}
     drawShelf();
   }
   function remember() {
-    save("hwlos.open", Object.keys(wins));
+    save("hwlos.open", Object.keys(wins).filter(function (k) { return !BY[k].temp; }));
     Object.keys(wins).forEach(function (k) {
-      var e = wins[k].el; if (PHONE.matches) return;
+      var e = wins[k].el; if (PHONE.matches || BY[k].temp) return;
       layout[k] = { x: e.offsetLeft, y: e.offsetTop, w: e.offsetWidth, h: e.offsetHeight, max: e.classList.contains("max") };
     });
     save("hwlos.layout", layout);
@@ -420,6 +435,43 @@ body.dragging .win .shield{display:block}
       grip.addEventListener("pointermove", mv); grip.addEventListener("pointerup", up);
     });
   }
+
+  /* ---------- Run a file: web apps (.html) from your own device ---------- */
+  var runN = 0, RUN_MAX = 8 * 1024 * 1024;
+  function runFile(f) {
+    var nm = f.name || "app", ext = (nm.match(/\.([a-z0-9]+)$/i) || [, ""])[1].toLowerCase();
+    if (ext === "apk" || ext === "aab" || ext === "xapk") return say("Android apps (." + ext + ") can't run in HWL OS - they need an Android phone or tablet. Web apps (.html) work.");
+    if (/^(exe|msi|bat|cmd|dmg|pkg|app|deb|rpm|sh|ps1|jar)$/.test(ext)) return say("." + ext + " files are programs for a computer's own system, so they can't run in HWL OS. Web apps (.html) work.");
+    if (ext !== "html" && ext !== "htm") return say("HWL OS can run web apps - .html files. That one is a ." + (ext || "?") + " file.");
+    if (f.size > RUN_MAX) return say("That file is too big to run here (up to 8 MB).");
+    var rd = new FileReader();
+    rd.onload = function () {
+      var id = "run" + (++runN);
+      BY[id] = { id: id, name: nm.replace(/\.html?$/i, ""), ic: "🧩", app: "#334155", html: String(rd.result), temp: true };
+      open(id);
+    };
+    rd.onerror = function () { say("Couldn't read that file."); };
+    rd.readAsText(f);
+  }
+  var sayT;
+  function say(t) {
+    var m = document.querySelector(".runner .rmsg"); if (m) { m.textContent = t; return; }
+    var d = $("toast") || document.body.appendChild(Object.assign(document.createElement("div"), { id: "toast", role: "status" }));
+    d.textContent = t; d.className = "on"; clearTimeout(sayT); sayT = setTimeout(function () { d.className = ""; }, 5000);
+  }
+  function runnerPane() {
+    var d = document.createElement("div"); d.className = "settings runner";
+    d.innerHTML = "<h2>Run a file</h2><p>Open a web app or game saved on this device (an .html file) and it runs here in its own window.</p>" +
+      '<label class="go" style="display:inline-block;cursor:pointer">Choose an .html file<input type="file" accept=".html,.htm,text/html" hidden></label>' +
+      '<div class="drop">…or drop one anywhere on the desktop</div><p class="rmsg" role="status" style="color:var(--ink);font-weight:600;min-height:1.4em;margin-top:12px"></p>' +
+      "<h3>What can run</h3><p>Web apps and games made of one .html file, like the ones Game Maker or Launchpad AI can make. They run walled off from the rest of the Launchpad: " +
+      "they can't see your account, your files or your other windows.</p>" +
+      "<h3>What can't</h3><p>Android apps (.apk) need an Android phone or tablet, and computer programs (.exe and the like) need Windows or a Mac. A browser can't run either.</p>";
+    var inp = d.querySelector("input"); inp.onchange = function () { if (inp.files[0]) runFile(inp.files[0]); inp.value = ""; };
+    return d;
+  }
+  document.addEventListener("dragover", function (e) { if (e.dataTransfer && [].indexOf.call(e.dataTransfer.types || [], "Files") >= 0) e.preventDefault(); });
+  document.addEventListener("drop", function (e) { if (!e.dataTransfer || !e.dataTransfer.files.length) return; e.preventDefault(); [].slice.call(e.dataTransfer.files, 0, 4).forEach(runFile); });
 
   /* ---------- Settings (the one app that lives inside HWL OS) ---------- */
   function settingsPane() {
