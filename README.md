@@ -5,7 +5,7 @@ Copyright © 2026 Shiv (silocell). All Rights Reserved.
 By viewing this repository, you agree to the following terms:
 * **NO COPYING:** You are strictly prohibited from copying, duplicating, or using any part of this code.
 * **NO HOSTING:** You may not host your own copy, fork, or live version of this dashboard.
-* **NO PLAGIARISM:** You may not present this work or any derivative of it as your own, only this repository is affected, all other repositories related to this is open source and free the use, with the exemption of HEH-Sandbox and HEH-Shop
+* **NO PLAGIARISM:** You may not present this work or any derivative of it as your own, only this repository is affected, all other repositories related to this is open source and free to use, with the exemption of HEH-Sandbox and HEH-Shop
 
 Viewing this code is permitted for educational inspection only. Unauthorized use, replication, or distribution will result in an immediate DMCA copyright takedown notice. See [LICENSE](LICENSE) for full legal terms.
 
@@ -30,19 +30,35 @@ instead of six tabs and a planner I'd left in my locker.
   Ten a day each. It won't do your homework for you.
 - **Look it up** — Simple English Wikipedia first, then full Wikipedia.
   Free, and it doesn't use up your ten.
+- **Launchpad AI** — a full AI chat at ai.civilinitiatives.org. The free
+  AIs come with a daily allowance; Claude costs pence you earn on the
+  Launchpad. It keeps the same safety filter as everything else.
+- **The Suite** — Write, Notebook, Present, Grid, Forms, PDF, Design, Draw
+  and Vids, at suite.civilinitiatives.org. Your files are saved to your
+  account and open on any device.
+- **My Files** — everything you've made in the Suite, and your storage,
+  at files.civilinitiatives.org.
+- **Videos** — post and watch videos and Shorts, at hosting.civilinitiatives.org.
+  Anything reported is hidden until an admin looks at it.
+- **Level Up** — practice questions that get harder as you get better.
+- **Launchpad Shop** — customise your look with what you earn, and trade with friends.
+- **Game Maker** — describe a game and the AI builds it, for Launchpad Pounds.
 - **Word of the day**, shortcuts, themes, and a font that's easier to read.
-- Customization- Launchpad Shop
+- **Apps** — the Launchpad on Android and the Microsoft Store, as well as the website.
 
 ## What's in this repository
 
-The page you see in your browser, and the admin panel. That's it.
+The dashboard you see at civilinitiatives.org, plus the privacy and terms
+pages. That's it.
 
 The server side — the bits that check who you are, run the filter and talk
 to the AI — isn't here. Not because hiding code makes anything safe: it
 doesn't, and anyone who tells you otherwise is selling something. It's
 because those files hold keys, and keys belong somewhere private.
 
-The games aren't here either. They're in repos of their own:
+Everything else lives in repos of its own.
+
+The games:
 
 - [HEH-Launchpad-Game](https://github.com/silocell/HEH-Launchpad-Game) — Gate Run, at gaterun.civilinitiatives.org
 - [HEH-Launchpad-Scratch](https://github.com/silocell/HEH-Launchpad-Scratch) — the six Scratch games, at games.civilinitiatives.org
@@ -50,10 +66,16 @@ The games aren't here either. They're in repos of their own:
 - [HEH-Play](https://github.com/silocell/HEH-Play) — the games page (every game in one place), at play.civilinitiatives.org
 - [HEH-Arcade](https://github.com/silocell/HEH-Arcade) — the Arcade, at arcade.civilinitiatives.org (GPL-3.0)
 - [HEH-Doodles](https://github.com/silocell/HEH-Doodles) — the doodle games, at doodles.civilinitiatives.org (GPL-3.0)
-- HEH-Sandbox
-  This is where students can ask ai to make dream games for a cost of course.
-  - HEH-Shop- The customisation and stuff traded, bought etc.
+- [HEH-Sandbox](https://github.com/silocell/HEH-Sandbox) — the Game Maker, where students ask the AI to make their dream game (for a cost, of course), at sandbox.civilinitiatives.org
 
+The rest of the Launchpad:
+
+- [HEH-AI](https://github.com/silocell/HEH-AI) — Launchpad AI, at ai.civilinitiatives.org
+- [HEH-Suite](https://github.com/silocell/HEH-Suite) — the Suite, at suite.civilinitiatives.org (GPL-3.0)
+- [HEH-Files](https://github.com/silocell/HEH-Files) — My Files, at files.civilinitiatives.org
+- [HEH-Hosting](https://github.com/silocell/HEH-Hosting) — Videos, at hosting.civilinitiatives.org
+- [HEH-Shop](https://github.com/silocell/HEH-Shop) — the Launchpad Shop: customisation, buying and trading, at shop.civilinitiatives.org
+- [HEH-Maintenance-](https://github.com/silocell/HEH-Maintenance-) — the admin panel, at maintenance.civilinitiatives.org
 
 One sign-in covers all of them: `auth-store.js` keeps the session in a
 cookie for `.civilinitiatives.org`, because each subdomain is a separate
@@ -92,14 +114,12 @@ Not this repository being tidy. Five things:
 
 ### If the server side ever has to be rebuilt
 
-Supabase, self-hosted on an Oracle Cloud server since 24 October. Three edge
-functions — `chat`, `admin`, `explain` — and a handful
-of SQL files that are run once in the SQL editor, in this order:
-`site_status.sql`, `rooms.sql`, `room_requests.sql`, `demo_admins.sql`,
-`lock_columns.sql`, `spend_ai.sql`, `rate_limits.sql`. The functions need
-three secrets: `GROQ_API_KEY`, and for sign-in the Azure client id and
-secret. None of these files live in this repository; keep the current
-copies with the backups.
+Supabase, self-hosted on an Oracle Cloud server in London since 24 October.
+Edge functions for the chat, the admin panel, the explainer, Launchpad AI,
+the Game Maker, profiles and more, and the SQL files that set up each part,
+run in the order they were made. The functions need secrets: a key for each
+AI provider, and for sign-in the Azure client id and secret. None of these
+files live in this repository; keep the current copies with the backups.
 
 ## Honest notes
 
@@ -111,7 +131,8 @@ copies with the backups.
 ## Built with
 
 Plain HTML, CSS and JavaScript — no framework. Supabase for the database,
-sign-in and server functions. Groq,Claude, Gemini and Cloudflare for the AI. GitHub Pages
-for hosting, on civilinitiatives.org
+sign-in and server functions. Groq, NVIDIA, OpenRouter, Cohere, Google
+Cloud, Gemini, Cloudflare and Claude for the AI. GitHub Pages for hosting,
+on civilinitiatives.org.
 
 — Shiv
