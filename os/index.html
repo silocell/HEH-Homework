@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>HWL OS</title>
+<meta name="description" content="HWL OS - the Homework Launchpad as a desktop: every Launchpad app in its own window.">
+<meta name="theme-color" content="#0b1026">
+<link rel="icon" type="image/png" href="/icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=Public+Sans:wght@400;500;600;700&display=swap">
+<script>
+try { var t = JSON.parse(localStorage.getItem("hwlos.prefs") || "{}"); if (t.theme === "dark" || t.theme === "light") document.documentElement.setAttribute("data-theme", t.theme); if (t.wall) document.documentElement.setAttribute("data-wall", t.wall); } catch (e) {}
+</script>
+<style>
+:root{
+  --night:#0b1026; --indigo:#4f46e5; --sky:#0ea5e9; --flame:#f59e0b; --flame2:#ef4444;
+  --win:#ffffff; --win2:#f1f5f9; --ink:#0f172a; --soft:#526077; --rule:rgba(15,23,42,.12);
+  --glass:rgba(255,255,255,.72); --glass-ink:#0f172a; --glass-rule:rgba(255,255,255,.55);
+  --shadow:0 24px 60px -18px rgba(3,7,30,.55), 0 2px 8px rgba(3,7,30,.18);
+  --display:"Bricolage Grotesque",system-ui,sans-serif; --body:"Public Sans",system-ui,sans-serif;
+  --shelf-h:60px;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){
+  --win:#121a2c; --win2:#1a2438; --ink:#e7ecf5; --soft:#9aa7bd; --rule:rgba(255,255,255,.1);
+  --glass:rgba(17,24,44,.72); --glass-ink:#e7ecf5; --glass-rule:rgba(255,255,255,.12); color-scheme:dark } }
+:root[data-theme="dark"]{
+  --win:#121a2c; --win2:#1a2438; --ink:#e7ecf5; --soft:#9aa7bd; --rule:rgba(255,255,255,.1);
+  --glass:rgba(17,24,44,.72); --glass-ink:#e7ecf5; --glass-rule:rgba(255,255,255,.12); color-scheme:dark }
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;overflow:hidden}
+body{font:15px/1.45 var(--body);color:var(--ink);background:var(--night);-webkit-font-smoothing:antialiased;user-select:none}
+button{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--sky);outline-offset:2px}
+
+/* ---------- wallpaper: a night sky with the launch trail ---------- */
+#wall{position:fixed;inset:0;overflow:hidden;background:
+  radial-gradient(120% 90% at 85% 110%, rgba(245,158,11,.30), transparent 55%),
+  radial-gradient(90% 70% at 10% 0%, rgba(79,70,229,.55), transparent 60%),
+  radial-gradient(80% 80% at 100% 0%, rgba(14,165,233,.35), transparent 60%),
+  linear-gradient(180deg,#0b1026 0%,#151a45 60%,#2a1d4f 100%)}
+:root[data-wall="dawn"] #wall{background:
+  radial-gradient(110% 80% at 50% 120%, rgba(251,191,36,.75), transparent 60%),
+  radial-gradient(90% 70% at 0% 0%, rgba(14,165,233,.55), transparent 60%),
+  linear-gradient(180deg,#1e3a8a 0%,#6d28d9 55%,#f472b6 100%)}
+:root[data-wall="mint"] #wall{background:
+  radial-gradient(100% 80% at 100% 100%, rgba(16,185,129,.55), transparent 60%),
+  radial-gradient(90% 70% at 0% 0%, rgba(14,165,233,.5), transparent 60%),
+  linear-gradient(180deg,#022c22 0%,#064e3b 55%,#0f766e 100%)}
+:root[data-wall="paper"] #wall{background:linear-gradient(160deg,#e0e7ff 0%,#f1f5f9 50%,#fde68a 100%)}
+#stars{position:absolute;inset:0;width:100%;height:100%;opacity:.9}
+:root[data-wall="paper"] #stars{opacity:0}
+.trail{position:absolute;right:-6vmax;bottom:calc(var(--shelf-h) + 4vmax);width:62vmax;height:3px;transform:rotate(-28deg);transform-origin:right center;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.08) 30%,rgba(253,186,116,.55) 85%,#fff);border-radius:3px;filter:blur(.4px)}
+.trail::after{content:"";position:absolute;right:-6px;top:50%;width:18px;height:18px;margin-top:-9px;border-radius:50%;background:radial-gradient(circle,#fff,rgba(253,186,116,.9) 40%,transparent 70%)}
+:root[data-wall="paper"] .trail{opacity:.35}
+@media (prefers-reduced-motion:no-preference){ .trail{animation:launch 1.6s cubic-bezier(.2,.7,.2,1) both} @keyframes launch{from{opacity:0;clip-path:inset(0 0 0 100%)}to{opacity:1;clip-path:inset(0 0 0 0)}} }
+.wordmark{position:absolute;left:clamp(20px,5vw,64px);top:clamp(20px,6vh,70px);color:rgba(255,255,255,.92);pointer-events:none}
+.wordmark b{display:block;font:800 clamp(2.4rem,7vw,5.6rem)/.9 var(--display);letter-spacing:-.03em}
+.wordmark span{display:block;font:500 clamp(.9rem,1.6vw,1.1rem) var(--body);opacity:.75;margin-top:10px}
+:root[data-wall="paper"] .wordmark{color:#1e1b4b}
+body.has-win .wordmark{opacity:.25;transition:opacity .3s}
+
+/* ---------- windows ---------- */
+#desk{position:fixed;inset:0 0 var(--shelf-h) 0}
+.win{position:absolute;display:flex;flex-direction:column;background:var(--win);border-radius:14px;box-shadow:var(--shadow);overflow:hidden;min-width:300px;min-height:200px;border:1px solid var(--rule)}
+.win.max{left:0!important;top:0!important;width:100%!important;height:100%!important;border-radius:0}
+.win[hidden]{display:none}
+.win .bar{display:flex;align-items:center;gap:8px;height:42px;padding:0 6px 0 12px;background:var(--win2);border-bottom:1px solid var(--rule);cursor:default;touch-action:none;flex:none}
+.win.front .bar{background:linear-gradient(90deg,color-mix(in srgb,var(--app,#4f46e5) 18%,var(--win2)),var(--win2) 60%)}
+.win .bar .ic{width:22px;height:22px;border-radius:7px;display:grid;place-items:center;font-size:.85rem;background:var(--app,#4f46e5);color:#fff;flex:none}
+.win .bar .nm{font:600 .92rem var(--display);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0}
+.win .bar button{width:34px;height:30px;border:0;border-radius:8px;background:transparent;display:grid;place-items:center;cursor:pointer;color:var(--soft);font-size:1rem;flex:none}
+.win .bar button:hover{background:var(--rule);color:var(--ink)}
+.win .bar button.x:hover{background:#ef4444;color:#fff}
+.win .body{position:relative;flex:1;background:var(--win)}
+.win iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:var(--win)}
+.win .load{position:absolute;inset:0;display:grid;place-items:center;color:var(--soft);font-size:.9rem;pointer-events:none}
+.win .load i{display:block;width:42px;height:42px;border-radius:12px;margin:0 auto 10px;background:var(--app,#4f46e5);color:#fff;font-style:normal;font-size:1.4rem;line-height:42px;text-align:center}
+.win .shield{position:absolute;inset:0;display:none}
+body.dragging .win .shield{display:block}
+.win .grip{position:absolute;right:0;bottom:0;width:18px;height:18px;cursor:nwse-resize;touch-action:none;z-index:2}
+.win .grip::after{content:"";position:absolute;right:4px;bottom:4px;width:8px;height:8px;border-right:2px solid var(--soft);border-bottom:2px solid var(--soft);opacity:.6}
+.win.max .grip{display:none}
+#snap{position:fixed;background:color-mix(in srgb,var(--sky) 22%,transparent);border:2px solid color-mix(in srgb,var(--sky) 70%,transparent);border-radius:14px;pointer-events:none;display:none;z-index:9998}
+
+/* ---------- shelf ---------- */
+#shelf{position:fixed;left:0;right:0;bottom:0;height:var(--shelf-h);display:flex;align-items:center;gap:6px;padding:0 10px;z-index:9999}
+#shelf .dock{margin:0 auto;display:flex;gap:4px;align-items:center;padding:6px;border-radius:18px;background:var(--glass);border:1px solid var(--glass-rule);backdrop-filter:blur(18px) saturate(1.4);-webkit-backdrop-filter:blur(18px) saturate(1.4);box-shadow:0 10px 30px -12px rgba(0,0,0,.45);max-width:calc(100vw - 210px);overflow-x:auto;scrollbar-width:none}
+#shelf .dock::-webkit-scrollbar{display:none}
+.sbtn{position:relative;width:44px;height:44px;border:0;border-radius:12px;background:transparent;display:grid;place-items:center;cursor:pointer;flex:none}
+.sbtn:hover{background:rgba(127,127,127,.18)}
+.sbtn .ic{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;font-size:1.15rem;background:var(--app);color:#fff;box-shadow:inset 0 -2px 0 rgba(0,0,0,.15)}
+.sbtn.run::after{content:"";position:absolute;bottom:1px;left:50%;width:6px;height:4px;margin-left:-3px;border-radius:2px;background:var(--glass-ink);opacity:.55}
+.sbtn.front::after{width:16px;margin-left:-8px;background:var(--flame);opacity:1}
+#launchBtn .ic{background:transparent;box-shadow:none}
+#launchBtn img{width:34px;height:34px;border-radius:10px;display:block}
+.sep{width:1px;height:28px;background:var(--glass-rule);margin:0 4px;flex:none}
+#tray{position:absolute;right:10px;display:flex;align-items:center;gap:8px;padding:6px 8px 6px 12px;border-radius:16px;background:var(--glass);border:1px solid var(--glass-rule);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);color:var(--glass-ink)}
+#clock{font:600 .95rem var(--display);text-align:right;line-height:1.1}
+#clock small{display:block;font:500 .72rem var(--body);opacity:.7}
+#me{width:34px;height:34px;border-radius:50%;border:0;background:linear-gradient(135deg,var(--indigo),var(--sky));color:#fff;font:700 .9rem var(--display);cursor:pointer}
+
+/* ---------- launcher ---------- */
+#launcher{position:fixed;left:50%;bottom:calc(var(--shelf-h) + 10px);transform:translateX(-50%);width:min(720px,calc(100vw - 24px));max-height:calc(100vh - var(--shelf-h) - 30px);overflow:auto;
+  padding:18px 18px 14px;border-radius:22px;background:var(--glass);border:1px solid var(--glass-rule);backdrop-filter:blur(26px) saturate(1.4);-webkit-backdrop-filter:blur(26px) saturate(1.4);color:var(--glass-ink);box-shadow:var(--shadow);z-index:10000}
+#launcher[hidden]{display:none}
+@media (prefers-reduced-motion:no-preference){ #launcher:not([hidden]){animation:rise .18s ease-out} @keyframes rise{from{opacity:0;transform:translate(-50%,12px)}to{opacity:1;transform:translate(-50%,0)}} }
+#q{width:100%;height:46px;border-radius:14px;border:1px solid var(--glass-rule);background:rgba(255,255,255,.55);padding:0 16px 0 44px;font:500 1rem var(--body);color:#0f172a;outline:0;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' fill='none' stroke='%23526077' stroke-width='2.2' stroke-linecap='round'%3E%3Ccircle cx='8.5' cy='8.5' r='6'/%3E%3Cpath d='M13 13l5 5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:15px 50%}
+:root[data-theme="dark"] #q{background-color:rgba(255,255,255,.08);color:var(--ink)}
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]) #q{background-color:rgba(255,255,255,.08);color:var(--ink)} }
+#q:focus{border-color:var(--sky)}
+.grp{margin-top:16px}
+.grp h3{font:600 .82rem var(--display);margin:0 0 8px 4px;opacity:.7}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:4px}
+.tile{position:relative;display:flex;flex-direction:column;align-items:center;gap:7px;padding:12px 4px 10px;border:0;border-radius:14px;background:transparent;cursor:pointer;text-align:center}
+.tile:hover,.tile.sel{background:rgba(127,127,127,.16)}
+.tile .ic{width:52px;height:52px;border-radius:15px;display:grid;place-items:center;font-size:1.6rem;background:var(--app);color:#fff;box-shadow:inset 0 -3px 0 rgba(0,0,0,.15),0 6px 14px -8px var(--app)}
+.tile span{font:500 .82rem var(--body);line-height:1.2}
+.tile .pin{position:absolute;top:4px;right:6px;width:24px;height:24px;border-radius:7px;border:0;background:transparent;font-size:.8rem;opacity:0;cursor:pointer}
+.tile:hover .pin,.tile .pin:focus-visible,.tile .pin.on{opacity:.85}
+.tile .pin:hover{background:rgba(127,127,127,.2)}
+.empty{opacity:.7;padding:14px 4px;margin:0}
+
+/* ---------- menus, sign-in, settings ---------- */
+#menu{position:fixed;right:10px;bottom:calc(var(--shelf-h) + 10px);width:270px;padding:16px;border-radius:18px;background:var(--glass);border:1px solid var(--glass-rule);backdrop-filter:blur(26px);-webkit-backdrop-filter:blur(26px);color:var(--glass-ink);box-shadow:var(--shadow);z-index:10000}
+#menu[hidden]{display:none}
+#menu .who{font:700 1.05rem var(--display)} #menu .em{font-size:.8rem;opacity:.7;margin-bottom:10px;overflow-wrap:anywhere}
+#menu button,#menu a{display:block;width:100%;text-align:left;padding:9px 10px;border:0;border-radius:10px;background:transparent;cursor:pointer;color:inherit;text-decoration:none;font-weight:500}
+#menu button:hover,#menu a:hover{background:rgba(127,127,127,.18)}
+#gate{position:fixed;inset:0;display:grid;place-items:center;z-index:20000;padding:20px}
+#gate[hidden]{display:none}
+#gate .card{max-width:420px;text-align:center;color:#fff}
+#gate h1{font:800 clamp(2.4rem,9vw,4rem)/.95 var(--display);margin:0 0 12px;letter-spacing:-.03em}
+#gate p{opacity:.85;margin:0 0 22px}
+.go{display:inline-block;padding:13px 22px;border-radius:14px;background:#fff;color:#1e1b4b;font:700 1rem var(--display);text-decoration:none;border:0;cursor:pointer}
+.settings{padding:22px;overflow:auto;height:100%;user-select:text;color:var(--ink)}
+.settings h2{font:700 1.3rem var(--display);margin:0 0 4px} .settings p{color:var(--soft);margin:0 0 18px}
+.settings h3{font:600 .95rem var(--display);margin:18px 0 8px}
+.walls{display:flex;gap:10px;flex-wrap:wrap}
+.walls button{width:96px;height:62px;border-radius:12px;border:2px solid transparent;cursor:pointer;padding:0;position:relative}
+.walls button[aria-pressed="true"]{border-color:var(--sky);box-shadow:0 0 0 2px color-mix(in srgb,var(--sky) 35%,transparent)}
+.walls button span{position:absolute;left:6px;bottom:4px;font:600 .7rem var(--body);color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.5)}
+.seg{display:inline-flex;border:1px solid var(--rule);border-radius:12px;padding:3px;gap:3px}
+.seg button{border:0;background:transparent;padding:7px 14px;border-radius:9px;cursor:pointer;font-weight:600}
+.seg button[aria-pressed="true"]{background:var(--indigo);color:#fff}
+
+/* ---------- phone: one app at a time, full screen ---------- */
+@media (max-width:700px){
+  :root{--shelf-h:64px}
+  .win{left:0!important;top:0!important;width:100%!important;height:100%!important;border-radius:0;border:0}
+  .win .grip,.win .bar .mx{display:none}
+  #shelf .dock{max-width:calc(100vw - 20px);margin:0 auto}
+  #tray{display:none}
+  #launcher{bottom:calc(var(--shelf-h) + 6px);border-radius:20px}
+  .grid{grid-template-columns:repeat(4,1fr)}
+  .tile .ic{width:48px;height:48px}
+  #menu{left:10px;right:10px;width:auto}
+  .wordmark{top:auto;bottom:calc(var(--shelf-h) + 30px)}
+}
+@media (max-width:700px){ #meDock{display:grid!important} }
+#meDock{display:none}
+</style>
+</head>
+<body>
+<div id="wall" aria-hidden="true"><canvas id="stars"></canvas><div class="trail"></div>
+  <div class="wordmark"><b>HWL OS</b><span id="hello">The Homework Launchpad, as a desktop.</span></div></div>
+<main id="desk" aria-label="Desktop"></main>
+<div id="snap"></div>
+<nav id="shelf" aria-label="Shelf">
+  <div class="dock" id="dock">
+    <button class="sbtn" id="launchBtn" type="button" aria-label="All apps" aria-expanded="false" title="All apps (Ctrl+Space)"><span class="ic"><img src="/icons/icon-192.png" alt=""></span></button>
+    <span class="sep" aria-hidden="true"></span>
+    <span id="pins" style="display:contents"></span>
+    <button class="sbtn" id="meDock" type="button" aria-label="You" title="You"><span class="ic" style="--app:linear-gradient(135deg,#4f46e5,#0ea5e9);border-radius:50%" id="meDockIc">?</span></button>
+  </div>
+  <div id="tray"><div id="clock" aria-live="off"></div><button id="me" type="button" aria-label="You" aria-haspopup="true">?</button></div>
+</nav>
+<section id="launcher" hidden aria-label="All apps">
+  <input id="q" type="search" placeholder="Search apps" autocomplete="off" aria-label="Search apps">
+  <div id="groups"></div>
+</section>
+<div id="menu" hidden role="menu"></div>
+<div id="gate" hidden><div class="card"><h1>HWL OS</h1><p id="gateMsg">Sign in on the Homework Launchpad, then come back here.</p><a class="go" href="https://civilinitiatives.org/">Sign in on the Launchpad</a></div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.0/dist/umd/supabase.js"></script>
+<script src="/auth-store.js?b=20261026a"></script>
+<script>
+(function () {
+  "use strict";
+  var $ = function (id) { return document.getElementById(id); };
+  var S = "https://suite.civilinitiatives.org/";
+  /* Every app is a Launchpad site; HWL OS just gives each one a window. */
+  var APPS = [
+    { id: "home",    name: "Launchpad",     ic: "🏠", app: "#4f46e5", url: "https://civilinitiatives.org/", grp: "Launchpad", keys: "dashboard home to-do chat noticeboard" },
+    { id: "ai",      name: "Launchpad AI",  ic: "✦", app: "#7c3aed", url: "https://ai.civilinitiatives.org/", grp: "Launchpad", keys: "chat ask help claude" },
+    { id: "files",   name: "My Files",      ic: "🗂", app: "#0284c7", url: "https://files.civilinitiatives.org/", grp: "Launchpad", keys: "documents storage" },
+    { id: "videos",  name: "Videos",        ic: "🎬", app: "#e11d48", url: "https://hosting.civilinitiatives.org/", grp: "Launchpad", keys: "hosting shorts watch" },
+    { id: "write",   name: "Write",         ic: "✍️", app: "#2563eb", url: S + "write/", grp: "Suite", keys: "document word essay" },
+    { id: "notebook",name: "Notebook",      ic: "📓", app: "#7e22ce", url: S + "notebook/", grp: "Suite", keys: "notes onenote" },
+    { id: "present", name: "Present",       ic: "📽", app: "#ea580c", url: S + "present/", grp: "Suite", keys: "slides powerpoint deck" },
+    { id: "grid",    name: "Grid",          ic: "📊", app: "#16a34a", url: S + "grid/", grp: "Suite", keys: "spreadsheet excel sheet" },
+    { id: "forms",   name: "Forms",         ic: "📝", app: "#0d9488", url: S + "forms/", grp: "Suite", keys: "quiz survey" },
+    { id: "pdf",     name: "PDF",           ic: "📄", app: "#dc2626", url: S + "pdf/", grp: "Suite", keys: "pdf sign annotate" },
+    { id: "design",  name: "Design",        ic: "🎨", app: "#db2777", url: S + "design/", grp: "Suite", keys: "poster canva" },
+    { id: "draw",    name: "Draw",          ic: "🖌", app: "#9333ea", url: S + "draw/", grp: "Suite", keys: "paint sketch" },
+    { id: "vids",    name: "Vids",          ic: "🎞", app: "#be123c", url: S + "vids/", grp: "Suite", keys: "video edit" },
+    { id: "levelup", name: "Level Up",      ic: "📈", app: "#0891b2", url: "https://learn.civilinitiatives.org/levelup.html", grp: "Learn and play", keys: "maths practice questions" },
+    { id: "learn",   name: "Learn",         ic: "🧠", app: "#0e7490", url: "https://learn.civilinitiatives.org/", grp: "Learn and play", keys: "times tables dragons history geography" },
+    { id: "play",    name: "Play",          ic: "🎮", app: "#f59e0b", url: "https://play.civilinitiatives.org/", grp: "Learn and play", keys: "games" },
+    { id: "arcade",  name: "Arcade",        ic: "🕹", app: "#ca8a04", url: "https://arcade.civilinitiatives.org/", grp: "Learn and play", keys: "games" },
+    { id: "maker",   name: "Game Maker",    ic: "🛠", app: "#65a30d", url: "https://sandbox.civilinitiatives.org/", grp: "Learn and play", keys: "make game sandbox" },
+    { id: "shop",    name: "Shop",          ic: "🛍", app: "#c026d3", url: "https://shop.civilinitiatives.org/", grp: "Learn and play", keys: "items avatar trade" },
+    { id: "settings",name: "Settings",      ic: "⚙️", app: "#475569", grp: "HWL OS", keys: "wallpaper theme dark light" }
+  ];
+  var BY = {}; APPS.forEach(function (a) { BY[a.id] = a; });
+  var PHONE = window.matchMedia("(max-width:700px)");
+
+  /* ---------- remembered things (this browser only) ---------- */
+  function load(k, d) { try { var v = JSON.parse(localStorage.getItem(k)); return v == null ? d : v; } catch (e) { return d; } }
+  function save(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+  var prefs = load("hwlos.prefs", {});
+  var pins = load("hwlos.pins", ["home", "ai", "write", "grid", "files"]).filter(function (id) { return BY[id]; });
+  var wins = {}, z = 10, front = null;
+
+  /* ---------- sign-in ---------- */
+  var sb = null;
+  try {
+    sb = window.supabase.createClient("https://hehs-live.duckdns.org",
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzkyODMyMjkwLCJleHAiOjIxMDgxOTIyOTB9.7gFhQa5RBwVtiOPLO7Qf2-aVEbkd5xgpLiN1J06Gybo",
+      { auth: { persistSession: true, autoRefreshToken: true, storage: (window.HEHAuth && window.HEHAuth.storage) || undefined } });
+  } catch (e) { sb = null; }
+  var me = null;
+  function initials(n) { return (n || "?").split(/[\s@._-]+/).filter(Boolean).slice(0, 2).map(function (w) { return w[0].toUpperCase(); }).join("") || "?"; }
+
+  /* ---------- the star field ---------- */
+  function stars() {
+    var c = $("stars"), d = Math.min(window.devicePixelRatio || 1, 2), w = innerWidth, h = innerHeight;
+    c.width = w * d; c.height = h * d; var x = c.getContext("2d"); x.scale(d, d);
+    var seed = 7; function rnd() { seed = (seed * 16807) % 2147483647; return seed / 2147483647; }
+    var n = Math.round(w * h / 5200);
+    for (var i = 0; i < n; i++) {
+      var r = rnd() * rnd() * 1.6 + .25, a = .25 + rnd() * .75;
+      x.fillStyle = "rgba(255,255,255," + a.toFixed(2) + ")"; x.beginPath(); x.arc(rnd() * w, rnd() * h * .85, r, 0, 6.283); x.fill();
+    }
+  }
+
+  /* ---------- clock ---------- */
+  function tick() {
+    var d = new Date();
+    $("clock").innerHTML = d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }) + "<small>" + d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" }) + "</small>";
+  }
+
+  /* ---------- the shelf ---------- */
+  function drawShelf() {
+    var box = $("pins"); box.textContent = "";
+    var ids = pins.slice(); Object.keys(wins).forEach(function (id) { if (ids.indexOf(id) < 0) ids.push(id); });
+    ids.forEach(function (id) {
+      var a = BY[id], b = document.createElement("button");
+      b.type = "button"; b.className = "sbtn" + (wins[id] ? " run" : "") + (front === id && wins[id] && !wins[id].el.hidden ? " front" : "");
+      b.title = a.name; b.setAttribute("aria-label", a.name + (wins[id] ? " (open)" : ""));
+      b.innerHTML = '<span class="ic" style="--app:' + a.app + '">' + a.ic + "</span>";
+      b.onclick = function () {
+        if (!wins[id]) return open(id);
+        var w = wins[id];
+        if (w.el.hidden) { w.el.hidden = false; focus(id); }
+        else if (front === id && !PHONE.matches) { w.el.hidden = true; front = null; drawShelf(); }
+        else focus(id);
+      };
+      box.appendChild(b);
+    });
+    document.body.classList.toggle("has-win", Object.keys(wins).some(function (k) { return !wins[k].el.hidden; }));
+  }
+
+  /* ---------- the launcher ---------- */
+  var sel = 0;
+  function drawLauncher() {
+    var q = $("q").value.trim().toLowerCase(), box = $("groups"); box.textContent = "";
+    var list = APPS.filter(function (a) { return !q || (a.name + " " + a.keys).toLowerCase().indexOf(q) >= 0; });
+    if (!list.length) { box.innerHTML = '<p class="empty">No app called that.</p>'; return; }
+    var groups = q ? [["Results", list]] : ["Launchpad", "Suite", "Learn and play", "HWL OS"].map(function (g) { return [g, list.filter(function (a) { return a.grp === g; })]; });
+    var n = 0;
+    groups.forEach(function (g) {
+      if (!g[1].length) return;
+      var sec = document.createElement("div"); sec.className = "grp";
+      sec.innerHTML = "<h3>" + g[0] + '</h3><div class="grid"></div>';
+      g[1].forEach(function (a) {
+        var t = document.createElement("div"); t.className = "tile" + (q && n === sel ? " sel" : ""); t.setAttribute("role", "button"); t.tabIndex = 0; t.dataset.id = a.id; n++;
+        var pinned = pins.indexOf(a.id) >= 0;
+        t.innerHTML = '<span class="ic" style="--app:' + a.app + '">' + a.ic + "</span><span>" + a.name + "</span>" +
+          '<button type="button" class="pin' + (pinned ? " on" : "") + '" title="' + (pinned ? "Unpin from" : "Pin to") + ' the shelf" aria-label="' + (pinned ? "Unpin " : "Pin ") + a.name + '">' + (pinned ? "📌" : "📍") + "</button>";
+        t.onclick = function (e) {
+          if (e.target.closest(".pin")) { togglePin(a.id); return; }
+          closeLauncher(); open(a.id);
+        };
+        t.onkeydown = function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); t.click(); } };
+        sec.querySelector(".grid").appendChild(t);
+      });
+      box.appendChild(sec);
+    });
+  }
+  function togglePin(id) {
+    var i = pins.indexOf(id); if (i >= 0) pins.splice(i, 1); else pins.push(id);
+    save("hwlos.pins", pins); drawShelf(); drawLauncher();
+  }
+  function openLauncher() { $("menu").hidden = true; $("launcher").hidden = false; $("launchBtn").setAttribute("aria-expanded", "true"); $("q").value = ""; sel = 0; drawLauncher(); setTimeout(function () { $("q").focus(); }, 0); }
+  function closeLauncher() { $("launcher").hidden = true; $("launchBtn").setAttribute("aria-expanded", "false"); }
+  $("launchBtn").onclick = function (e) { e.stopPropagation(); if ($("launcher").hidden) openLauncher(); else closeLauncher(); };
+  $("q").oninput = function () { sel = 0; drawLauncher(); };
+  $("q").onkeydown = function (e) {
+    var tiles = [].slice.call(document.querySelectorAll("#groups .tile"));
+    if (e.key === "Enter") { e.preventDefault(); var t = tiles[$("q").value.trim() ? sel : 0]; if (t) t.click(); }
+    else if (e.key === "ArrowRight" || e.key === "ArrowDown") { e.preventDefault(); sel = Math.min(tiles.length - 1, sel + 1); if (!$("q").value.trim()) $("q").value = ""; drawSel(tiles); }
+    else if (e.key === "ArrowLeft" || e.key === "ArrowUp") { e.preventDefault(); sel = Math.max(0, sel - 1); drawSel(tiles); }
+  };
+  function drawSel(tiles) { tiles.forEach(function (t, i) { t.classList.toggle("sel", i === sel); }); if (tiles[sel]) tiles[sel].scrollIntoView({ block: "nearest" }); }
+
+  /* ---------- windows ---------- */
+  var layout = load("hwlos.layout", {});
+  function place(id) {
+    var L = layout[id], dw = innerWidth, dh = innerHeight - 60, n = Object.keys(wins).length;
+    if (L && L.w <= dw && L.h <= dh) return L;
+    var w = Math.min(1100, Math.round(dw * .72)), h = Math.min(760, Math.round(dh * .82));
+    return { x: Math.max(8, Math.round((dw - w) / 2) + (n % 5) * 28 - 56), y: Math.max(8, Math.round((dh - h) / 2) + (n % 5) * 24 - 40), w: w, h: h, max: false };
+  }
+  function open(id, quiet) {
+    var a = BY[id]; if (!a) return;
+    if (wins[id]) { wins[id].el.hidden = false; focus(id); return; }
+    var p = place(id), el = document.createElement("section");
+    el.className = "win" + (p.max ? " max" : ""); el.style.setProperty("--app", a.app);
+    el.style.left = p.x + "px"; el.style.top = p.y + "px"; el.style.width = p.w + "px"; el.style.height = p.h + "px";
+    el.setAttribute("aria-label", a.name);
+    el.innerHTML = '<div class="bar"><span class="ic">' + a.ic + '</span><span class="nm">' + a.name + "</span>" +
+      (a.url ? '<button type="button" class="rl" title="Reload" aria-label="Reload ' + a.name + '">↻</button><button type="button" class="nt" title="Open in a new tab" aria-label="Open ' + a.name + ' in a new tab">↗</button>' : "") +
+      '<button type="button" class="mn" title="Minimise" aria-label="Minimise ' + a.name + '">–</button>' +
+      '<button type="button" class="mx" title="Maximise" aria-label="Maximise ' + a.name + '">▢</button>' +
+      '<button type="button" class="x" title="Close" aria-label="Close ' + a.name + '">✕</button></div>' +
+      '<div class="body"><div class="load"><div><i>' + a.ic + "</i>Opening " + a.name + "…</div></div>" + '<div class="shield"></div></div><div class="grip" aria-hidden="true"></div>';
+    var body = el.querySelector(".body");
+    if (a.url) {
+      var f = document.createElement("iframe");
+      f.src = a.url; f.title = a.name; f.setAttribute("allow", "clipboard-read; clipboard-write; fullscreen; microphone; camera; autoplay; display-capture");
+      f.onload = function () { var l = body.querySelector(".load"); if (l) l.remove(); };
+      body.insertBefore(f, body.querySelector(".shield"));
+    } else if (id === "settings") { var l0 = body.querySelector(".load"); l0.remove(); body.insertBefore(settingsPane(), body.querySelector(".shield")); }
+    $("desk").appendChild(el);
+    wins[id] = { el: el, a: a };
+    wire(id, el);
+    focus(id);
+    if (!quiet) remember();
+  }
+  function close(id) {
+    var w = wins[id]; if (!w) return;
+    w.el.remove(); delete wins[id];
+    if (front === id) { front = null; var top = topmost(); if (top) focus(top); }
+    drawShelf(); remember();
+  }
+  function topmost() { var best = null, bz = -1; Object.keys(wins).forEach(function (k) { var e = wins[k].el; if (!e.hidden && +e.style.zIndex > bz) { bz = +e.style.zIndex; best = k; } }); return best; }
+  function focus(id) {
+    var w = wins[id]; if (!w) return;
+    w.el.style.zIndex = ++z; front = id;
+    Object.keys(wins).forEach(function (k) { wins[k].el.classList.toggle("front", k === id); });
+    drawShelf();
+  }
+  function remember() {
+    save("hwlos.open", Object.keys(wins));
+    Object.keys(wins).forEach(function (k) {
+      var e = wins[k].el; if (PHONE.matches) return;
+      layout[k] = { x: e.offsetLeft, y: e.offsetTop, w: e.offsetWidth, h: e.offsetHeight, max: e.classList.contains("max") };
+    });
+    save("hwlos.layout", layout);
+  }
+  function toggleMax(id) { var e = wins[id].el; e.classList.toggle("max"); remember(); }
+  function wire(id, el) {
+    var bar = el.querySelector(".bar");
+    el.addEventListener("pointerdown", function () { if (front !== id) focus(id); }, true);
+    bar.querySelector(".x").onclick = function () { close(id); };
+    bar.querySelector(".mn").onclick = function () { el.hidden = true; if (front === id) { front = null; var t = topmost(); if (t) focus(t); } drawShelf(); };
+    bar.querySelector(".mx").onclick = function () { toggleMax(id); };
+    var rl = bar.querySelector(".rl"); if (rl) rl.onclick = function () { var f = el.querySelector("iframe"); f.src = f.src; };
+    var nt = bar.querySelector(".nt"); if (nt) nt.onclick = function () { window.open(wins[id].a.url, "_blank", "noopener"); };
+    bar.addEventListener("dblclick", function (e) { if (!e.target.closest("button") && !PHONE.matches) toggleMax(id); });
+    // drag the title bar to move it; drop it on the left or right edge to fill that half, or the top to fill the screen
+    bar.addEventListener("pointerdown", function (e) {
+      if (e.target.closest("button") || PHONE.matches || e.button !== 0) return;
+      var sx = e.clientX, sy = e.clientY, ox = el.offsetLeft, oy = el.offsetTop, moved = false, snap = null;
+      if (el.classList.contains("max")) {
+        var r = el.getBoundingClientRect(), L = layout[id] || place(id);
+        el.classList.remove("max"); el.style.width = L.w + "px"; el.style.height = L.h + "px";
+        ox = Math.max(0, sx - L.w * ((sx - r.left) / r.width)); oy = 0; el.style.left = ox + "px"; el.style.top = "0px";
+      }
+      bar.setPointerCapture(e.pointerId); document.body.classList.add("dragging");
+      function mv(ev) {
+        var dx = ev.clientX - sx, dy = ev.clientY - sy; if (!moved && Math.abs(dx) + Math.abs(dy) < 3) return; moved = true;
+        el.style.left = Math.min(innerWidth - 80, Math.max(-el.offsetWidth + 120, ox + dx)) + "px";
+        el.style.top = Math.min(innerHeight - 120, Math.max(0, oy + dy)) + "px";
+        var dh = innerHeight - 60, s = $("snap");
+        snap = ev.clientX < 8 ? [0, 0, innerWidth / 2, dh] : ev.clientX > innerWidth - 8 ? [innerWidth / 2, 0, innerWidth / 2, dh] : ev.clientY < 6 ? "max" : null;
+        if (snap) { var q = snap === "max" ? [0, 0, innerWidth, dh] : snap; s.style.cssText = "display:block;left:" + (q[0] + 6) + "px;top:" + (q[1] + 6) + "px;width:" + (q[2] - 12) + "px;height:" + (q[3] - 12) + "px"; }
+        else s.style.display = "none";
+      }
+      function up() {
+        bar.removeEventListener("pointermove", mv); bar.removeEventListener("pointerup", up); bar.removeEventListener("pointercancel", up);
+        document.body.classList.remove("dragging"); $("snap").style.display = "none";
+        if (snap === "max") el.classList.add("max");
+        else if (snap) { el.style.left = snap[0] + "px"; el.style.top = snap[1] + "px"; el.style.width = snap[2] + "px"; el.style.height = snap[3] + "px"; }
+        if (moved) remember();
+      }
+      bar.addEventListener("pointermove", mv); bar.addEventListener("pointerup", up); bar.addEventListener("pointercancel", up);
+    });
+    var grip = el.querySelector(".grip");
+    grip.addEventListener("pointerdown", function (e) {
+      e.preventDefault(); var sx = e.clientX, sy = e.clientY, w0 = el.offsetWidth, h0 = el.offsetHeight;
+      grip.setPointerCapture(e.pointerId); document.body.classList.add("dragging");
+      function mv(ev) { el.style.width = Math.max(300, w0 + ev.clientX - sx) + "px"; el.style.height = Math.max(200, h0 + ev.clientY - sy) + "px"; }
+      function up() { grip.removeEventListener("pointermove", mv); grip.removeEventListener("pointerup", up); document.body.classList.remove("dragging"); remember(); }
+      grip.addEventListener("pointermove", mv); grip.addEventListener("pointerup", up);
+    });
+  }
+
+  /* ---------- Settings (the one app that lives inside HWL OS) ---------- */
+  function settingsPane() {
+    var d = document.createElement("div"); d.className = "settings";
+    var walls = [["night", "Night launch", "linear-gradient(180deg,#0b1026,#2a1d4f)"], ["dawn", "Dawn", "linear-gradient(180deg,#1e3a8a,#6d28d9,#f472b6)"], ["mint", "Mint", "linear-gradient(180deg,#022c22,#0f766e)"], ["paper", "Paper", "linear-gradient(160deg,#e0e7ff,#fde68a)"]];
+    d.innerHTML = "<h2>Settings</h2><p>These are kept in this browser.</p><h3>Wallpaper</h3><div class=\"walls\">" +
+      walls.map(function (w) { return '<button type="button" data-wall="' + w[0] + '" aria-pressed="' + ((prefs.wall || "night") === w[0]) + '" style="background:' + w[2] + '"><span>' + w[1] + "</span></button>"; }).join("") +
+      '</div><h3>Windows and menus</h3><div class="seg" role="group" aria-label="Theme">' +
+      [["system", "Like my device"], ["light", "Light"], ["dark", "Dark"]].map(function (t) { return '<button type="button" data-theme="' + t[0] + '" aria-pressed="' + ((prefs.theme || "system") === t[0]) + '">' + t[1] + "</button>"; }).join("") +
+      '</div><h3>Shelf</h3><p>Pin or unpin apps from All apps (the rocket) - hover an app and tap 📍.</p><button type="button" class="go" id="resetOS" style="background:var(--win2);color:var(--ink);font-size:.9rem;padding:10px 16px">Put everything back how it started</button>' +
+      "<h3>About</h3><p>HWL OS 1.0 - every app is part of the Homework Launchpad, signed in once. Made by Shiv.</p>";
+    d.addEventListener("click", function (e) {
+      var w = e.target.closest("[data-wall]"), t = e.target.closest(".seg [data-theme]");
+      if (w) { prefs.wall = w.dataset.wall; document.documentElement.setAttribute("data-wall", prefs.wall); d.querySelectorAll("[data-wall]").forEach(function (b) { b.setAttribute("aria-pressed", String(b === w)); }); save("hwlos.prefs", prefs); }
+      if (t) { prefs.theme = t.dataset.theme; if (prefs.theme === "system") document.documentElement.removeAttribute("data-theme"); else document.documentElement.setAttribute("data-theme", prefs.theme);
+        d.querySelectorAll(".seg [data-theme]").forEach(function (b) { b.setAttribute("aria-pressed", String(b === t)); }); save("hwlos.prefs", prefs); }
+      if (e.target.id === "resetOS") { ["hwlos.prefs", "hwlos.pins", "hwlos.layout", "hwlos.open"].forEach(function (k) { try { localStorage.removeItem(k); } catch (x) {} }); location.reload(); }
+    });
+    return d;
+  }
+
+  /* ---------- you ---------- */
+  function showMenu() {
+    closeLauncher();
+    var m = $("menu"); if (!m.hidden) { m.hidden = true; return; }
+    var nm = me ? (me.user_metadata && (me.user_metadata.full_name || me.user_metadata.name)) || me.email.split("@")[0] : "";
+    m.innerHTML = '<div class="who"></div><div class="em"></div>' +
+      '<button type="button" data-o="settings">⚙️ Settings</button><a href="https://civilinitiatives.org/">🚀 Leave HWL OS</a><button type="button" data-o="out">Sign out</button>';
+    m.querySelector(".who").textContent = nm; m.querySelector(".em").textContent = me ? me.email : "";
+    m.hidden = false;
+    m.onclick = function (e) {
+      var o = e.target.closest("[data-o]"); if (!o) return; m.hidden = true;
+      if (o.dataset.o === "settings") open("settings");
+      if (o.dataset.o === "out" && sb) sb.auth.signOut().then(function () { location.reload(); });
+    };
+  }
+  $("me").onclick = function (e) { e.stopPropagation(); showMenu(); };
+  $("meDock").onclick = function (e) { e.stopPropagation(); showMenu(); };
+  document.addEventListener("pointerdown", function (e) {
+    if (!e.target.closest("#launcher,#launchBtn")) closeLauncher();
+    if (!e.target.closest("#menu,#me,#meDock")) $("menu").hidden = true;
+  });
+  window.addEventListener("blur", function () { setTimeout(function () { if (document.activeElement && document.activeElement.tagName === "IFRAME") { closeLauncher(); $("menu").hidden = true; } }, 0); });
+  document.addEventListener("keydown", function (e) {
+    if ((e.ctrlKey && e.code === "Space") || e.key === "Meta" && false) { e.preventDefault(); if ($("launcher").hidden) openLauncher(); else closeLauncher(); }
+    if (e.key === "Escape") { closeLauncher(); $("menu").hidden = true; }
+  });
+
+  /* ---------- start ---------- */
+  function start(user) {
+    me = user;
+    var nm = (user.user_metadata && (user.user_metadata.full_name || user.user_metadata.name)) || user.email.split("@")[0];
+    $("me").textContent = initials(nm); $("meDockIc").textContent = initials(nm);
+    var h = new Date().getHours(); $("hello").textContent = (h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening") + ", " + nm.split(" ")[0] + ".";
+    var again = load("hwlos.open", []).filter(function (id) { return BY[id]; });
+    if (PHONE.matches) again = again.slice(-1);
+    again.forEach(function (id) { open(id, true); });
+    drawShelf();
+  }
+  stars(); tick(); setInterval(tick, 15000); drawShelf();
+  var rt; addEventListener("resize", function () { clearTimeout(rt); rt = setTimeout(stars, 200); });
+  if (!sb) { $("gateMsg").textContent = "HWL OS couldn't load. Check your internet and refresh."; $("gate").hidden = false; return; }
+  sb.auth.getSession().then(function (r) {
+    var u = r && r.data && r.data.session && r.data.session.user;
+    if (!u) { $("gate").hidden = false; $("shelf").hidden = true; return; }
+    start(u);
+  }, function () { $("gate").hidden = false; });
+})();
+</script>
+</body>
+</html>
