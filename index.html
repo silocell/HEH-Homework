@@ -522,6 +522,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 .smode button[aria-checked="true"]{background:var(--accent);color:#fff;opacity:1}
 .smode button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 @media (max-width:560px){ .smode{flex:1 1 100%} .smode button{flex:1} }
+.smode[hidden]{display:none!important}
 /* Chips that jump to the far-away parts of the page. Phones only: on a
    laptop everything is one short scroll away, on a phone the chat is
    half a mile down. */
@@ -1624,7 +1625,7 @@ body.gsc-overflow-hidden{overflow:auto!important}
   </div>
 
   <form class="searchbar" id="searchForm">
-    <div class="smode" id="searchMode" role="radiogroup" aria-label="Search with">
+    <div class="smode" id="searchMode" role="radiogroup" aria-label="Search with" hidden>
       <button type="button" role="radio" data-sm="search" aria-checked="true">Search</button>
       <button type="button" role="radio" data-sm="hwlai" aria-checked="false" title="HWLAI searches the web and answers with sources">🔎 HWLAI</button>
     </div>
@@ -4365,7 +4366,7 @@ document.getElementById("searchMode").addEventListener("keydown", function(e){
   e.preventDefault(); setSearchMode(searchMode === "hwlai" ? "search" : "hwlai", true);
   var on = document.querySelector('#searchMode [aria-checked="true"]'); if(on) on.focus();
 });
-try{ setSearchMode(localStorage.getItem("hl.searchmode") || "search", false); }catch(err){ setSearchMode("search", false); }
+setSearchMode("search", false);   // HWLAI is picked again once the server says it has it
 
 document.getElementById("searchForm").addEventListener("submit",function(e){
   e.preventDefault();
@@ -6831,7 +6832,13 @@ function featureCards(){
       var ft = document.getElementById("siteFoot"); if(ft) ft.hidden = f.footer === false;
       document.querySelectorAll('.site-foot a[href*="/chat/"]').forEach(function(a){ a.parentNode.hidden = f.hwchat === false; });
       var ac = document.getElementById("aiCard"); if(ac) ac.hidden = f.hwchat === false;
-      var hm = document.getElementById("searchMode"); if(hm){ hm.hidden = f.hwchat === false; if(f.hwchat === false) setSearchMode("search", false); }
+      /* the HWLAI switch only shows once the server has HWLAI (it says so in hw_info) */
+      var hm = document.getElementById("searchMode");
+      if(hm) sb.rpc("hw_info").then(function(hr){
+        var ready = f.hwchat !== false && hr && !hr.error && hr.data && hr.data.hwlai;
+        hm.hidden = !ready;
+        if(ready){ try{ setSearchMode(localStorage.getItem("hl.searchmode") || "search", false); }catch(err){} } else setSearchMode("search", false);
+      }, function(){ hm.hidden = true; setSearchMode("search", false); });
     });
   }).catch(function(){});
 }
