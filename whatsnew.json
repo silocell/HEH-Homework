@@ -1,0 +1,4 @@
+[
+  { "id": "hwlos-1", "date": "2026-11-13", "text": "HWL OS: the whole Launchpad as a desktop, with windows, a shelf and every app.", "label": "Try it", "link": "/os/" },
+  { "id": "suite-ai-1", "date": "2026-11-13", "text": "Launchpad AI is in the Suite: ask it from Write, Notebook, Present and Grid.", "label": "Open Write", "link": "https://suite.civilinitiatives.org/write/" }
+]

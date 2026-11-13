@@ -1473,6 +1473,15 @@ body.gsc-overflow-hidden{overflow:auto!important}
 .agree-row .agree-yes{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
 .agree-row .agree-yes:disabled{opacity:.45;cursor:default}
 .agree-row .agree-no{color:var(--ink-soft)}
+.newbar{display:flex;align-items:center;gap:10px;margin:4px 0 14px;padding:9px 10px 9px 12px;border-radius:14px;background:var(--accent-soft);border:1px solid color-mix(in srgb,var(--accent) 30%,transparent);font-size:.93rem;line-height:1.35}
+.newbar[hidden]{display:none}
+.newbar .nb-tag{flex:none;font-weight:700;font-size:.74rem;color:#fff;background:var(--accent);border-radius:999px;padding:2px 9px}
+.newbar .nb-text{flex:1;min-width:0}
+.newbar .nb-go{flex:none;font-weight:700;color:var(--accent);text-decoration:none;white-space:nowrap}
+.newbar .nb-go:hover{text-decoration:underline}
+.newbar .nb-x{flex:none;width:30px;height:30px;border:0;border-radius:8px;background:transparent;color:inherit;opacity:.6;cursor:pointer}
+.newbar .nb-x:hover{opacity:1;background:color-mix(in srgb,var(--accent) 12%,transparent)}
+@media (max-width:560px){ .newbar{flex-wrap:wrap} .newbar .nb-text{flex-basis:calc(100% - 90px)} }
 </style>
 <link rel="stylesheet" href="polish.css?b=20261102091427">
 <link rel="stylesheet" href="https://civilinitiatives.org/glass.css?b=20261102a">
@@ -1622,6 +1631,11 @@ body.gsc-overflow-hidden{overflow:auto!important}
   <div class="greeting">
     <h2 id="greetingText">Hello</h2>
     <div class="meta" id="dateText"></div>
+  </div>
+  <div class="newbar" id="newBar" hidden role="status">
+    <span class="nb-tag">New</span><span class="nb-text" id="newText"></span>
+    <a class="nb-go" id="newGo" href="#"></a>
+    <button type="button" class="nb-x" id="newX" aria-label="Hide this">✕</button>
   </div>
 
   <form class="searchbar" id="searchForm">
@@ -6843,6 +6857,19 @@ function featureCards(){
   }).catch(function(){});
 }
 setTimeout(featureCards, 1500);
+/* What's new: the newest thing in whatsnew.json you haven't hidden yet */
+(function whatsNew(){
+  var seen = []; try{ seen = JSON.parse(localStorage.getItem("hl.whatsnew.hidden") || "[]"); }catch(e){}
+  fetch("/whatsnew.json?b=" + Math.floor(Date.now() / 3600000), { cache: "no-store" }).then(function(r){ return r.ok ? r.json() : []; }).then(function(list){
+    var it = (list || []).filter(function(x){ return x && x.id && seen.indexOf(x.id) < 0; })[0]; if(!it) return;
+    document.getElementById("newText").textContent = it.text;
+    var go = document.getElementById("newGo"); go.textContent = it.label || "Have a look"; go.href = it.link || "#"; go.hidden = !it.link;
+    document.getElementById("newBar").hidden = false;
+    function hide(){ seen.push(it.id); try{ localStorage.setItem("hl.whatsnew.hidden", JSON.stringify(seen.slice(-50))); }catch(e){} document.getElementById("newBar").hidden = true; setTimeout(whatsNew, 0); }
+    document.getElementById("newX").onclick = hide;
+    go.onclick = function(){ seen.push(it.id); try{ localStorage.setItem("hl.whatsnew.hidden", JSON.stringify(seen.slice(-50))); }catch(e){} };
+  }).catch(function(){});
+})();
 (function boot(){
   var emailBox = document.getElementById("email");
   var hint = recall(SESSION_HINT, null);
