@@ -135,4 +135,4 @@ sign-in and server functions. Groq, NVIDIA, OpenRouter, Cohere, Google
 Cloud, Gemini, Cloudflare and Claude for the AI. GitHub Pages for hosting,
 on civilinitiatives.org.
 
-— Shiv
+— Shiv Kumar, HWL Systems
