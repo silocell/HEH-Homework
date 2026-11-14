@@ -526,7 +526,7 @@ html.phone #meDock{display:grid!important}
       '</div><h3>On a phone</h3><div class="seg" role="group" aria-label="On a phone">' +
       [["side", "Sideways desktop"], ["up", "Upright, one app at a time"]].map(function (t) { return '<button type="button" data-phone="' + t[0] + '" aria-pressed="' + ((prefs.phone || "side") === t[0]) + '">' + t[1] + "</button>"; }).join("") +
       '</div><h3>Shelf</h3><p>Pin or unpin apps from All apps (the rocket) - hover an app and tap 📍.</p><button type="button" class="go" id="resetOS" style="background:var(--win2);color:var(--ink);font-size:.9rem;padding:10px 16px">Put everything back how it started</button>' +
-      "<h3>About</h3><p>HWL OS 1.0 - every app is part of the Homework Launchpad, signed in once. Developed by Shiv Kumar under HWL Systems.</p>";
+      "<h3>About</h3><p>HWL OS 1.0 - every app is part of the Homework Launchpad, signed in once. By HWL Systems. Developed by Shiv Kumar.</p>";
     d.addEventListener("click", function (e) {
       var w = e.target.closest("[data-wall]"), t = e.target.closest(".seg [data-theme]");
       if (w) { prefs.wall = w.dataset.wall; document.documentElement.setAttribute("data-wall", prefs.wall); d.querySelectorAll("[data-wall]").forEach(function (b) { b.setAttribute("aria-pressed", String(b === w)); }); save("hwlos.prefs", prefs); }
