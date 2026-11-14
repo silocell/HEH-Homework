@@ -6943,6 +6943,25 @@ setTimeout(featureCards, 1500);
 })();
 </script>
 <script>
+/* On touch screens, long smooth scrolls make some phones stall or crash while the page
+   tries to draw everything it passes, so jumps further than about a screen happen instantly. */
+(function(){
+  if(!(window.matchMedia && matchMedia("(pointer:coarse)").matches)) return;
+  function far(y){ return Math.abs(y - window.pageYOffset) > innerHeight * 1.2; }
+  var siv = Element.prototype.scrollIntoView;
+  Element.prototype.scrollIntoView = function(o){
+    if(o && typeof o === "object" && o.behavior === "smooth"){
+      var top = this.getBoundingClientRect().top + window.pageYOffset;
+      if(far(top)) o = Object.assign({}, o, { behavior: "auto" });
+    }
+    return siv.call(this, o);
+  };
+  var wst = window.scrollTo.bind(window);
+  window.scrollTo = function(a, b){
+    if(a && typeof a === "object" && a.behavior === "smooth" && far(a.top || 0)) a = Object.assign({}, a, { behavior: "auto" });
+    return b === undefined ? wst(a) : wst(a, b);
+  };
+})();
 /* Phones: the dashboard is long, so a row of shortcuts along the top jumps to each part.
    Built from the panels that are actually showing, so it keeps up as parts appear or switch off. */
 (function(){
@@ -6970,7 +6989,11 @@ setTimeout(featureCards, 1500);
     bar.dataset.sig = sig; bar.textContent = "";
     targets.forEach(function(t, i){
       var b = document.createElement("button"); b.type = "button"; b.textContent = t[0];
-      b.onclick = function(){ t[1].scrollIntoView({ behavior: "smooth", block: "start" }); };
+      b.onclick = function(){
+        /* jump straight there: a smooth scroll down a long page is too much for some phones */
+        var y = t[1].getBoundingClientRect().top + window.pageYOffset - 64;
+        window.scrollTo(0, Math.max(0, y));
+      };
       bar.appendChild(b);
     });
     bar.hidden = false; mark();
@@ -6982,10 +7005,10 @@ setTimeout(featureCards, 1500);
     var y = 90, cur = 0;
     targets.forEach(function(t, i){ if(t[1].getBoundingClientRect().top <= y) cur = i; });
     [].forEach.call(bar.children, function(b, i){
-      var on = i === cur; if(b.classList.contains("on") !== on){ b.classList.toggle("on", on); if(on && b.scrollIntoView) bar.scrollTo({ left: b.offsetLeft - 12, behavior: "smooth" }); }
+      var on = i === cur; if(b.classList.contains("on") !== on){ b.classList.toggle("on", on); if(on) bar.scrollLeft = b.offsetLeft - 12; }
     });
   }
-  addEventListener("scroll", function(){ if(!raf) raf = requestAnimationFrame(mark); }, { passive: true });
+  addEventListener("scroll", function(){ if(!raf) raf = setTimeout(mark, 200); }, { passive: true });
   [800, 2500, 6000].forEach(function(ms){ setTimeout(build, ms); });
   if(phone.addEventListener) phone.addEventListener("change", build);
   window.hlJumpBuild = function(){ clearTimeout(build.t); build.t = setTimeout(build, 50); };
