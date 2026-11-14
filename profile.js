@@ -18,7 +18,7 @@
 (function(){
   var CACHE = "hl.profile2";
   var SHOP = "https://shop.civilinitiatives.org/";
-  var LEVELUP = "https://learn.civilinitiatives.org/levelup.html";
+  var LEVELUP = "https://learn.civilinitiatives.org/";
   var S = null;               // what the profile function's "get" returns
   var tab = "me";
 
@@ -156,7 +156,7 @@
       row.appendChild(el("small", null, t.correct + " right today"));
       box.appendChild(row);
     });
-    var lu = el("a", "pf-earn", "Earn pence in Level Up →"); lu.href = LEVELUP;
+    var lu = el("a", "pf-earn", "Earn pence in the learning games →"); lu.href = LEVELUP;
     box.appendChild(lu);
     sheet.appendChild(box);
   }

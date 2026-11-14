@@ -1,4 +1,23 @@
 [
-  { "id": "hwlos-1", "date": "2026-11-13", "text": "HWL OS: the whole Launchpad as a desktop, with windows, a shelf and every app.", "label": "Try it", "link": "/os/" },
-  { "id": "suite-ai-1", "date": "2026-11-13", "text": "Launchpad AI is in the Suite: ask it from Write, Notebook, Present and Grid.", "label": "Open Write", "link": "https://suite.civilinitiatives.org/write/" }
+ {
+  "id": "homework-apps-1",
+  "date": "2026-11-14",
+  "text": "New: Brainstorm Maths, XP Reader, Chemically Scientific and Word Passport (French, Spanish, German) - weekly homework due Fridays, and they replace Level Up.",
+  "label": "Open",
+  "link": "https://learn.civilinitiatives.org/"
+ },
+ {
+  "id": "hwlos-1",
+  "date": "2026-11-13",
+  "text": "HWL OS: the whole Launchpad as a desktop, with windows, a shelf and every app.",
+  "label": "Try it",
+  "link": "/os/"
+ },
+ {
+  "id": "suite-ai-1",
+  "date": "2026-11-13",
+  "text": "Launchpad AI is in the Suite: ask it from Write, Notebook, Present and Grid.",
+  "label": "Open Write",
+  "link": "https://suite.civilinitiatives.org/write/"
+ }
 ]

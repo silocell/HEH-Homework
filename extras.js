@@ -651,7 +651,10 @@
       t.appendChild(i); t.appendChild(w); grid.appendChild(t);
     }
     tile("🏎️", "Gate Run", "Steer through the right answer", "https://gaterun.civilinitiatives.org/");
-    tile("🚀", "Level Up", "Practice at your level", "https://learn.civilinitiatives.org/levelup.html");
+    tile("🧠", "Brainstorm Maths", "Weekly maths homework", "https://learn.civilinitiatives.org/maths.html");
+    tile("📚", "XP Reader", "Read and earn XP", "https://learn.civilinitiatives.org/reader.html");
+    tile("🧪", "Chemically Scientific", "Science quizzes", "https://learn.civilinitiatives.org/science.html");
+    tile("🛂", "Word Passport", "French, Spanish, German", "https://learn.civilinitiatives.org/languages.html");
     tile("✖️", "Times Table Tycoon", "60-second rounds", "https://learn.civilinitiatives.org/tables.html");
     tile("🐉", "Word Dragons", "Grow dragons with English", "https://learn.civilinitiatives.org/dragons.html");
     tile("⚔️", "Battle Stories", "Hastings, 1066", "https://learn.civilinitiatives.org/history.html");
