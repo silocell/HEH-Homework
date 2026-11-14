@@ -14,6 +14,7 @@
 try { var t = JSON.parse(localStorage.getItem("hwlos.prefs") || "{}"); if (t.theme === "dark" || t.theme === "light") document.documentElement.setAttribute("data-theme", t.theme); if (t.wall) document.documentElement.setAttribute("data-wall", t.wall); } catch (e) {}
 </script>
 <style>
+html{--W:100vw;--H:100vh}
 :root{
   --night:#0b1026; --indigo:#4f46e5; --sky:#0ea5e9; --flame:#f59e0b; --flame2:#ef4444;
   --win:#ffffff; --win2:#f1f5f9; --ink:#0f172a; --soft:#526077; --rule:rgba(15,23,42,.12);
@@ -88,7 +89,7 @@ body.dragging .win .shield{display:block}
 
 /* ---------- shelf ---------- */
 #shelf{position:fixed;left:0;right:0;bottom:0;height:var(--shelf-h);display:flex;align-items:center;gap:6px;padding:0 10px;z-index:9999}
-#shelf .dock{margin:0 auto;display:flex;gap:4px;align-items:center;padding:6px;border-radius:18px;background:var(--glass);border:1px solid var(--glass-rule);backdrop-filter:blur(18px) saturate(1.4);-webkit-backdrop-filter:blur(18px) saturate(1.4);box-shadow:0 10px 30px -12px rgba(0,0,0,.45);max-width:calc(100vw - 210px);overflow-x:auto;scrollbar-width:none}
+#shelf .dock{margin:0 auto;display:flex;gap:4px;align-items:center;padding:6px;border-radius:18px;background:var(--glass);border:1px solid var(--glass-rule);backdrop-filter:blur(18px) saturate(1.4);-webkit-backdrop-filter:blur(18px) saturate(1.4);box-shadow:0 10px 30px -12px rgba(0,0,0,.45);max-width:calc(var(--W) - 210px);overflow-x:auto;scrollbar-width:none}
 #shelf .dock::-webkit-scrollbar{display:none}
 .sbtn{position:relative;width:44px;height:44px;border:0;border-radius:12px;background:transparent;display:grid;place-items:center;cursor:pointer;flex:none}
 .sbtn:hover{background:rgba(127,127,127,.18)}
@@ -104,7 +105,7 @@ body.dragging .win .shield{display:block}
 #me{width:34px;height:34px;border-radius:50%;border:0;background:linear-gradient(135deg,var(--indigo),var(--sky));color:#fff;font:700 .9rem var(--display);cursor:pointer}
 
 /* ---------- launcher ---------- */
-#launcher{position:fixed;left:50%;bottom:calc(var(--shelf-h) + 10px);transform:translateX(-50%);width:min(720px,calc(100vw - 24px));max-height:calc(100vh - var(--shelf-h) - 30px);overflow:auto;
+#launcher{position:fixed;left:50%;bottom:calc(var(--shelf-h) + 10px);transform:translateX(-50%);width:min(720px,calc(var(--W) - 24px));max-height:calc(var(--H) - var(--shelf-h) - 30px);overflow:auto;
   padding:18px 18px 14px;border-radius:22px;background:var(--glass);border:1px solid var(--glass-rule);backdrop-filter:blur(26px) saturate(1.4);-webkit-backdrop-filter:blur(26px) saturate(1.4);color:var(--glass-ink);box-shadow:var(--shadow);z-index:10000}
 #launcher[hidden]{display:none}
 @media (prefers-reduced-motion:no-preference){ #launcher:not([hidden]){animation:rise .18s ease-out} @keyframes rise{from{opacity:0;transform:translate(-50%,12px)}to{opacity:1;transform:translate(-50%,0)}} }
@@ -149,27 +150,38 @@ body.dragging .win .shield{display:block}
 .seg button[aria-pressed="true"]{background:var(--indigo);color:#fff}
 
 .runner .drop{margin-top:12px;padding:18px;border:2px dashed var(--rule);border-radius:14px;color:var(--soft);text-align:center}
-#toast{position:fixed;left:50%;bottom:calc(var(--shelf-h) + 16px);transform:translate(-50%,10px);max-width:calc(100vw - 32px);padding:11px 16px;border-radius:14px;background:#0f172a;color:#fff;font-weight:600;opacity:0;pointer-events:none;transition:.2s;z-index:10001}
+#toast{position:fixed;left:50%;bottom:calc(var(--shelf-h) + 16px);transform:translate(-50%,10px);max-width:calc(var(--W) - 32px);padding:11px 16px;border-radius:14px;background:#0f172a;color:#fff;font-weight:600;opacity:0;pointer-events:none;transition:.2s;z-index:10001}
 #toast.on{opacity:1;transform:translate(-50%,0)}
 
-/* ---------- phone: one app at a time, full screen ---------- */
-@media (max-width:700px){
-  :root{--shelf-h:64px}
-  .win{left:0!important;top:0!important;width:100%!important;height:100%!important;border-radius:0;border:0}
-  .win .grip,.win .bar .mx{display:none}
-  #shelf .dock{max-width:calc(100vw - 20px);margin:0 auto}
-  #tray{display:none}
-  #launcher{bottom:calc(var(--shelf-h) + 6px);border-radius:20px}
-  .grid{grid-template-columns:repeat(4,1fr)}
-  .tile .ic{width:48px;height:48px}
-  #menu{left:10px;right:10px;width:auto}
-  .wordmark{top:auto;bottom:calc(var(--shelf-h) + 30px)}
-}
-@media (max-width:700px){ #meDock{display:grid!important} }
+/* ---------- phone held upright: one app at a time, full screen ---------- */
+html.phone{--shelf-h:64px}
+html.phone .win{left:0!important;top:0!important;width:100%!important;height:100%!important;border-radius:0;border:0}
+html.phone .win .grip,html.phone .win .bar .mx{display:none}
+html.phone #shelf .dock{max-width:calc(var(--W) - 20px);margin:0 auto}
+html.phone #tray{display:none}
+html.phone #launcher{bottom:calc(var(--shelf-h) + 6px);border-radius:20px}
+html.phone .grid{grid-template-columns:repeat(4,1fr)}
+html.phone .tile .ic{width:48px;height:48px}
+html.phone #menu{left:10px;right:10px;width:auto}
+html.phone .wordmark{top:auto;bottom:calc(var(--shelf-h) + 30px)}
+
+/* ---------- phone sideways: the whole desktop turned on its side, so a phone held upright
+   shows a proper landscape desktop (turn the phone round to use it) ---------- */
+#screen{position:fixed;left:0;top:0;width:var(--W);height:var(--H);overflow:hidden}
+html.rot #screen{transform:rotate(90deg) translateY(-100%);transform-origin:top left}
+html.rot{--shelf-h:52px}
+html.rot .sbtn{width:40px;height:40px} html.rot .sbtn .ic{width:30px;height:30px;font-size:1rem}
+html.rot #launchBtn img{width:30px;height:30px}
+html.rot .win .bar{height:36px}
+html.rot .wordmark b{font-size:3rem}
+#fsBtn{display:none;width:34px;height:34px;border:0;border-radius:10px;background:rgba(127,127,127,.18);color:inherit;cursor:pointer;font-size:1rem}
+html.touch #fsBtn{display:grid;place-items:center}
 #meDock{display:none}
+html.phone #meDock{display:grid!important}
 </style>
 </head>
 <body>
+<div id="screen">
 <div id="wall" aria-hidden="true"><canvas id="stars"></canvas><div class="trail"></div>
   <div class="wordmark"><b>HWL OS</b><span id="hello">The Homework Launchpad, as a desktop.</span></div></div>
 <main id="desk" aria-label="Desktop"></main>
@@ -181,7 +193,7 @@ body.dragging .win .shield{display:block}
     <span id="pins" style="display:contents"></span>
     <button class="sbtn" id="meDock" type="button" aria-label="You" title="You"><span class="ic" style="--app:linear-gradient(135deg,#4f46e5,#0ea5e9);border-radius:50%" id="meDockIc">?</span></button>
   </div>
-  <div id="tray"><div id="clock" aria-live="off"></div><button id="me" type="button" aria-label="You" aria-haspopup="true">?</button></div>
+  <div id="tray"><button id="fsBtn" type="button" title="Full screen" aria-label="Full screen">⛶</button><div id="clock" aria-live="off"></div><button id="me" type="button" aria-label="You" aria-haspopup="true">?</button></div>
 </nav>
 <section id="launcher" hidden aria-label="All apps">
   <input id="q" type="search" placeholder="Search apps" autocomplete="off" aria-label="Search apps">
@@ -189,6 +201,7 @@ body.dragging .win .shield{display:block}
 </section>
 <div id="menu" hidden role="menu"></div>
 <div id="gate" hidden><div class="card"><h1>HWL OS</h1><p id="gateMsg">Sign in on the Homework Launchpad, then come back here.</p><a class="go" href="https://civilinitiatives.org/">Sign in on the Launchpad</a></div></div>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.0/dist/umd/supabase.js"></script>
 <script src="/auth-store.js?b=20261026a"></script>
@@ -222,7 +235,33 @@ body.dragging .win .shield{display:block}
     { id: "settings",name: "Settings",      ic: "⚙️", app: "#475569", grp: "HWL OS", keys: "wallpaper theme dark light" }
   ];
   var BY = {}; APPS.forEach(function (a) { BY[a.id] = a; });
-  var PHONE = window.matchMedia("(max-width:700px)");
+  /* How the screen is used:
+     - on a phone held upright, the desktop is turned on its side (html.rot) so it's a proper
+       landscape desktop - turn the phone round to use it (Settings can switch this off);
+     - a phone held sideways is a desktop as it is;
+     - with "Upright" chosen, a phone shows one app at a time, full screen (html.phone). */
+  var ROT = false, TOUCH = window.matchMedia && matchMedia("(pointer:coarse)").matches;
+  function SW() { return ROT ? innerHeight : innerWidth; }
+  function SH() { return ROT ? innerWidth : innerHeight; }
+  function isPhone() { return document.documentElement.classList.contains("phone"); }
+  // a touch or click on the real screen, as a point on the (maybe sideways) desktop
+  function P(e) { return ROT ? { x: e.clientY, y: innerWidth - e.clientX } : { x: e.clientX, y: e.clientY }; }
+  function fit() {
+    var small = Math.min(innerWidth, innerHeight) <= 600, upright = innerHeight > innerWidth, wantSide = (prefs.phone || "side") === "side";
+    var was = ROT;
+    ROT = TOUCH && small && upright && wantSide;
+    var h = document.documentElement;
+    h.classList.toggle("rot", ROT); h.classList.toggle("touch", !!TOUCH);
+    h.classList.toggle("phone", !ROT && SW() <= 700);
+    h.style.setProperty("--W", SW() + "px"); h.style.setProperty("--H", SH() + "px");
+    if (was !== ROT || true) { Object.keys(wins).forEach(function (k) { keepOn(wins[k].el); }); }
+  }
+  function keepOn(el) {   // after turning or resizing, pull windows back onto the screen
+    if (isPhone() || el.classList.contains("max")) return;
+    var w = Math.min(el.offsetWidth, SW()), h = Math.min(el.offsetHeight, SH() - 60);
+    el.style.width = w + "px"; el.style.height = h + "px";
+    el.style.left = Math.max(0, Math.min(el.offsetLeft, SW() - w)) + "px"; el.style.top = Math.max(0, Math.min(el.offsetTop, SH() - 60 - h)) + "px";
+  }
 
   /* ---------- remembered things (this browser only) ---------- */
   function load(k, d) { try { var v = JSON.parse(localStorage.getItem(k)); return v == null ? d : v; } catch (e) { return d; } }
@@ -243,7 +282,7 @@ body.dragging .win .shield{display:block}
 
   /* ---------- the star field ---------- */
   function stars() {
-    var c = $("stars"), d = Math.min(window.devicePixelRatio || 1, 2), w = innerWidth, h = innerHeight;
+    var c = $("stars"), d = Math.min(window.devicePixelRatio || 1, 2), w = SW(), h = SH();
     c.width = w * d; c.height = h * d; var x = c.getContext("2d"); x.scale(d, d);
     var seed = 7; function rnd() { seed = (seed * 16807) % 2147483647; return seed / 2147483647; }
     var n = Math.round(w * h / 5200);
@@ -272,7 +311,7 @@ body.dragging .win .shield{display:block}
         if (!wins[id]) return open(id);
         var w = wins[id];
         if (w.el.hidden) { w.el.hidden = false; focus(id); }
-        else if (front === id && !PHONE.matches) { w.el.hidden = true; front = null; drawShelf(); }
+        else if (front === id && !isPhone()) { w.el.hidden = true; front = null; drawShelf(); }
         else focus(id);
       };
       box.appendChild(b);
@@ -326,7 +365,7 @@ body.dragging .win .shield{display:block}
   /* ---------- windows ---------- */
   var layout = load("hwlos.layout", {});
   function place(id) {
-    var L = layout[id], dw = innerWidth, dh = innerHeight - 60, n = Object.keys(wins).length;
+    var L = layout[id], dw = SW(), dh = SH() - 60, n = Object.keys(wins).length;
     if (L && L.w <= dw && L.h <= dh) return L;
     var w = Math.min(1100, Math.round(dw * .72)), h = Math.min(760, Math.round(dh * .82));
     return { x: Math.max(8, Math.round((dw - w) / 2) + (n % 5) * 28 - 56), y: Math.max(8, Math.round((dh - h) / 2) + (n % 5) * 24 - 40), w: w, h: h, max: false };
@@ -386,7 +425,7 @@ body.dragging .win .shield{display:block}
   function remember() {
     save("hwlos.open", Object.keys(wins).filter(function (k) { return !BY[k].temp; }));
     Object.keys(wins).forEach(function (k) {
-      var e = wins[k].el; if (PHONE.matches || BY[k].temp) return;
+      var e = wins[k].el; if (isPhone() || BY[k].temp) return;
       layout[k] = { x: e.offsetLeft, y: e.offsetTop, w: e.offsetWidth, h: e.offsetHeight, max: e.classList.contains("max") };
     });
     save("hwlos.layout", layout);
@@ -400,24 +439,24 @@ body.dragging .win .shield{display:block}
     bar.querySelector(".mx").onclick = function () { toggleMax(id); };
     var rl = bar.querySelector(".rl"); if (rl) rl.onclick = function () { var f = el.querySelector("iframe"); f.src = f.src; };
     var nt = bar.querySelector(".nt"); if (nt) nt.onclick = function () { window.open(wins[id].a.url, "_blank", "noopener"); };
-    bar.addEventListener("dblclick", function (e) { if (!e.target.closest("button") && !PHONE.matches) toggleMax(id); });
+    bar.addEventListener("dblclick", function (e) { if (!e.target.closest("button") && !isPhone()) toggleMax(id); });
     // drag the title bar to move it; drop it on the left or right edge to fill that half, or the top to fill the screen
     bar.addEventListener("pointerdown", function (e) {
-      if (e.target.closest("button") || PHONE.matches || e.button !== 0) return;
-      var sx = e.clientX, sy = e.clientY, ox = el.offsetLeft, oy = el.offsetTop, moved = false, snap = null;
+      if (e.target.closest("button") || isPhone() || e.button !== 0) return;
+      var p0 = P(e), sx = p0.x, sy = p0.y, ox = el.offsetLeft, oy = el.offsetTop, moved = false, snap = null;
       if (el.classList.contains("max")) {
-        var r = el.getBoundingClientRect(), L = layout[id] || place(id);
+        var r = { left: el.offsetLeft, width: el.offsetWidth }, L = layout[id] || place(id);
         el.classList.remove("max"); el.style.width = L.w + "px"; el.style.height = L.h + "px";
         ox = Math.max(0, sx - L.w * ((sx - r.left) / r.width)); oy = 0; el.style.left = ox + "px"; el.style.top = "0px";
       }
       bar.setPointerCapture(e.pointerId); document.body.classList.add("dragging");
       function mv(ev) {
-        var dx = ev.clientX - sx, dy = ev.clientY - sy; if (!moved && Math.abs(dx) + Math.abs(dy) < 3) return; moved = true;
-        el.style.left = Math.min(innerWidth - 80, Math.max(-el.offsetWidth + 120, ox + dx)) + "px";
-        el.style.top = Math.min(innerHeight - 120, Math.max(0, oy + dy)) + "px";
-        var dh = innerHeight - 60, s = $("snap");
-        snap = ev.clientX < 8 ? [0, 0, innerWidth / 2, dh] : ev.clientX > innerWidth - 8 ? [innerWidth / 2, 0, innerWidth / 2, dh] : ev.clientY < 6 ? "max" : null;
-        if (snap) { var q = snap === "max" ? [0, 0, innerWidth, dh] : snap; s.style.cssText = "display:block;left:" + (q[0] + 6) + "px;top:" + (q[1] + 6) + "px;width:" + (q[2] - 12) + "px;height:" + (q[3] - 12) + "px"; }
+        var pt = P(ev), dx = pt.x - sx, dy = pt.y - sy, W = SW(); if (!moved && Math.abs(dx) + Math.abs(dy) < 3) return; moved = true;
+        el.style.left = Math.min(W - 80, Math.max(-el.offsetWidth + 120, ox + dx)) + "px";
+        el.style.top = Math.min(SH() - 120, Math.max(0, oy + dy)) + "px";
+        var dh = SH() - 60, s = $("snap"), edge = TOUCH ? 16 : 8;
+        snap = pt.x < edge ? [0, 0, W / 2, dh] : pt.x > W - edge ? [W / 2, 0, W / 2, dh] : pt.y < edge - 2 ? "max" : null;
+        if (snap) { var q = snap === "max" ? [0, 0, W, dh] : snap; s.style.cssText = "display:block;left:" + (q[0] + 6) + "px;top:" + (q[1] + 6) + "px;width:" + (q[2] - 12) + "px;height:" + (q[3] - 12) + "px"; }
         else s.style.display = "none";
       }
       function up() {
@@ -431,9 +470,9 @@ body.dragging .win .shield{display:block}
     });
     var grip = el.querySelector(".grip");
     grip.addEventListener("pointerdown", function (e) {
-      e.preventDefault(); var sx = e.clientX, sy = e.clientY, w0 = el.offsetWidth, h0 = el.offsetHeight;
+      e.preventDefault(); var p0 = P(e), sx = p0.x, sy = p0.y, w0 = el.offsetWidth, h0 = el.offsetHeight;
       grip.setPointerCapture(e.pointerId); document.body.classList.add("dragging");
-      function mv(ev) { el.style.width = Math.max(300, w0 + ev.clientX - sx) + "px"; el.style.height = Math.max(200, h0 + ev.clientY - sy) + "px"; }
+      function mv(ev) { var pt = P(ev); el.style.width = Math.max(300, w0 + pt.x - sx) + "px"; el.style.height = Math.max(200, h0 + pt.y - sy) + "px"; }
       function up() { grip.removeEventListener("pointermove", mv); grip.removeEventListener("pointerup", up); document.body.classList.remove("dragging"); remember(); }
       grip.addEventListener("pointermove", mv); grip.addEventListener("pointerup", up);
     });
@@ -459,7 +498,7 @@ body.dragging .win .shield{display:block}
   var sayT;
   function say(t) {
     var m = document.querySelector(".runner .rmsg"); if (m) { m.textContent = t; return; }
-    var d = $("toast") || document.body.appendChild(Object.assign(document.createElement("div"), { id: "toast", role: "status" }));
+    var d = $("toast") || $("screen").appendChild(Object.assign(document.createElement("div"), { id: "toast", role: "status" }));
     d.textContent = t; d.className = "on"; clearTimeout(sayT); sayT = setTimeout(function () { d.className = ""; }, 5000);
   }
   function runnerPane() {
@@ -484,6 +523,8 @@ body.dragging .win .shield{display:block}
       walls.map(function (w) { return '<button type="button" data-wall="' + w[0] + '" aria-pressed="' + ((prefs.wall || "night") === w[0]) + '" style="background:' + w[2] + '"><span>' + w[1] + "</span></button>"; }).join("") +
       '</div><h3>Windows and menus</h3><div class="seg" role="group" aria-label="Theme">' +
       [["system", "Like my device"], ["light", "Light"], ["dark", "Dark"]].map(function (t) { return '<button type="button" data-theme="' + t[0] + '" aria-pressed="' + ((prefs.theme || "system") === t[0]) + '">' + t[1] + "</button>"; }).join("") +
+      '</div><h3>On a phone</h3><div class="seg" role="group" aria-label="On a phone">' +
+      [["side", "Sideways desktop"], ["up", "Upright, one app at a time"]].map(function (t) { return '<button type="button" data-phone="' + t[0] + '" aria-pressed="' + ((prefs.phone || "side") === t[0]) + '">' + t[1] + "</button>"; }).join("") +
       '</div><h3>Shelf</h3><p>Pin or unpin apps from All apps (the rocket) - hover an app and tap 📍.</p><button type="button" class="go" id="resetOS" style="background:var(--win2);color:var(--ink);font-size:.9rem;padding:10px 16px">Put everything back how it started</button>' +
       "<h3>About</h3><p>HWL OS 1.0 - every app is part of the Homework Launchpad, signed in once. Made by Shiv.</p>";
     d.addEventListener("click", function (e) {
@@ -491,6 +532,8 @@ body.dragging .win .shield{display:block}
       if (w) { prefs.wall = w.dataset.wall; document.documentElement.setAttribute("data-wall", prefs.wall); d.querySelectorAll("[data-wall]").forEach(function (b) { b.setAttribute("aria-pressed", String(b === w)); }); save("hwlos.prefs", prefs); }
       if (t) { prefs.theme = t.dataset.theme; if (prefs.theme === "system") document.documentElement.removeAttribute("data-theme"); else document.documentElement.setAttribute("data-theme", prefs.theme);
         d.querySelectorAll(".seg [data-theme]").forEach(function (b) { b.setAttribute("aria-pressed", String(b === t)); }); save("hwlos.prefs", prefs); }
+      var ph = e.target.closest("[data-phone]");
+      if (ph) { prefs.phone = ph.dataset.phone; save("hwlos.prefs", prefs); d.querySelectorAll("[data-phone]").forEach(function (b) { b.setAttribute("aria-pressed", String(b === ph)); }); fit(); stars(); drawShelf(); }
       if (e.target.id === "resetOS") { ["hwlos.prefs", "hwlos.pins", "hwlos.layout", "hwlos.open"].forEach(function (k) { try { localStorage.removeItem(k); } catch (x) {} }); location.reload(); }
     });
     return d;
@@ -530,12 +573,20 @@ body.dragging .win .shield{display:block}
     $("me").textContent = initials(nm); $("meDockIc").textContent = initials(nm);
     var h = new Date().getHours(); $("hello").textContent = (h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening") + ", " + nm.split(" ")[0] + ".";
     var again = load("hwlos.open", []).filter(function (id) { return BY[id]; });
-    if (PHONE.matches) again = again.slice(-1);
+    if (isPhone()) again = again.slice(-1);
     again.forEach(function (id) { open(id, true); });
     drawShelf();
   }
-  stars(); tick(); setInterval(tick, 15000); drawShelf();
-  var rt; addEventListener("resize", function () { clearTimeout(rt); rt = setTimeout(stars, 200); });
+  fit(); stars(); tick(); setInterval(tick, 15000); drawShelf();
+  var rt; addEventListener("resize", function () { clearTimeout(rt); rt = setTimeout(function () { fit(); stars(); drawShelf(); }, 150); });
+  // full screen, and on phones that allow it, lock to landscape for real (then nothing needs turning)
+  $("fsBtn").onclick = function () {
+    var d = document.documentElement;
+    if (document.fullscreenElement) { document.exitFullscreen().catch(function () {}); return; }
+    (d.requestFullscreen ? d.requestFullscreen() : Promise.reject()).then(function () {
+      if (screen.orientation && screen.orientation.lock) return screen.orientation.lock("landscape").catch(function () {});
+    }).catch(function () { say("Full screen isn't available here - turn your phone sideways instead."); });
+  };
   if (!sb) { $("gateMsg").textContent = "HWL OS couldn't load. Check your internet and refresh."; $("gate").hidden = false; return; }
   sb.auth.getSession().then(function (r) {
     var u = r && r.data && r.data.session && r.data.session.user;
