@@ -1476,6 +1476,33 @@ body.gsc-overflow-hidden{overflow:auto!important}
 .newbar .nb-x{flex:none;width:30px;height:30px;border:0;border-radius:8px;background:transparent;color:inherit;opacity:.6;cursor:pointer}
 .newbar .nb-x:hover{opacity:1;background:color-mix(in srgb,var(--accent) 12%,transparent)}
 @media (max-width:560px){ .newbar{flex-wrap:wrap} .newbar .nb-text{flex-basis:calc(100% - 90px)} }
+/* ---------- every phone, from flip phones to big ones: nothing pushes the page sideways ---------- */
+@media (max-width:700px){
+  html, body{overflow-x:clip}
+  .exp-row{flex-wrap:wrap}
+  .exp-row > *{min-width:0}
+  form.lookup{min-width:0}
+  form.lookup input{min-width:0;flex:1 1 0}
+  #dash img, #dash video, #dash iframe, #dash canvas{max-width:100%}
+  #dash .panel, #dash .col, #dash .columns{min-width:0}
+  #dash button, #dash .ghost-btn, #dash .mode-btn{max-width:100%;overflow-wrap:anywhere}
+  .foot-grid a, .foot-dev{overflow-wrap:anywhere}
+}
+/* small and cramped screens (flip phones, small Androids, split screen) */
+@media (max-width:380px){
+  .shell{padding-left:10px !important;padding-right:10px !important}
+  #dash .panel{padding:14px 12px !important;border-radius:16px !important}
+  .greeting h2{font-size:1.25rem}
+  .foot-grid{grid-template-columns:1fr !important}
+  .jumpbar{margin-left:-10px;margin-right:-10px;padding-left:10px;padding-right:10px}
+  .jumpbar button{padding:6px 10px;font-size:.8rem}
+}
+@media (max-width:280px){
+  html{font-size:14px}
+  #dash .panel{padding:10px 8px !important}
+  .lookup{flex-wrap:wrap}
+  .lookup button{flex:1 1 100%}
+}
 /* phones: a row of shortcuts to each part of the dashboard */
 .jumpbar{display:none}
 @media (max-width:700px){
