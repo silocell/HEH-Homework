@@ -9,7 +9,7 @@ try{ var m = document.cookie.match(/(?:^|; )hl_theme=(dark|light|system)/), t = 
      if(t === "dark" || t === "light") document.documentElement.setAttribute("data-theme", t); }catch(e){}
 </script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<script src="/site.js?b=20261112d"></script>
+<script src="/site.js?b=20261114p"></script>
 <meta name="robots" content="noindex, nofollow">
 <link rel="icon" type="image/png" href="/favicon.png">
 <link rel="manifest" href="manifest.webmanifest">
@@ -143,6 +143,7 @@ try{ var m = document.cookie.match(/(?:^|; )hl_theme=(dark|light|system)/), t = 
 .swatch:hover{transform:scale(1.1)}
 .swatch[aria-pressed="true"]{border-color:var(--ink);outline-color:transparent}
 .modes{display:flex;gap:7px;margin-top:14px;flex-wrap:wrap}
+.perf-note{margin:8px 0 0;font-size:.8rem;color:var(--ink-soft);line-height:1.4}
 .mode-btn{
   padding:6px 12px;border-radius:999px;font:inherit;font-size:.78rem;
   border:1px solid var(--rule);background:var(--paper);color:var(--ink-soft);
@@ -1655,7 +1656,6 @@ body.gsc-overflow-hidden{overflow:auto!important}
       <a class="ghost-btn" id="moreBtn" hidden></a>
       <button class="ghost-btn" id="labBtn" type="button" hidden>Lab</button>
       <button class="ghost-btn" id="themeBtn" type="button">Dark mode</button>
-      <button class="ghost-btn" id="fastBtn" type="button" title="Fast mode turns off the glass and animations so pages scroll smoothly on slower devices. It switches on by itself when a device is struggling.">Fast mode</button>
       <button class="ghost-btn" id="quickBtn" type="button" title="Sign in another device with a code">Quick sign-in</button>
       <button class="ghost-btn" id="switchBtn" type="button">Sign out</button>
     </div>
@@ -1862,6 +1862,13 @@ body.gsc-overflow-hidden{overflow:auto!important}
           <button type="button" class="mode-btn" data-font="">Normal text</button>
           <button type="button" class="mode-btn" data-font="plain">Easier to read</button>
         </div>
+        <div class="modes" id="perfModes" role="group" aria-label="Smoothness">
+          <button type="button" class="mode-btn" data-perf="auto">Auto</button>
+          <button type="button" class="mode-btn" data-perf="full">Full</button>
+          <button type="button" class="mode-btn" data-perf="smooth">Smooth</button>
+          <button type="button" class="mode-btn" data-perf="lite">Lite</button>
+        </div>
+        <p class="perf-note" id="perfNote"></p>
         <button type="button" class="guide-again" id="guideAgain">Show me around again</button>
       </div>
     </div>
@@ -6934,12 +6941,23 @@ setTimeout(featureCards, 1500);
 
 </script>
 <script>
-/* Fast mode (site.js decides it automatically; this lets anyone choose). */
+/* Smoothness: site.js picks Full, Smooth or Lite for each device; this lets anyone choose. */
 (function(){
-  var b = document.getElementById("fastBtn"); if(!b || !window.HEHLite) return;
-  function show(){ var on = HEHLite.on(); b.textContent = on ? "Fast mode: on" : "Fast mode: off"; b.setAttribute("aria-pressed", on ? "true" : "false"); }
-  b.addEventListener("click", function(){ HEHLite.set(!HEHLite.on()); show(); });
-  show(); setTimeout(show, 6000);   // it may switch on by itself in the first few seconds
+  var box = document.getElementById("perfModes"), note = document.getElementById("perfNote");
+  if(!box || !window.HEHPerf){ if(box) box.hidden = true; return; }
+  var WHAT = { full:"Full: all the glass and animations.", smooth:"Smooth: lighter glass and a still background.", lite:"Lite: no blur or animations, and parts further down load as you reach them." };
+  function show(){
+    var c = HEHPerf.choice(), l = HEHPerf.level();
+    box.querySelectorAll("[data-perf]").forEach(function(b){
+      var on = b.getAttribute("data-perf") === c;
+      b.classList.toggle("active", on); b.setAttribute("aria-pressed", on ? "true" : "false");
+    });
+    note.textContent = (c === "auto" ? "Auto picked " + l[0].toUpperCase() + l.slice(1) + " for this device. " : "") + WHAT[l] +
+      (c === "auto" ? " If scrolling starts to stutter it steps down by itself." : "");
+  }
+  box.addEventListener("click", function(e){ var b = e.target.closest("[data-perf]"); if(!b) return; HEHPerf.set(b.getAttribute("data-perf")); show(); });
+  addEventListener("hlperf", show);
+  show();
 })();
 </script>
 <script>

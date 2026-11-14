@@ -134,18 +134,19 @@ canvas, iframe, video, .stage, .board, .map, .game, #game, #stage{
    Blurring what's behind every card on every frame is too much work for most
    phones, and it shows up as blank patches while you scroll. On touch screens
    the light behind the page stays still, cards are mostly solid with a soft
-   frost, and small buttons lose their blur altogether. */
+   frost, and small buttons lose their blur altogether. site.js normally picks
+   a level (full / smooth / lite) for each device; this is for pages without it. */
 @media (pointer:coarse) and (max-width:1024px){
-  body::before{ animation:none; will-change:auto }
-  .card, .panel, .tile, .gate-card, .stat, .modal, .sheet, .menu, .popover, .dialog, dialog{
+  html:not(.full):not(.smooth):not(.lite) body::before{ animation:none; will-change:auto }
+  html:not(.full):not(.smooth):not(.lite) .card, html:not(.full):not(.smooth):not(.lite) .panel, html:not(.full):not(.smooth):not(.lite) .tile, html:not(.full):not(.smooth):not(.lite) .gate-card, html:not(.full):not(.smooth):not(.lite) .stat, html:not(.full):not(.smooth):not(.lite) .modal, html:not(.full):not(.smooth):not(.lite) .sheet, html:not(.full):not(.smooth):not(.lite) .menu, html:not(.full):not(.smooth):not(.lite) .popover, html:not(.full):not(.smooth):not(.lite) .dialog, html:not(.full):not(.smooth):not(.lite) dialog{
     background:color-mix(in srgb, var(--card, #fff) 88%, transparent) !important;
     -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px);
     box-shadow:var(--lg-shine), 0 6px 18px -12px rgba(20,24,48,.3) !important;
   }
-  .top{ -webkit-backdrop-filter:blur(12px); backdrop-filter:blur(12px); background:color-mix(in srgb, var(--bar, #141a33) 88%, transparent) !important }
-  .abtn.quiet, .abtn.ghost, .btn.ghost, .btn.quiet{
+  html:not(.full):not(.smooth):not(.lite) .top{ -webkit-backdrop-filter:blur(12px); backdrop-filter:blur(12px); background:color-mix(in srgb, var(--bar, #141a33) 88%, transparent) !important }
+  html:not(.full):not(.smooth):not(.lite) .abtn.quiet, html:not(.full):not(.smooth):not(.lite) .abtn.ghost, html:not(.full):not(.smooth):not(.lite) .btn.ghost, html:not(.full):not(.smooth):not(.lite) .btn.quiet{
     background:color-mix(in srgb, var(--card, #fff) 80%, transparent) !important;
     -webkit-backdrop-filter:none; backdrop-filter:none;
   }
-  .tile{ transition:none }
+  html:not(.full):not(.smooth):not(.lite) .tile{ transition:none }
 }

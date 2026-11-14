@@ -5,8 +5,8 @@
       frosted glass, blur, shadows and animations, which are what make
       scrolling stutter. Decided from the device itself (memory, cores,
       data saver, slow connection, "reduce motion") and then from how
-      smoothly the first second actually draws. Anyone can force it either
-      way: localStorage "hl.lite" = "on" / "off".
+      smoothly it actually draws, including while scrolling. Three levels:
+      full, smooth, lite. Anyone can pick one in "Make it yours".
 
    2. MAINTENANCE. When the switch in Maintenance closes the site, every
       subdomain shows the "Under maintenance" screen too, not just the main
@@ -53,38 +53,98 @@
     (document.head || html).appendChild(vp);
   }
 
-  function weakDevice() {
-    var n = navigator, c = n.connection || {};
-    if (c.saveData) return true;
-    if (/(^|-)2g$|^3g$/.test(c.effectiveType || "")) return true;
-    if (n.deviceMemory && n.deviceMemory <= 4) return true;
-    if (n.hardwareConcurrency && n.hardwareConcurrency <= 4) return true;
-    try { if (matchMedia("(prefers-reduced-motion: reduce)").matches) return true; } catch (e) {}
-    return false;
-  }
-  var force = ls("hl.lite");
-  var lite = force === "on" ? true : force === "off" ? false : (ls("hl.lite.seen") === "1" || weakDevice());
-  if (lite) html.classList.add("lite");
+  /* Three levels, picked for each device:
+       full   - all the glass and animations (laptops, strong phones)
+       smooth - lighter glass, still background (most phones)
+       lite   - no blur, no animations, far-down parts drawn only when you get near them
+     Auto looks at what the device says about itself, then times how smoothly it
+     actually draws (first few seconds, and again whenever you scroll), and steps
+     down a level if frames keep dropping. Nothing about the device leaves it.
+     Anyone can pick a level themselves: localStorage "hl.perf" = auto/full/smooth/lite. */
+  var LEVELS = ["lite", "smooth", "full"];
+  var SMOOTH_CSS =
+    "html.smooth body::before{animation:none!important}" +
+    "html.smooth .card,html.smooth .panel,html.smooth .tile,html.smooth .gate-card,html.smooth .stat,html.smooth .modal,html.smooth .sheet,html.smooth .menu,html.smooth .popover,html.smooth .dialog,html.smooth dialog{" +
+      "background:color-mix(in srgb,var(--card,#fff) 88%,transparent)!important;-webkit-backdrop-filter:blur(8px)!important;backdrop-filter:blur(8px)!important}" +
+    "html.smooth .top{-webkit-backdrop-filter:blur(12px)!important;backdrop-filter:blur(12px)!important}" +
+    "html.smooth .abtn.quiet,html.smooth .abtn.ghost,html.smooth .btn.ghost,html.smooth .btn.quiet,html.smooth .ghost-btn{-webkit-backdrop-filter:none!important;backdrop-filter:none!important}";
+  var LITE_MORE =
+    "html.lite body::before{display:none!important}" +
+    "html.lite .card,html.lite .panel,html.lite .tile,html.lite .stat,html.lite .modal,html.lite .sheet,html.lite .menu,html.lite dialog{background:var(--card,#fff)!important}" +
+    "html.lite .top{background:var(--bar,#141a33)!important}" +
+    /* parts of a long page further down aren't drawn until you scroll near them */
+    "html.lite .panel,html.lite .sec,html.lite .acct{content-visibility:auto;contain-intrinsic-size:auto 360px}";
+  addStyle(SMOOTH_CSS + LITE_MORE);
 
-  /* If nothing gave it away, watch the first few seconds of drawing. Lots of
-     long frames means the device is struggling: switch to light mode now and
-     remember it for next time. */
-  if (!lite && force !== "off" && window.requestAnimationFrame) {
-    var last = 0, frames = 0, slow = 0, start = 0;
+  function specLevel() {
+    var n = navigator, c = n.connection || {}, mem = n.deviceMemory || 0, cores = n.hardwareConcurrency || 0;
+    var touch = false, still = false, w = Math.min(screen.width || 9999, innerWidth || 9999);
+    try { touch = matchMedia("(pointer:coarse)").matches; still = matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) {}
+    if (c.saveData || /(^|-)2g$/.test(c.effectiveType || "")) return "lite";
+    if ((mem && mem <= 2) || (cores && cores <= 2) || w <= 300) return "lite";
+    if (still || touch || (mem && mem <= 4) || (cores && cores <= 4) || c.effectiveType === "3g") return "smooth";
+    return "full";
+  }
+  function lower(a, b) { return LEVELS.indexOf(a) <= LEVELS.indexOf(b) ? a : b; }
+  // older "Fast mode" switch: on = lite, off = full
+  var old = ls("hl.lite");
+  if (old === "on" || old === "off") { ls("hl.perf", old === "on" ? "lite" : "full"); try { localStorage.removeItem("hl.lite"); } catch (e) {} }
+  if (ls("hl.lite.seen") === "1") { ls("hl.perf.seen", "lite"); try { localStorage.removeItem("hl.lite.seen"); } catch (e) {} }
+
+  var choice = ls("hl.perf") || "auto";
+  if (LEVELS.indexOf(choice) < 0) choice = "auto";
+  var seen = ls("hl.perf.seen");                       // the lowest level auto has needed on this device
+  var autoLevel = LEVELS.indexOf(seen) >= 0 ? lower(seen, specLevel()) : specLevel();
+  var level = choice === "auto" ? autoLevel : choice;
+  function apply() {
+    LEVELS.forEach(function (l) { html.classList.toggle(l, l === level); });
+    try { window.dispatchEvent(new CustomEvent("hlperf", { detail: { level: level, choice: choice, auto: autoLevel } })); } catch (e) {}
+  }
+  apply();
+  function stepDown(why) {
+    if (choice !== "auto" || level === "lite") return;
+    level = autoLevel = LEVELS[LEVELS.indexOf(level) - 1];
+    ls("hl.perf.seen", level); apply();
+  }
+
+  /* Time how smoothly the page draws: the first few seconds after it loads, and
+     every stretch of scrolling. Lots of long frames = step down a level. */
+  if (window.requestAnimationFrame) {
+    var watching = false, frames = 0, slow = 0, last = 0, until = 0, lastDrop = 0;
     var tick = function (t) {
-      if (!start) start = t;
       if (last) { frames++; if (t - last > 34) slow++; }
       last = t;
-      if (t - start < 4000 && !document.hidden) requestAnimationFrame(tick);
-      else if (frames > 20 && slow / frames > 0.25) { html.classList.add("lite"); ls("hl.lite.seen", "1"); }
+      if (t < until && !document.hidden) { requestAnimationFrame(tick); return; }
+      watching = false;
+      if (frames >= 30 && slow / frames > 0.25 && Date.now() - lastDrop > 8000) { lastDrop = Date.now(); stepDown(); }
     };
-    var go = function () { setTimeout(function () { requestAnimationFrame(tick); }, 800); };
+    var watch = function (ms) {
+      if (choice !== "auto" || level === "lite") return;
+      var now = performance.now();
+      if (watching) { until = Math.max(until, now + ms); return; }
+      watching = true; frames = 0; slow = 0; last = 0; until = now + ms;
+      requestAnimationFrame(tick);
+    };
+    var go = function () { setTimeout(function () { watch(3500); }, 800); };
     if (document.readyState === "complete") go(); else addEventListener("load", go);
+    addEventListener("scroll", function () { watch(2500); }, { passive: true });
   }
-  window.HEHLite = {
-    on: function () { return html.classList.contains("lite"); },
-    set: function (v) { ls("hl.lite", v ? "on" : "off"); html.classList.toggle("lite", !!v); },
-    auto: function () { try { localStorage.removeItem("hl.lite"); localStorage.removeItem("hl.lite.seen"); } catch (e) {} }
+
+  window.HEHPerf = {
+    level: function () { return level; },
+    choice: function () { return choice; },
+    auto: function () { return autoLevel; },
+    set: function (c) {
+      choice = LEVELS.indexOf(c) >= 0 ? c : "auto";
+      if (choice === "auto") { try { localStorage.removeItem("hl.perf"); localStorage.removeItem("hl.perf.seen"); } catch (e) {} autoLevel = specLevel(); level = autoLevel; }
+      else { ls("hl.perf", choice); level = choice; }
+      apply();
+    }
+  };
+  window.HEHLite = {   // kept for older pages
+    on: function () { return level === "lite"; },
+    set: function (v) { HEHPerf.set(v ? "lite" : "full"); },
+    auto: function () { HEHPerf.set("auto"); }
   };
 
   /* ---------------- 4. the look: Glass or Notebook ----------------
