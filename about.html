@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="/site.js?b=20261114p"></script>
+<title>About the Launchpad · HWL Systems</title>
+<meta name="description" content="What the Homework Launchpad is, how its learning games teach, and how pupils are kept safe. For teachers and parents.">
+<link rel="icon" type="image/png" href="favicon.png">
+<style>
+:root{ --bg:#f6f5f1; --card:#fff; --ink:#151827; --soft:#5b6178; --line:#e4e2da; --brand:#3730a3; --good:#15803d; }
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){ --bg:#11141b; --card:#1a1e29; --ink:#eef1ff; --soft:#a5adcf; --line:#2a3040; --brand:#a5b4fc; --good:#4ade80; } }
+:root[data-theme="dark"]{ --bg:#11141b; --card:#1a1e29; --ink:#eef1ff; --soft:#a5adcf; --line:#2a3040; --brand:#a5b4fc; --good:#4ade80; }
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:860px;margin:0 auto;padding:22px 16px 60px}
+a{color:var(--brand)}
+.back{display:inline-block;font-weight:700;text-decoration:none;padding:8px 14px;border:1px solid var(--line);border-radius:999px;background:var(--card);color:var(--ink)}
+h1{font-size:clamp(1.8rem,6vw,2.6rem);line-height:1.1;margin:22px 0 10px;letter-spacing:-.02em}
+.sub{color:var(--soft);font-size:1.08rem;margin:0 0 18px;max-width:62ch}
+h2{font-size:1.3rem;margin:34px 0 8px}
+p{max-width:68ch}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;margin:18px 0 6px}
+.fact{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px 16px}
+.fact b{display:block;font-size:1.05rem}
+.fact span{color:var(--soft);font-size:.9rem}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin-top:10px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px 18px}
+.card h3{margin:0 0 4px;font-size:1.05rem}
+.card p{margin:0;color:var(--soft);font-size:.95rem}
+.safe{list-style:none;padding:0;margin:10px 0 0;display:grid;gap:10px}
+.safe li{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px 12px 44px;position:relative}
+.safe li::before{content:"✓";position:absolute;left:14px;top:11px;width:20px;height:20px;border-radius:50%;background:var(--good);color:#fff;font-weight:800;font-size:.8rem;display:grid;place-items:center}
+.safe b{display:block}
+.steps{counter-reset:s;list-style:none;padding:0;margin:10px 0 0;display:grid;gap:10px}
+.steps li{counter-increment:s;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px 12px 50px;position:relative}
+.steps li::before{content:counter(s);position:absolute;left:14px;top:12px;width:24px;height:24px;border-radius:8px;background:var(--brand);color:var(--card);font-weight:800;font-size:.85rem;display:grid;place-items:center}
+.cta{display:flex;gap:10px;flex-wrap:wrap;margin:24px 0 0}
+.btn{display:inline-block;padding:12px 18px;border-radius:999px;font-weight:700;text-decoration:none;background:var(--brand);color:var(--card)}
+.btn.ghost{background:var(--card);color:var(--ink);border:1px solid var(--line)}
+footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--line);color:var(--soft);font-size:.88rem}
+</style>
+<link rel="stylesheet" href="https://civilinitiatives.org/glass.css?b=20261114a">
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="./">← Back to the Launchpad</a>
+
+  <h1>About the Homework Launchpad</h1>
+  <p class="sub">A homework and learning website for pupils at Hatch End High School, developed by HWL Systems. This page is for teachers and parents: what it does, how the learning games teach, and how pupils are kept safe.</p>
+
+  <div class="facts">
+    <div class="fact"><b>No adverts</b><span>and no tracking cookies</span></div>
+    <div class="fact"><b>No real money</b><span>pence and Pounds are pretend, earned by learning</span></div>
+    <div class="fact"><b>Kept in the UK</b><span>its own server in London, encrypted connections</span></div>
+    <div class="fact"><b>Open source</b><span>the code can be read on GitHub</span></div>
+  </div>
+
+  <h2>What pupils can do</h2>
+  <div class="grid">
+    <div class="card"><h3>📝 Homework tools</h3><p>A homework planner, a word of the day, Wikipedia look-ups, and short explanations of a topic at their level.</p></div>
+    <div class="card"><h3>🎓 Learning games</h3><p>Maths, English, science, history and geography, built so that every wrong answer teaches something.</p></div>
+    <div class="card"><h3>📄 The Suite</h3><p>Documents, spreadsheets, slides and files that work on school computers, phones and at home.</p></div>
+    <div class="card"><h3>✨ Launchpad AI</h3><p>A homework helper with a personal-information filter and a safety check in front of it.</p></div>
+  </div>
+
+  <h2>How the learning games teach</h2>
+  <ol class="steps">
+    <li><b>Every wrong answer explains why.</b> The games show the right answer with a short reason, so a mistake turns into something learned instead of just a red cross.</li>
+    <li><b>They practise what each pupil is weakest at.</b> Every answer updates how well a skill is known, and "Practise my weakest" picks the topic that needs it most. Skills fade if they aren't used, so old topics come back.</li>
+    <li><b>Mistakes come back as flash cards.</b> A wrong answer becomes a card, reviewed again after 1, 3, 7 and then 16 days, so it sticks for the long term.</li>
+    <li><b>They ask "why", not only "what".</b> Battle Stories re-enacts Hastings, Agincourt, Bosworth and the Armada, then asks why things happened, not just what happened.</li>
+    <li><b>Small daily goals.</b> Streaks, a daily goal of 20 right answers and a progress page encourage a little practice often, rather than a lot at once.</li>
+  </ol>
+
+  <h2>Keeping pupils safe</h2>
+  <ul class="safe">
+    <li><b>School sign-in, approved accounts.</b> Pupils sign in with their school Microsoft account, and new accounts are checked before they get in.</li>
+    <li><b>Personal details are taken out before anything reaches an AI.</b> Emails, phone numbers, postcodes and names that can be spotted are removed first, and pupils are reminded never to type them.</li>
+    <li><b>A safety check reads AI messages.</b> Harmful requests are stopped. If someone seems to be in danger, they are pointed to a trusted adult or Childline.</li>
+    <li><b>Moderation and reports.</b> Anything shared can be reported. Helpers can remove unkind messages, and photos only appear to others after they've been approved. The person reported is never told who reported them.</li>
+    <li><b>Games are kept in their place.</b> New accounts start with games switched off. Each account can be set to learning games only, games can be paused for the rest of the day, and the 3D game has a daily time limit.</li>
+    <li><b>Pupils see first names only.</b> Others see a first name and initial, never a full email address.</li>
+  </ul>
+
+  <h2>Privacy</h2>
+  <p>The Launchpad keeps only what it needs to work: a pupil's sign-in, homework list, learning progress and what they make or post. Nothing is sold or shared with other companies for their own use. Pupils can delete their own to-dos and AI chats, and a whole account can be deleted on request. The full details are in the <a href="privacy.html">privacy notice</a> and the <a href="terms.html">rules</a>.</p>
+
+  <div class="cta">
+    <a class="btn" href="./">Open the Launchpad</a>
+    <a class="btn ghost" href="https://learn.civilinitiatives.org/">See the learning games</a>
+    <a class="btn ghost" href="https://github.com/silocell/HEH-Homework" rel="noopener">Read the code</a>
+  </div>
+
+  <footer>© 2026 HWL Systems · Developed by Shiv Kumar</footer>
+</div>
+</body>
+</html>
