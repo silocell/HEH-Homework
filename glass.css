@@ -129,3 +129,23 @@ canvas, iframe, video, .stage, .board, .map, .game, #game, #stage{
   body::before{ animation:none }
   .tile, .btn, .abtn{ transition:none }
 }
+
+/* ---- phones and tablets: lighter glass so scrolling stays smooth ----
+   Blurring what's behind every card on every frame is too much work for most
+   phones, and it shows up as blank patches while you scroll. On touch screens
+   the light behind the page stays still, cards are mostly solid with a soft
+   frost, and small buttons lose their blur altogether. */
+@media (pointer:coarse) and (max-width:1024px){
+  body::before{ animation:none; will-change:auto }
+  .card, .panel, .tile, .gate-card, .stat, .modal, .sheet, .menu, .popover, .dialog, dialog{
+    background:color-mix(in srgb, var(--card, #fff) 88%, transparent) !important;
+    -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px);
+    box-shadow:var(--lg-shine), 0 6px 18px -12px rgba(20,24,48,.3) !important;
+  }
+  .top{ -webkit-backdrop-filter:blur(12px); backdrop-filter:blur(12px); background:color-mix(in srgb, var(--bar, #141a33) 88%, transparent) !important }
+  .abtn.quiet, .abtn.ghost, .btn.ghost, .btn.quiet{
+    background:color-mix(in srgb, var(--card, #fff) 80%, transparent) !important;
+    -webkit-backdrop-filter:none; backdrop-filter:none;
+  }
+  .tile{ transition:none }
+}
