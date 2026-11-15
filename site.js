@@ -325,6 +325,6 @@
   var on = (/^(www\.)?civilinitiatives\.org$/.test(h) && /^\/(index\.html|about\.html)?$/.test(p)) ||
            (/^learn\.civilinitiatives\.org$/.test(h) && /^\/(index\.html|homework(\.html|\/)?|progress\.html)?$/.test(p));
   if (!on) return;
-  var s = document.createElement("script"); s.src = "https://civilinitiatives.org/support.js?b=20261115a"; s.defer = true;
+  var s = document.createElement("script"); s.src = "https://civilinitiatives.org/support.js?b=20261115b"; s.defer = true;
   (document.head || document.documentElement).appendChild(s);
 })();

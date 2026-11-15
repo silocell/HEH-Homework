@@ -4,13 +4,13 @@
      which knows the Launchpad, is free, and goes through the same safety check
      and personal-info filter as every other Launchpad AI message.
    - Otherwise: answers from the short FAQ below.
-   - Always: "Still stuck?" sends it to the help desk (hwl@chausima.com).
+   - Always: "Still stuck?" sends it to the help desk (info@chausima.com).
    Nothing typed here is kept on this device. */
 (function () {
   if (window.__hlSupport) return; window.__hlSupport = true;
   var URL_ = "https://hehs-live.duckdns.org";
   var KEY_ = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzkyODMyMjkwLCJleHAiOjIxMDgxOTIyOTB9.7gFhQa5RBwVtiOPLO7Qf2-aVEbkd5xgpLiN1J06Gybo";  // public (anon) key
-  var HELPDESK = "hwl@chausima.com";
+  var HELPDESK = "info@chausima.com";
 
   var FAQ = [
     [/pence|pounds|coins?|money|earn|points/i, "You earn 1p for every right answer in HWL Learning (Brainstorm Maths, XP Reader, Chemically Scientific, Word Passport, Times Tables and the rest). Pence add up into Launchpad Pounds, which you can spend in the Shop and the Game Maker."],
