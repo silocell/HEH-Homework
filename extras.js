@@ -655,7 +655,7 @@
     tile("📚", "XP Reader", "Read and earn XP", "https://learn.civilinitiatives.org/reader.html");
     tile("🧪", "Chemically Scientific", "Science quizzes", "https://learn.civilinitiatives.org/science.html");
     tile("🛂", "Word Passport", "French, Spanish, German", "https://learn.civilinitiatives.org/languages.html");
-    tile("✖️", "Times Table Tycoon", "60-second rounds", "https://learn.civilinitiatives.org/tables.html");
+    tile("✖️", "Times tables", "In Brainstorm Maths", "https://maths.civilinitiatives.org/");
     tile("🐉", "Word Dragons", "Grow dragons with English", "https://learn.civilinitiatives.org/dragons.html");
     tile("⚔️", "Battle Stories", "Hastings, 1066", "https://learn.civilinitiatives.org/history.html");
     if (gameLevel === "learning") {
