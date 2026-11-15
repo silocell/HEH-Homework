@@ -1280,6 +1280,9 @@ body.gsc-overflow-hidden{overflow:auto!important}
 }
 .playcard:hover{transform:translateY(-2px)}
 .shopcard{background:linear-gradient(110deg,#b45309 0%,#db2777 55%,#7c3aed 100%);box-shadow:0 10px 30px -12px rgba(219,39,119,.7)}
+.learncard{background:linear-gradient(110deg,#1d4ed8 0%,#0284c7 50%,#059669 100%);box-shadow:0 10px 30px -12px rgba(2,132,199,.7)}
+@media (prefers-color-scheme:dark){ :root:not([data-theme="light"]) .playcard.learncard{background:linear-gradient(110deg,#1e3a8a 0%,#075985 50%,#065f46 100%)} }
+:root[data-theme="dark"] .playcard.learncard{background:linear-gradient(110deg,#1e3a8a 0%,#075985 50%,#065f46 100%)}
 .makercard{background:linear-gradient(110deg,#0f766e 0%,#0891b2 50%,#4f46e5 100%);box-shadow:0 10px 30px -12px rgba(8,145,178,.7)}
 @media (prefers-color-scheme:dark){ :root:not([data-theme="light"]) .makercard{background:linear-gradient(110deg,#134e4a 0%,#155e75 50%,#312e81 100%)} }
 :root[data-theme="dark"] .makercard{background:linear-gradient(110deg,#134e4a 0%,#155e75 50%,#312e81 100%)}
@@ -1691,6 +1694,15 @@ body.gsc-overflow-hidden{overflow:auto!important}
       <span>Every game in one place - the ones that teach you something, and the ones that don't.</span>
     </span>
     <span class="playgo">Play</span>
+  </a>
+
+  <a class="playcard learncard" id="learnCard" href="https://learn.civilinitiatives.org/">
+    <span class="shopicon" aria-hidden="true">🎓</span>
+    <span class="playwords">
+      <strong>HWL Learning</strong>
+      <span>Your homework, Brainstorm Maths, XP Reader, Chemically Scientific, Word Passport and more - 1p for every right answer.</span>
+    </span>
+    <span class="playgo">Learn</span>
   </a>
 
   <a class="playcard aicard" id="aiCard" href="https://ai.civilinitiatives.org/">
@@ -6995,6 +7007,7 @@ setTimeout(featureCards, 1500);
     var dash = document.getElementById("dash"); if(!dash || dash.hidden){ bar.hidden = true; return; }
     targets = [["Top", dash.querySelector(".greeting")]];
     var pc = document.getElementById("playCard"); if(shown(pc)) targets.push(["Play", pc]);
+    var lc = document.getElementById("learnCard"); if(shown(lc)) targets.push(["Learn", lc]);
     var seen = {};
     dash.querySelectorAll(".panel").forEach(function(p){
       if(!shown(p)) return;
