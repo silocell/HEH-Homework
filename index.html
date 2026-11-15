@@ -1977,6 +1977,17 @@ body.gsc-overflow-hidden{overflow:auto!important}
 <script src="auth-store.js?b=20261026a"></script>
 <script>if("serviceWorker" in navigator && !/LaunchpadApp\//.test(navigator.userAgent)) addEventListener("load", function(){ navigator.serviceWorker.register("/sw.js").catch(function(){}); });</script>
 <script src="polish.js?b=20261102091427"></script>
+<script src="brand-intro.js?b=20261115a"></script>
+<script>
+/* The HWL intro: plays once per visit, only when the sign-in screen is what's showing. */
+(function(){
+  var gate=document.getElementById("gate"), dash=document.getElementById("dash");
+  function showing(){ return gate && !gate.hidden && gate.offsetParent !== null && (!dash || dash.hidden); }
+  function maybe(){ if(showing() && window.BrandIntro) BrandIntro.play("hwl"); }
+  setTimeout(maybe, 1200);
+  if(gate && window.MutationObserver) new MutationObserver(function(){ setTimeout(maybe, 50); }).observe(gate, {attributes:true, attributeFilter:["hidden"]});
+})();
+</script>
 <script src="level-practice.js?b=20261024a"></script>
 <script src="extras.js?b=20261115a"></script>
 <script src="avatar.js?b=20261115a"></script>
