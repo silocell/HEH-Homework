@@ -148,9 +148,10 @@
     var p = t.v.split("|");
     if (!css) { css = el("style"); css.id = "hlaTheme"; document.head.appendChild(css); }
     css.textContent =
-      ":root{--accent:" + p[0] + " !important;--accent-soft:" + p[1] + " !important}" +
-      "@media (prefers-color-scheme:dark){:root:not([data-theme=light]){--accent-soft:" + p[2] + " !important}}" +
-      ":root[data-theme=dark]{--accent-soft:" + p[2] + " !important}";
+      /* only when no colour is picked in "Make it yours" - a picked colour always wins */
+      ":root:not([data-accent]){--accent:" + p[0] + " !important;--accent-soft:" + p[1] + " !important}" +
+      "@media (prefers-color-scheme:dark){:root:not([data-theme=light]):not([data-accent]){--accent-soft:" + p[2] + " !important}}" +
+      ":root[data-theme=dark]:not([data-accent]){--accent-soft:" + p[2] + " !important}";
     if (p[3]) {
       if (!deco) { deco = el("div"); deco.id = "hlaDeco"; deco.setAttribute("aria-hidden", "true"); document.body.insertBefore(deco, document.body.firstChild); }
       deco.style.background = p[3];
