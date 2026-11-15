@@ -2,7 +2,7 @@
    A sketch draws itself, colour floods in, the subject moves, big letters draw stroke by
    stroke, then the page is revealed. Click, tap or any key skips it. Skipped entirely for
    people who ask their device for reduced motion.
-   Usage: BrandIntro.play("chausima" | "hwl", { onDone }) */
+   Usage: BrandIntro.play("chausima" | "site" | "hwl", { onDone }) */
 (function () {
   "use strict";
   const NS = "http://www.w3.org/2000/svg";
@@ -21,6 +21,21 @@
           <path class="ln wv" d="M-1500 440 q40 -26 80 0 t80 0 t80 0 t80 0 t80 0 t80 0 t80 0 t80 0 t80 0 t80 0 t80 0 t80 0 t80 0 t80 0 t80 0 t80 0 t80 0 t80 0 t80 0 t80 0 t80 0 t80 0 t80 0 t80 0 t80 0 t80 0 t80 0 t80 0 t80 0 t80 0 t80 0 t80 0 t80 0 t80 0 t80 0 t80 0 t80 0 t80 0 t80 0 t80 0 t80 0 t80 0 t80 0 t80 0 t80 0 t80 0"/>
         </g>`,
       fly: [{ transform: "translate(500px,270px)" }, { transform: "translate(2300px,-200px) rotate(14deg) scale(.45)" }]
+    },
+    site: {
+      bg: "#fdfdf8", ink: "#9aa3ad", main: "#1f3a93", on: "#ffffff", word: "CHAUSIMA", sub: "BY HWL SYSTEMS", size: 150,
+      font: "'Bricolage Grotesque', 'Atkinson Hyperlegible', 'Segoe UI', Arial, sans-serif",
+      art: `
+        <g class="sk" id="bi-subject" transform="translate(500 290)">
+          <path class="ln" d="M0 -110 C-60 -130 -140 -125 -190 -100 L-190 120 C-140 95 -60 90 0 110 Z"/>
+          <path class="ln" d="M0 -110 C60 -130 140 -125 190 -100 L190 120 C140 95 60 90 0 110 Z"/>
+          <path class="ln" d="M0 -110 L0 110"/>
+          <path class="ln" d="M-160 -60 L-40 -54 M-160 -20 L-40 -14 M-160 20 L-70 25"/>
+          <path class="ln" d="M40 -54 L160 -60 M40 -14 L160 -20 M40 26 L120 22"/>
+          <path class="ln" d="M150 -150 L210 -210 L226 -194 L166 -134 Z M150 -150 L142 -126 L166 -134"/>
+        </g>
+        <g id="bi-waves" class="sk"><path class="ln wv" d="M-1500 420 L2500 420"/><path class="ln wv" d="M-1500 446 L2500 446"/></g>`,
+      fly: [{ transform: "translate(500px,290px)" }, { transform: "translate(500px,1200px) rotate(-8deg) scale(.6)" }]
     },
     hwl: {
       bg: "#ffffff", ink: "#9aa3ad", main: "#1f4fd8", on: "#ffffff", word: "HWL", sub: "LAUNCHPAD", size: 200,
@@ -110,11 +125,16 @@
       if (done) return;
       go(box.querySelector("#bi-waves"), [{ opacity: 1 }, { opacity: .25 }], { duration: 400 });
       // 4. the name draws stroke by stroke, then fills
-      const word = $("bi-word");
+      const word = $("bi-word"), sub = $("bi-sub");
+      try { await Promise.race([document.fonts.ready, wait(400)]); } catch (e) {}
+      const fit = (el, base) => { const w = el.getComputedTextLength(), max = vw * 0.86; if (w > max) el.style.fontSize = (base * max / w) + "px"; };
+      fit(word, sc.size);
+      if (sub.getComputedTextLength() > vw * 0.86) { sub.style.letterSpacing = "8px"; fit(sub, 34); }
       await go(word, [{ strokeDashoffset: 2400 }, { strokeDashoffset: 0 }], { duration: 1300, easing: "ease-in-out" });
       if (done) return;
       go(word, [{ fill: "rgba(255,255,255,0)" }, { fill: sc.on }], { duration: 380 });
-      await go($("bi-sub"), [{ opacity: 0, letterSpacing: "40px" }, { opacity: 1, letterSpacing: "22px" }], { duration: 500, easing: "ease-out" });
+      const ls = parseFloat(sub.style.letterSpacing) || 22;
+      await go(sub, [{ opacity: 0, letterSpacing: (ls + 18) + "px" }, { opacity: 1, letterSpacing: ls + "px" }], { duration: 500, easing: "ease-out" });
       await wait(550);
       // 5. reveal the page
       finish(false);
