@@ -438,12 +438,47 @@
     p.appendChild(card); p.appendChild(meta); p.appendChild(nav); p.appendChild(form);
     left.appendChild(p);
 
-    var mineCards = read("hl.x.cards", []), cards = mineCards, at = 0, flipped = false, deckName = "mine";
+    /* "My cards" is one set everywhere: the cards you write here and the
+       ones your HWL Learning games make from wrong answers, kept on the
+       server (the flashcards table). The Flash Cards page on HWL Learning
+       reviews the same set. Cards written before this, or while the server
+       can't be reached, wait on this device and move up when it can. */
+    var local = read("hl.x.cards", []), server = [], mineCards = [], cards = [], at = 0, flipped = false, deckName = "mine", online = false;
+    var practise = el("a", "exp-note", "Practise the ones that are due on HWL Learning");
+    practise.href = "https://learn.civilinitiatives.org/cards.html"; practise.hidden = true;
+    p.insertBefore(practise, form);
+    var SUBJ = { mine:"yours", maths:"Maths", english:"English", science:"Science", history:"History", geography:"Geography" };
+    function rebuild(){
+      mineCards = server.map(function(c){ return { f:c.front, b:c.back, id:c.id, chip:(SUBJ[c.subject] || c.subject) + (c.subject === "mine" ? "" : " - from a game") }; })
+        .concat(local.map(function(c){ return { f:c.f, b:c.b, chip:"on this device" }; }));
+      if (deckName === "mine") { cards = mineCards; paint(); }
+    }
+    function sbOk(){ return window.sb && window.sb.from && window.sb.rpc; }
+    function pull(){
+      if (!sbOk()) return Promise.resolve();
+      return window.sb.from("flashcards").select("id,subject,front,back,box,due_at").order("created_at", { ascending: true }).limit(600).then(function(r){
+        if (r.error) return;                       /* signed out, or cards not switched on */
+        online = true; server = r.data || []; practise.hidden = !server.length; rebuild();
+      }, function(){});
+    }
+    function push(){
+      /* move cards waiting on this device up to the server, one at a time */
+      if (!online || !local.length) return Promise.resolve();
+      var c = local[0];
+      return window.sb.rpc("card_add", { f: c.f, b: c.b }).then(function(r){
+        if (r.error) return;                       /* not switched on yet - they stay here */
+        local.shift(); store("hl.x.cards", local);
+        if (r.data && !server.some(function(x){ return x.id === r.data.id; })) server.push(r.data);
+        rebuild(); return push();
+      }, function(){});
+    }
+    function sync(){ return pull().then(push); }
     function useDeck(name){
       deckName = name; at = 0; flipped = false;
       [].forEach.call(tabs.children, function(t){ t.setAttribute("aria-pressed", t.dataset.deck === name ? "true" : "false"); });
       form.hidden = bDel.hidden = name !== "mine";
       bKnew.hidden = name !== "history";
+      practise.hidden = name !== "mine" || !server.length;
       if (name === "mine") { cards = mineCards; deckNote.textContent = ""; paint(); return; }
       cards = []; deckNote.textContent = "Getting your cards..."; paint();
       window.LevelPractice.deck(name).then(function(r){
@@ -458,7 +493,7 @@
       at = (at + 1) % cards.length; flipped = false; paint();
     });
     function paint(){
-      if (!cards.length){ card.textContent = deckName === "mine" ? "No cards yet. Add one below." : "No cards here yet."; card.disabled = true; meta.textContent = ""; }
+      if (!cards.length){ card.textContent = deckName === "mine" ? "No cards yet. Add one below - wrong answers in HWL Learning games add some too." : "No cards here yet."; card.disabled = true; meta.textContent = ""; }
       else {
         at = Math.max(0, Math.min(at, cards.length - 1));
         card.disabled = false;
@@ -473,17 +508,35 @@
     bPrev.addEventListener("click", function(){ at = (at - 1 + cards.length) % cards.length; flipped = false; paint(); });
     bMix.addEventListener("click", function(){
       for (var i = cards.length - 1; i > 0; i--){ var j = Math.floor(Math.random()*(i+1)); var t = cards[i]; cards[i] = cards[j]; cards[j] = t; }
-      at = 0; flipped = false; if (deckName === "mine") store("hl.x.cards", cards); paint();
+      at = 0; flipped = false; paint();
     });
-    bDel.addEventListener("click", function(){ cards.splice(at, 1); flipped = false; store("hl.x.cards", cards); paint(); });
+    bDel.addEventListener("click", function(){
+      var c = cards[at]; if (!c) return;
+      bDel.disabled = true;
+      function gone(){ cards.splice(at, 1); flipped = false; paint(); }
+      if (c.id != null) {
+        window.sb.rpc("card_remove", { card: c.id }).then(function(r){
+          if (r.error) { meta.textContent = "Couldn't delete that card: " + r.error.message; bDel.disabled = false; return; }
+          server = server.filter(function(x){ return x.id !== c.id; }); gone();
+        }, function(){ meta.textContent = "Couldn't reach the server - try again."; bDel.disabled = false; });
+      } else {
+        var k = local.findIndex(function(x){ return x.f === c.f && x.b === c.b; });
+        if (k >= 0) { local.splice(k, 1); store("hl.x.cards", local); }
+        gone();
+      }
+    });
     form.addEventListener("submit", function(e){
       e.preventDefault();
       var a = f1.value.trim(), b = f2.value.trim();
       if (!a || !b) return;
-      mineCards.push({ f:a, b:b }); store("hl.x.cards", mineCards.slice(-300));
-      at = cards.length - 1; flipped = false; f1.value = f2.value = ""; f1.focus(); paint();
+      local.push({ f:a, b:b }); store("hl.x.cards", local.slice(-300));
+      f1.value = f2.value = ""; f1.focus(); rebuild(); at = cards.length - 1; paint();
+      push();
     });
-    paint();
+    paint(); rebuild();
+    /* the dashboard signs in a moment after this runs, so try a few times */
+    var tries = 0; (function again(){ sync().then(function(){ if (!online && ++tries < 6) setTimeout(again, 2500); }); })();
+    document.addEventListener("visibilitychange", function(){ if (!document.hidden) sync(); });
   }
 
 
