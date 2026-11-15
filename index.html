@@ -5200,9 +5200,13 @@ function hideAsked(){
   if(h) h.textContent = "";
 }
 
+/* The explainer is retired (15 Nov 2026): Launchpad AI does the same job
+   and more. Its panel and "What people are asking" stay hidden for
+   everyone; the code below is kept in case it ever comes back. */
+var EXPLAINER_RETIRED = true;
 function refreshAllowance(){
   hideAsked();
-  if(!canSync()) { showExplainPanel(false); return; }
+  if(EXPLAINER_RETIRED || !canSync()) { showExplainPanel(false); return; }
   /* Stay hidden until the server confirms this account may use it, so an
      account without the explainer never sees it appear and vanish. */
   showExplainPanel(false);
