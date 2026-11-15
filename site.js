@@ -317,3 +317,14 @@
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", ready); else ready();
 })();
+
+/* 💬 Help: the support chat on the dashboard, the About page and the HWL Learning
+   hub pages (not inside games, where it would sit on top of the controls). */
+(function () {
+  var h = location.hostname, p = location.pathname;
+  var on = (/^(www\.)?civilinitiatives\.org$/.test(h) && /^\/(index\.html|about\.html)?$/.test(p)) ||
+           (/^learn\.civilinitiatives\.org$/.test(h) && /^\/(index\.html|homework(\.html|\/)?|progress\.html)?$/.test(p));
+  if (!on) return;
+  var s = document.createElement("script"); s.src = "https://civilinitiatives.org/support.js?b=20261115a"; s.defer = true;
+  (document.head || document.documentElement).appendChild(s);
+})();
