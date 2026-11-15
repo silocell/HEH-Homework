@@ -147,7 +147,7 @@
     var box = el("div", "pf-today");
     var right = today.reduce(function(n, t){ return n + t.correct; }, 0);
     box.appendChild(el("b", null, "Today: " + right + " right answer" + (right === 1 ? "" : "s") + " = " + right + "p"));
-    box.appendChild(el("p", null, "Pence (p): 1p for every right answer in the learning games (Level Up, Word Dragons, Times Table Tycoon, Map Quest, Battle Stories, flash cards), " +
+    box.appendChild(el("p", null, "Pence (p): 1p for every right answer in HWL Learning (Level Up, Word Dragons, Times Table Tycoon, Map Quest, Battle Stories, flash cards), " +
       "and 1-3p a round in the Arcade and Scratch games (up to 10p per game a day)."));
     box.appendChild(el("p", null, "🪙 Launchpad Pounds are rare: every right answer has a small lucky chance of one (up to 3 a day), and achievements always pay them. The fun games never do."));
     today.forEach(function(t){
@@ -156,7 +156,7 @@
       row.appendChild(el("small", null, t.correct + " right today"));
       box.appendChild(row);
     });
-    var lu = el("a", "pf-earn", "Earn pence in the learning games →"); lu.href = LEVELUP;
+    var lu = el("a", "pf-earn", "Earn pence in HWL Learning →"); lu.href = LEVELUP;
     box.appendChild(lu);
     sheet.appendChild(box);
   }

@@ -500,7 +500,7 @@
     float:"Bubble Float", ttt:"Noughts & Crosses", mines:"Bomb Squad", stack:"Tower Stack", quick:"Quick Draw"
   };
 
-  /* "learning" = this account has only the learning games switched on
+  /* "learning" = this account has only HWL Learning switched on
      (admin panel -> Games). Then the doodles, the doodle of the day and
      the fun tiles stay away. Asked once, from the same my_games() the
      game pages ask. Unknown (server not reachable) counts as "all", like

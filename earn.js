@@ -4,7 +4,7 @@
    A game calls HEHEarn.played("plane", score) when a round ends (the
    Scratch games every 2 minutes of play). The server pays 1-3p, at most
    10p per game a day, never more often than every 15 seconds, and never
-   Launchpad Pounds. Learning games pay 1p per right answer on their own,
+   Launchpad Pounds. HWL Learning games pay 1p per right answer on their own,
    with a small lucky chance of a Pound; achievements always pay Pounds.
 
    Uses the same shared sign-in as the games gate (auth-store.js). No
