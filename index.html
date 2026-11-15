@@ -4440,7 +4440,7 @@ document.getElementById("searchForm").addEventListener("submit",function(e){
   var q = document.getElementById("searchInput").value.trim();
   if(!q) return;
   /* HWLAI: the question goes after the # so it never reaches a server log */
-  if(searchMode === "hwlai"){ location.href = "https://ai.civilinitiatives.org/#ai=hwlai&ask=" + encodeURIComponent(q.slice(0, 4000)); return; }
+  if(searchMode === "hwlai"){ location.href = "https://hwlai.civilinitiatives.org/#q=" + encodeURIComponent(q.slice(0, 500)); return; }
   /* A new search replaces whatever is open: the page being read closes
      and the fresh results take its place, no need to press Close first. */
   var reader = document.getElementById("reader");
