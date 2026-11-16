@@ -150,6 +150,42 @@ body.dragging .win .shield{display:block}
 .seg button[aria-pressed="true"]{background:var(--indigo);color:#fff}
 
 .runner .drop{margin-top:12px;padding:18px;border:2px dashed var(--rule);border-radius:14px;color:var(--soft);text-align:center}
+/* ---------- browser ---------- */
+.br{display:flex;flex-direction:column;height:100%;background:var(--win);color:var(--ink)}
+.br .tb{display:flex;align-items:center;gap:4px;padding:6px 8px;border-bottom:1px solid var(--rule);background:var(--win2)}
+.br .tb button{width:32px;height:32px;border:0;border-radius:9px;background:transparent;color:var(--ink);font-size:1rem;cursor:pointer;flex:none}
+.br .tb button:hover:not(:disabled){background:rgba(127,127,127,.18)} .br .tb button:disabled{opacity:.35;cursor:default}
+.br .tb form{flex:1;display:flex;min-width:0}
+.br .tb input{flex:1;min-width:0;height:32px;border-radius:999px;border:1px solid var(--rule);background:var(--win);color:var(--ink);padding:0 14px;font:500 .9rem var(--body);outline:0}
+.br .tb input:focus{border-color:var(--sky)}
+.br .view{flex:1;position:relative;overflow:auto}
+.br iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:#fff}
+.br .note{padding:6px 12px;font-size:.78rem;color:var(--soft);border-top:1px solid var(--rule);display:flex;gap:10px;align-items:center;justify-content:space-between}
+.br .note[hidden]{display:none}
+.br .note a{color:var(--sky);font-weight:600;text-decoration:none;white-space:nowrap}
+.br .homep{max-width:560px;margin:0 auto;padding:44px 20px 30px;text-align:center}
+.br .homep h2{font:800 2rem var(--display);margin:6px 0 14px;letter-spacing:-.02em}
+.br .homep .logo{width:64px;height:64px;border-radius:18px}
+.br .sbox{display:flex;gap:8px} .br .sbox input{flex:1;height:44px;border-radius:999px;border:1px solid var(--rule);background:var(--win2);color:var(--ink);padding:0 18px;font:500 1rem var(--body);outline:0}
+.br .sbox input:focus{border-color:var(--sky)} .br .sbox button{height:44px;padding:0 18px;border:0;border-radius:999px;background:var(--indigo);color:#fff;font-weight:700;cursor:pointer}
+.br .opts{margin:10px 0 0;font-size:.85rem;color:var(--soft)} .br .opts label{cursor:pointer}
+.br .quick{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:26px}
+.br .quick button{display:flex;flex-direction:column;align-items:center;gap:6px;width:88px;padding:10px 4px;border:0;border-radius:14px;background:transparent;color:var(--ink);cursor:pointer;font:500 .8rem var(--body)}
+.br .quick button:hover{background:rgba(127,127,127,.14)} .br .quick i{font-style:normal;font-size:1.5rem;width:46px;height:46px;border-radius:13px;display:grid;place-items:center;background:var(--win2)}
+.br .res{max-width:720px;padding:16px 22px 30px}
+.br .res .hd{color:var(--soft);font-size:.85rem;margin:0 0 12px}
+.br .res a{display:block;padding:10px 12px;margin:0 -12px;border-radius:12px;text-decoration:none;color:inherit;cursor:pointer}
+.br .res a:hover{background:rgba(127,127,127,.1)} .br .res b{display:block;color:var(--sky);font:600 1.02rem var(--display)}
+.br .res small{display:block;color:#16a34a;font-size:.75rem;margin:2px 0 3px} .br .res span{color:var(--soft);font-size:.88rem;line-height:1.45}
+/* ---------- what's new banner ---------- */
+#news{position:absolute;top:14px;left:50%;transform:translateX(-50%);z-index:5;display:flex;align-items:center;gap:12px;max-width:calc(var(--W) - 24px);
+  padding:10px 10px 10px 16px;border-radius:16px;background:var(--glass);border:1px solid var(--glass-rule);color:var(--glass-ink);
+  backdrop-filter:blur(22px) saturate(1.4);-webkit-backdrop-filter:blur(22px) saturate(1.4);box-shadow:0 14px 34px -18px rgba(0,0,0,.6)}
+#news[hidden]{display:none} #news b{font:700 .95rem var(--display);white-space:nowrap} #news p{margin:0;font-size:.86rem;opacity:.85}
+#news button{border:0;border-radius:10px;padding:8px 12px;font-weight:700;cursor:pointer;white-space:nowrap;background:var(--indigo);color:#fff}
+#news button.ghost{background:transparent;color:inherit;font-size:1rem;padding:6px 9px}
+@media (max-width:700px){ #news p{display:none} }
+@media (prefers-reduced-motion:no-preference){ #news:not([hidden]){animation:drop .35s ease-out} @keyframes drop{from{opacity:0;transform:translate(-50%,-10px)}to{opacity:1;transform:translate(-50%,0)}} }
 #toast{position:fixed;left:50%;bottom:calc(var(--shelf-h) + 16px);transform:translate(-50%,10px);max-width:calc(var(--W) - 32px);padding:11px 16px;border-radius:14px;background:#0f172a;color:#fff;font-weight:600;opacity:0;pointer-events:none;transition:.2s;z-index:10001}
 #toast.on{opacity:1;transform:translate(-50%,0)}
 
@@ -185,6 +221,9 @@ html.phone #meDock{display:grid!important}
 <div id="wall" aria-hidden="true"><canvas id="stars"></canvas><div class="trail"></div>
   <div class="wordmark"><b>HWL OS</b><span id="hello">The Homework Launchpad, as a desktop.</span></div></div>
 <main id="desk" aria-label="Desktop"></main>
+<div id="news" hidden role="status"><b>New in HWL OS</b><p>A web Browser with HWL Search, Chatbot R, and HWLOS for TurboWarp.</p>
+  <button type="button" data-n="browser">Open Browser</button><button type="button" data-n="rchat" class="ghost" title="Chatbot R" aria-label="Open Chatbot R">🤖</button>
+  <button type="button" data-n="x" class="ghost" title="Close" aria-label="Close this banner">✕</button></div>
 <div id="snap"></div>
 <nav id="shelf" aria-label="Shelf">
   <div class="dock" id="dock">
@@ -234,6 +273,9 @@ html.phone #meDock{display:grid!important}
     { id: "arcade",  name: "Arcade",        ic: "🕹", app: "#ca8a04", url: "https://arcade.civilinitiatives.org/", grp: "Learn and play", keys: "games" },
     { id: "maker",   name: "Game Maker",    ic: "🛠", app: "#65a30d", url: "https://sandbox.civilinitiatives.org/", grp: "Learn and play", keys: "make game sandbox" },
     { id: "shop",    name: "Shop",          ic: "🛍", app: "#c026d3", url: "https://shop.civilinitiatives.org/", grp: "Learn and play", keys: "items avatar trade" },
+    { id: "rchat",   name: "Chatbot R",     ic: "🤖", app: "#3346d8", url: "https://games.civilinitiatives.org/chatbot-r/", grp: "Learn and play", keys: "chat robot scratch r" },
+    { id: "twos",    name: "HWLOS (TurboWarp)", ic: "💻", app: "#d9408f", url: "https://games.civilinitiatives.org/hwlos/", grp: "Learn and play", keys: "computer turbowarp scratch os" },
+    { id: "browser", name: "Browser",       ic: "🌐", app: "#0284c7", grp: "HWL OS", keys: "web internet search wikipedia website google" },
     { id: "runner",  name: "Run a file",    ic: "▶️", app: "#0f766e", grp: "HWL OS", keys: "open html app game apk run file" },
     { id: "settings",name: "Settings",      ic: "⚙️", app: "#475569", grp: "HWL OS", keys: "wallpaper theme dark light" }
   ];
@@ -404,6 +446,7 @@ html.phone #meDock{display:grid!important}
       h.srcdoc = shim + a.html; h.onload = function () { var l = body.querySelector(".load"); if (l) l.remove(); };
       body.insertBefore(h, body.querySelector(".shield"));
     } else if (id === "runner") { body.querySelector(".load").remove(); body.insertBefore(runnerPane(), body.querySelector(".shield")); }
+    else if (id === "browser") { var lb = body.querySelector(".load"); lb.remove(); body.insertBefore(browserPane(), body.querySelector(".shield")); }
     else if (id === "settings") { var l0 = body.querySelector(".load"); l0.remove(); body.insertBefore(settingsPane(), body.querySelector(".shield")); }
     $("desk").appendChild(el);
     wins[id] = { el: el, a: a };
@@ -519,6 +562,94 @@ html.phone #meDock{display:grid!important}
   document.addEventListener("drop", function (e) { if (!e.dataTransfer || !e.dataTransfer.files.length) return; e.preventDefault(); [].slice.call(e.dataTransfer.files, 0, 4).forEach(runFile); });
 
   /* ---------- Settings (the one app that lives inside HWL OS) ---------- */
+  /* ---------- Browser: HWL Search (Wikipedia) and web pages in a window ---------- */
+  var QUICK = [["📖", "Wikipedia", "https://en.m.wikipedia.org/wiki/Main_Page"], ["🧒", "Simple Wikipedia", "https://simple.m.wikipedia.org/wiki/Main_Page"],
+    ["🤖", "Chatbot R", "https://games.civilinitiatives.org/chatbot-r/"], ["💻", "HWLOS", "https://games.civilinitiatives.org/hwlos/"],
+    ["🎮", "Games", "https://games.civilinitiatives.org/"], ["✉️", "Chausima", "https://chausima.com/"]];
+  function esc(t) { return String(t).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  function toUrl(t) {
+    t = t.trim(); if (!t) return null;
+    if (/\s/.test(t) || !/\./.test(t)) return null;                // words, not an address: search
+    if (!/^[a-z]+:\/\//i.test(t)) t = "https://" + t;
+    if (!/^https?:\/\//i.test(t)) return null;
+    var m = t.match(/youtube\.com\/watch\?(?:.*&)?v=([\w-]{6,})/) || t.match(/youtu\.be\/([\w-]{6,})/);
+    if (m) t = "https://www.youtube-nocookie.com/embed/" + m[1];
+    return t;
+  }
+  function browserPane() {
+    var d = document.createElement("div"); d.className = "br";
+    d.innerHTML = '<div class="tb"><button type="button" data-b="back" title="Back" aria-label="Back">←</button><button type="button" data-b="fwd" title="Forward" aria-label="Forward">→</button>' +
+      '<button type="button" data-b="home" title="Home" aria-label="Home">⌂</button><button type="button" data-b="reload" title="Reload" aria-label="Reload">↻</button>' +
+      '<form><input type="text" placeholder="Search Wikipedia or type a web address" aria-label="Address" autocomplete="off" spellcheck="false"></form>' +
+      '<button type="button" data-b="out" title="Open in a new tab" aria-label="Open in a new tab">↗</button></div><div class="view"></div>' +
+      '<div class="note" hidden><span>Page blank? Some sites don\'t allow being shown inside another page.</span><a href="#" target="_blank" rel="noopener noreferrer">Open it in a new tab ↗</a></div>';
+    var view = d.querySelector(".view"), addr = d.querySelector(".tb input"), note = d.querySelector(".note"), noteA = note.querySelector("a");
+    var hist = [], at = -1, simple = !!prefs.simpleWiki;
+    function buttons() {
+      d.querySelector('[data-b="back"]').disabled = at <= 0; d.querySelector('[data-b="fwd"]').disabled = at >= hist.length - 1;
+      var cur = hist[at]; d.querySelector('[data-b="out"]').disabled = !(cur && cur.t === "url");
+    }
+    function go(entry, push) {
+      if (push) { hist = hist.slice(0, at + 1); hist.push(entry); at = hist.length - 1; }
+      show(entry); buttons();
+    }
+    function show(e) {
+      note.hidden = true; view.innerHTML = "";
+      if (e.t === "home") { addr.value = ""; home(); }
+      else if (e.t === "search") { addr.value = e.q; results(e.q); }
+      else { addr.value = e.u; var f = document.createElement("iframe"); f.src = e.u; f.title = "Web page";
+        f.setAttribute("referrerpolicy", "no-referrer"); f.setAttribute("allow", "fullscreen; autoplay; picture-in-picture");
+        f.setAttribute("sandbox", "allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-presentation");
+        view.appendChild(f); note.hidden = false; noteA.href = e.u; }
+    }
+    function home() {
+      view.innerHTML = '<div class="homep"><img class="logo" src="/icons/icon-192.png" alt=""><h2>HWL Search</h2>' +
+        '<form class="sbox"><input type="search" placeholder="What do you want to find out?" aria-label="Search"><button>Search</button></form>' +
+        '<p class="opts"><label><input type="checkbox"' + (simple ? " checked" : "") + '> Simple English Wikipedia (easier to read)</label></p>' +
+        '<div class="quick">' + QUICK.map(function (q, i) { return '<button type="button" data-q="' + i + '"><i>' + q[0] + "</i>" + esc(q[1]) + "</button>"; }).join("") + "</div></div>";
+      var box = view.querySelector(".sbox input");
+      view.querySelector(".sbox").onsubmit = function (ev) { ev.preventDefault(); var q = box.value.trim(); if (q) go({ t: "search", q: q }, true); };
+      view.querySelector(".opts input").onchange = function () { simple = this.checked; prefs.simpleWiki = simple; save("hwlos.prefs", prefs); };
+      view.querySelectorAll("[data-q]").forEach(function (b) { b.onclick = function () { go({ t: "url", u: QUICK[+b.dataset.q][2] }, true); }; });
+      setTimeout(function () { box.focus(); }, 30);
+    }
+    function results(q) {
+      var host = simple ? "simple" : "en";
+      view.innerHTML = '<div class="res"><p class="hd">Searching ' + (simple ? "Simple English " : "") + "Wikipedia for “" + esc(q) + "”…</p></div>";
+      var box = view.querySelector(".res");
+      fetch("https://" + host + ".wikipedia.org/w/api.php?action=query&list=search&format=json&origin=*&srlimit=12&srsearch=" + encodeURIComponent(q))
+        .then(function (r) { return r.json(); })
+        .then(function (j) {
+          var hits = (j.query && j.query.search) || [];
+          box.innerHTML = '<p class="hd">' + (hits.length ? "Results from " + (simple ? "Simple English " : "") + "Wikipedia for “" + esc(q) + "”" : "Nothing found for “" + esc(q) + "”. Try different words.") + "</p>";
+          hits.forEach(function (h) {
+            var u = "https://" + host + ".m.wikipedia.org/wiki/" + encodeURIComponent(h.title.replace(/ /g, "_"));
+            var a = document.createElement("a"); a.href = u;
+            var tmp = document.createElement("div"); tmp.innerHTML = h.snippet || "";
+            a.innerHTML = "<b>" + esc(h.title) + "</b><small>" + esc(host + ".wikipedia.org/wiki/" + h.title.replace(/ /g, "_")) + "</small><span>" + esc(tmp.textContent) + "…</span>";
+            a.onclick = function (ev) { ev.preventDefault(); go({ t: "url", u: u }, true); };
+            box.appendChild(a);
+          });
+        })
+        .catch(function () { box.innerHTML = '<p class="hd">Search didn\'t work just now. Check the internet connection and try again.</p>'; });
+    }
+    d.querySelector(".tb form").onsubmit = function (ev) {
+      ev.preventDefault(); var t = addr.value.trim(); if (!t) return;
+      var u = toUrl(t); go(u ? { t: "url", u: u } : { t: "search", q: t }, true); addr.blur();
+    };
+    d.querySelector(".tb").addEventListener("click", function (ev) {
+      var b = ev.target.closest("[data-b]"); if (!b || b.disabled) return;
+      var k = b.dataset.b;
+      if (k === "back" && at > 0) { at--; show(hist[at]); buttons(); }
+      else if (k === "fwd" && at < hist.length - 1) { at++; show(hist[at]); buttons(); }
+      else if (k === "home") go({ t: "home" }, true);
+      else if (k === "reload") show(hist[at]);
+      else if (k === "out" && hist[at] && hist[at].t === "url") window.open(hist[at].u, "_blank", "noopener");
+    });
+    go({ t: "home" }, true);
+    return d;
+  }
+
   function settingsPane() {
     var d = document.createElement("div"); d.className = "settings";
     var walls = [["night", "Night launch", "linear-gradient(180deg,#0b1026,#2a1d4f)"], ["dawn", "Dawn", "linear-gradient(180deg,#1e3a8a,#6d28d9,#f472b6)"], ["mint", "Mint", "linear-gradient(180deg,#022c22,#0f766e)"], ["paper", "Paper", "linear-gradient(160deg,#e0e7ff,#fde68a)"]];
@@ -541,6 +672,17 @@ html.phone #meDock{display:grid!important}
     });
     return d;
   }
+
+  /* ---------- what's new banner (shows until closed) ---------- */
+  (function () {
+    var n = $("news"); if (!n || load("hwlos.news", "") === "v1") return;
+    setTimeout(function () { n.hidden = false; }, 900);
+    n.addEventListener("click", function (e) {
+      var b = e.target.closest("[data-n]"); if (!b) return;
+      if (b.dataset.n !== "x") open(b.dataset.n);
+      n.hidden = true; save("hwlos.news", "v1");
+    });
+  })();
 
   /* ---------- you ---------- */
   function showMenu() {
