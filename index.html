@@ -1656,6 +1656,7 @@ body.gsc-overflow-hidden{overflow:auto!important}
     <div class="brand"><span class="dot"></span> Homework Launchpad</div>
     <button class="ghost-btn bar-menu" id="barMenu" type="button" aria-expanded="false" aria-controls="barActions" aria-label="Menu">Menu</button>
     <div class="topbar-actions" id="barActions">
+      <span data-chausima-apps></span>
       <span class="sync" id="syncPill" title="Sync status"><span class="sync-dot"></span><span id="syncText">Synced</span></span>
       <a class="ghost-btn" id="moreBtn" hidden></a>
       <button class="ghost-btn" id="labBtn" type="button" hidden>Lab</button>
@@ -7063,5 +7064,6 @@ setTimeout(featureCards, 1500);
   addEventListener("load", function(){ var d = document.getElementById("dash"); if(d) mo.observe(d, { attributes: true, attributeFilter: ["hidden"], subtree: true, childList: true }); });
 })();
 </script>
+<script src="https://chausima.com/apps.js?v=1" defer></script>
 </body>
 </html>
