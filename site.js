@@ -256,6 +256,15 @@
       var h = parseInt(p, 10) % 24; return h >= 23 || h < 6;
     } catch (e) { return false; }
   }
+  /* Only pages that use the server sleep: ones that load Supabase or talk to HEH-Live. Games and other pages
+     that work on their own (and other sites like chausima.com) stay open. <html data-sleep="no|yes"> overrides. */
+  function needsServer() {
+    var o = html.getAttribute("data-sleep"); if (o === "no") return false; if (o === "yes") return true;
+    if (document.querySelector('script[src*="supabase"]')) return true;
+    var sc = document.querySelectorAll("script:not([src])");
+    for (var i = 0; i < sc.length; i++) if (/hehs-live\.duckdns\.org|supabase\.createClient/.test(sc[i].textContent)) return true;
+    return false;
+  }
   var SLEEP_MSG = "Sleep mode: the Launchpad sleeps from 11 pm to 6 am (UK time) while the server restarts and does its night work. See you at 6 am!";
   var shown = null;
   function showClosed(msg, title) {
@@ -283,7 +292,7 @@
   var ownGate = false;
   function checkLock() {
     if (document.hidden) return;
-    if (sleepingNow()) {
+    if (sleepingNow() && needsServer()) {
       isOwner(sessionEmail()).then(function (owner) { if (owner) hideClosed(); else showClosed(SLEEP_MSG, "The Launchpad is asleep 😴"); });
       return;
     }
