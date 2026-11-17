@@ -566,6 +566,8 @@ html.phone #meDock{display:grid!important}
   var QUICK = [["📖", "Wikipedia", "https://en.m.wikipedia.org/wiki/Main_Page"], ["🧒", "Simple Wikipedia", "https://simple.m.wikipedia.org/wiki/Main_Page"],
     ["🤖", "Chatbot R", "https://games.civilinitiatives.org/chatbot-r/"], ["💻", "HWLOS", "https://games.civilinitiatives.org/hwlos/"],
     ["🎮", "Games", "https://games.civilinitiatives.org/"], ["✉️", "Chausima", "https://chausima.com/"]];
+  var TRUST = /(^|\.)(wikipedia\.org|wikimedia\.org|bbc\.co\.uk|civilinitiatives\.org|chausima\.com|kiddle\.co|nasa\.gov|nhm\.ac\.uk|britannica\.com|natgeokids\.com|mathsisfun\.com|gov\.uk|scratch\.mit\.edu|khanacademy\.org|developer\.mozilla\.org|w3schools\.com)$/i;
+  function hostOf(u) { try { return new URL(u).hostname; } catch (e) { return ""; } }
   function esc(t) { return String(t).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
   function toUrl(t) {
     t = t.trim(); if (!t) return null;
@@ -582,7 +584,7 @@ html.phone #meDock{display:grid!important}
       '<button type="button" data-b="home" title="Home" aria-label="Home">⌂</button><button type="button" data-b="reload" title="Reload" aria-label="Reload">↻</button>' +
       '<form><input type="text" placeholder="Search Wikipedia or type a web address" aria-label="Address" autocomplete="off" spellcheck="false"></form>' +
       '<button type="button" data-b="out" title="Open in a new tab" aria-label="Open in a new tab">↗</button></div><div class="view"></div>' +
-      '<div class="note" hidden><span>Page blank? Some sites don\'t allow being shown inside another page.</span><a href="#" target="_blank" rel="noopener noreferrer">Open it in a new tab ↗</a></div>';
+      '<div class="note" hidden><span>Page blank? Some sites don\'t allow being shown inside another page. Links inside a page aren\'t checked, so use the address bar to go somewhere new.</span><a href="#" target="_blank" rel="noopener noreferrer">Open it in a new tab ↗</a></div>';
     var view = d.querySelector(".view"), addr = d.querySelector(".tb input"), note = d.querySelector(".note"), noteA = note.querySelector("a");
     var hist = [], at = -1, simple = !!prefs.simpleWiki;
     function buttons() {
@@ -597,10 +599,25 @@ html.phone #meDock{display:grid!important}
       note.hidden = true; view.innerHTML = "";
       if (e.t === "home") { addr.value = ""; home(); }
       else if (e.t === "search") { addr.value = e.q; results(e.q); }
+      else if (e.t === "blocked") { addr.value = e.u; view.innerHTML = '<div class="homep"><div style="font-size:3rem">🛡️</div><h2>Not opened</h2><p class="opts">' + esc(e.why) + "</p></div>"; }
+      else if (e.t === "url" && !e.ok && !TRUST.test(hostOf(e.u))) {
+        addr.value = e.u; view.innerHTML = '<div class="homep"><div style="font-size:3rem">🔎</div><h2>Checking this page…</h2><p class="opts">Making sure it\'s OK for school.</p></div>';
+        var want = e; check(e.u).then(function (r) {
+          if (hist[at] !== want) return;                 // you've moved on
+          if (r.ok) { want.ok = true; show(want); } else { want.t = "blocked"; want.why = r.reason || "This page isn't suitable for school."; show(want); }
+        });
+      }
       else { addr.value = e.u; var f = document.createElement("iframe"); f.src = e.u; f.title = "Web page";
         f.setAttribute("referrerpolicy", "no-referrer"); f.setAttribute("allow", "fullscreen; autoplay; picture-in-picture");
         f.setAttribute("sandbox", "allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox allow-presentation");
         view.appendChild(f); note.hidden = false; noteA.href = e.u; }
+    }
+    function check(u) {
+      if (!sb) return Promise.resolve({ ok: false, reason: "The safety check isn't available, so this page stays closed." });
+      return sb.functions.invoke("linkcheck", { body: { url: u } }).then(function (r) {
+        if (r.data && typeof r.data.ok === "boolean") return r.data;
+        return { ok: false, reason: "The safety check isn't answering right now, so this page stays closed. Try again in a minute." };
+      }, function () { return { ok: false, reason: "The safety check isn't answering right now, so this page stays closed." }; });
     }
     function home() {
       view.innerHTML = '<div class="homep"><img class="logo" src="/icons/icon-192.png" alt=""><h2>HWL Search</h2>' +
@@ -613,25 +630,48 @@ html.phone #meDock{display:grid!important}
       view.querySelectorAll("[data-q]").forEach(function (b) { b.onclick = function () { go({ t: "url", u: QUICK[+b.dataset.q][2] }, true); }; });
       setTimeout(function () { box.focus(); }, 30);
     }
+    function strip(h) { var t = document.createElement("div"); t.innerHTML = String(h || ""); return t.textContent; }
+    function hit(box, title, url, shown, text, entry) {
+      var a = document.createElement("a"); a.href = url;
+      a.innerHTML = "<b>" + esc(title) + "</b><small>" + esc(shown) + "</small><span>" + esc(text) + "</span>";
+      a.onclick = function (ev) { ev.preventDefault(); go(entry, true); }; box.appendChild(a);
+    }
     function results(q) {
       var host = simple ? "simple" : "en";
-      view.innerHTML = '<div class="res"><p class="hd">Searching ' + (simple ? "Simple English " : "") + "Wikipedia for “" + esc(q) + "”…</p></div>";
-      var box = view.querySelector(".res");
-      fetch("https://" + host + ".wikipedia.org/w/api.php?action=query&list=search&format=json&origin=*&srlimit=12&srsearch=" + encodeURIComponent(q))
+      view.innerHTML = '<div class="res"><p class="hd">Searching for “' + esc(q) + '”…</p><div class="web"></div><div class="vid"></div><div class="wiki"></div></div>';
+      var box = view.querySelector(".res"), found = 0, done = 0;
+      function finish() { if (++done < 3) return; box.querySelector(".hd").textContent = found ? "Results for “" + q + "”" : "Nothing found for “" + q + "”. Try different words."; }
+      function section(cls, name) { var s = box.querySelector("." + cls); s.innerHTML = '<p class="hd" style="margin-top:14px;font-weight:700;color:var(--ink)">' + name + "</p>"; return s; }
+      // 1. our own search engine (YaCy, safe learning sites only)
+      fetch("https://hehs-live.duckdns.org/search/v1?query=" + encodeURIComponent(q) + "&maximumRecords=8")
+        .then(function (r) { return r.json(); })
+        .then(function (j) {
+          var items = ((j.channels || [])[0] || {}).items || [];
+          if (items.length) { var s = section("web", "HWL Search"); items.forEach(function (it) { found++;
+            var u = it.link; var sh = u.replace(/^https?:\/\//, "").slice(0, 80);
+            hit(s, strip(it.title) || sh, u, sh, strip(it.description).slice(0, 220), { t: "url", u: u }); }); }
+        }).catch(function () {}).then(finish);
+      // 2. videos from the CTube feed (educational channels)
+      fetch("https://chausima.com/ctube/feed.json")
+        .then(function (r) { return r.json(); })
+        .then(function (f) {
+          var words = q.toLowerCase().split(/\s+/).filter(function (w) { return w.length > 2; });
+          var ch = {}; (f.channels || []).forEach(function (c) { ch[c.id] = c.name; });
+          var vids = (f.videos || []).map(function (v) { var t = (v.t + " " + v.d).toLowerCase(); var sc = 0; words.forEach(function (w) { if (t.indexOf(w) >= 0) sc += v.t.toLowerCase().indexOf(w) >= 0 ? 3 : 1; }); return [sc, v]; })
+            .filter(function (x) { return x[0] > 0; }).sort(function (a, b) { return b[0] - a[0]; }).slice(0, 4);
+          if (vids.length) { var s = section("vid", "Videos"); vids.forEach(function (x) { found++; var v = x[1];
+            var u = "https://www.youtube-nocookie.com/embed/" + v.id;
+            hit(s, "▶ " + v.t, u, (ch[v.c] || "YouTube") + " · YouTube", (v.d || "").slice(0, 160), { t: "url", u: u }); }); }
+        }).catch(function () {}).then(finish);
+      // 3. Wikipedia
+      fetch("https://" + host + ".wikipedia.org/w/api.php?action=query&list=search&format=json&origin=*&srlimit=8&srsearch=" + encodeURIComponent(q))
         .then(function (r) { return r.json(); })
         .then(function (j) {
           var hits = (j.query && j.query.search) || [];
-          box.innerHTML = '<p class="hd">' + (hits.length ? "Results from " + (simple ? "Simple English " : "") + "Wikipedia for “" + esc(q) + "”" : "Nothing found for “" + esc(q) + "”. Try different words.") + "</p>";
-          hits.forEach(function (h) {
+          if (hits.length) { var s = section("wiki", (simple ? "Simple English " : "") + "Wikipedia"); hits.forEach(function (h) { found++;
             var u = "https://" + host + ".m.wikipedia.org/wiki/" + encodeURIComponent(h.title.replace(/ /g, "_"));
-            var a = document.createElement("a"); a.href = u;
-            var tmp = document.createElement("div"); tmp.innerHTML = h.snippet || "";
-            a.innerHTML = "<b>" + esc(h.title) + "</b><small>" + esc(host + ".wikipedia.org/wiki/" + h.title.replace(/ /g, "_")) + "</small><span>" + esc(tmp.textContent) + "…</span>";
-            a.onclick = function (ev) { ev.preventDefault(); go({ t: "url", u: u }, true); };
-            box.appendChild(a);
-          });
-        })
-        .catch(function () { box.innerHTML = '<p class="hd">Search didn\'t work just now. Check the internet connection and try again.</p>'; });
+            hit(s, h.title, u, host + ".wikipedia.org/wiki/" + h.title.replace(/ /g, "_"), strip(h.snippet) + "…", { t: "url", u: u }); }); }
+        }).catch(function () {}).then(finish);
     }
     d.querySelector(".tb form").onsubmit = function (ev) {
       ev.preventDefault(); var t = addr.value.trim(); if (!t) return;
