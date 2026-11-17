@@ -174,6 +174,8 @@ body.dragging .win .shield{display:block}
 .br .quick button:hover{background:rgba(127,127,127,.14)} .br .quick i{font-style:normal;font-size:1.5rem;width:46px;height:46px;border-radius:13px;display:grid;place-items:center;background:var(--win2)}
 .br .res{max-width:720px;padding:16px 22px 30px}
 .br .res .hd{color:var(--soft);font-size:.85rem;margin:0 0 12px}
+.br .aim{display:inline-flex;align-items:center;gap:6px;border:0;border-radius:999px;padding:7px 14px;margin:0 0 12px;font:600 .9rem var(--display);cursor:pointer;color:#fff;background:linear-gradient(135deg,#3b6cf0,#9b4de0)}
+.br .sbox .aim{margin:0;padding:0 16px}
 .br .res a{display:block;padding:10px 12px;margin:0 -12px;border-radius:12px;text-decoration:none;color:inherit;cursor:pointer}
 .br .res a:hover{background:rgba(127,127,127,.1)} .br .res b{display:block;color:var(--sky);font:600 1.02rem var(--display)}
 .br .res small{display:block;color:#16a34a;font-size:.75rem;margin:2px 0 3px} .br .res span{color:var(--soft);font-size:.88rem;line-height:1.45}
@@ -621,15 +623,17 @@ html.phone #meDock{display:grid!important}
     }
     function home() {
       view.innerHTML = '<div class="homep"><img class="logo" src="/icons/icon-192.png" alt=""><h2>HWL Search</h2>' +
-        '<form class="sbox"><input type="search" placeholder="What do you want to find out?" aria-label="Search"><button>Search</button></form>' +
+        '<form class="sbox"><input type="search" placeholder="What do you want to find out?" aria-label="Search"><button>Search</button><button type="button" class="aim" title="Ask HWLAI">✨ AI Mode</button></form>' +
         '<p class="opts"><label><input type="checkbox"' + (simple ? " checked" : "") + '> Simple English Wikipedia (easier to read)</label></p>' +
         '<div class="quick">' + QUICK.map(function (q, i) { return '<button type="button" data-q="' + i + '"><i>' + q[0] + "</i>" + esc(q[1]) + "</button>"; }).join("") + "</div></div>";
       var box = view.querySelector(".sbox input");
       view.querySelector(".sbox").onsubmit = function (ev) { ev.preventDefault(); var q = box.value.trim(); if (q) go({ t: "search", q: q }, true); };
+      view.querySelector(".sbox .aim").onclick = function () { var q = box.value.trim(); go({ t: "url", u: aiUrl(q) }, true); };
       view.querySelector(".opts input").onchange = function () { simple = this.checked; prefs.simpleWiki = simple; save("hwlos.prefs", prefs); };
       view.querySelectorAll("[data-q]").forEach(function (b) { b.onclick = function () { go({ t: "url", u: QUICK[+b.dataset.q][2] }, true); }; });
       setTimeout(function () { box.focus(); }, 30);
     }
+    function aiUrl(q) { return "https://hwlai.civilinitiatives.org/" + (q ? "#q=" + encodeURIComponent(q.slice(0, 500)) : ""); }
     function strip(h) { var t = document.createElement("div"); t.innerHTML = String(h || ""); return t.textContent; }
     function hit(box, title, url, shown, text, entry) {
       var a = document.createElement("a"); a.href = url;
@@ -638,8 +642,9 @@ html.phone #meDock{display:grid!important}
     }
     function results(q) {
       var host = simple ? "simple" : "en";
-      view.innerHTML = '<div class="res"><p class="hd">Searching for “' + esc(q) + '”…</p><div class="web"></div><div class="vid"></div><div class="wiki"></div></div>';
+      view.innerHTML = '<div class="res"><button type="button" class="aim">✨ Ask HWLAI (AI Mode)</button><p class="hd">Searching for “' + esc(q) + '”…</p><div class="web"></div><div class="vid"></div><div class="wiki"></div></div>';
       var box = view.querySelector(".res"), found = 0, done = 0;
+      box.querySelector(".aim").onclick = function () { go({ t: "url", u: aiUrl(q) }, true); };
       function finish() { if (++done < 3) return; box.querySelector(".hd").textContent = found ? "Results for “" + q + "”" : "Nothing found for “" + q + "”. Try different words."; }
       function section(cls, name) { var s = box.querySelector("." + cls); s.innerHTML = '<p class="hd" style="margin-top:14px;font-weight:700;color:var(--ink)">' + name + "</p>"; return s; }
       // 1. our own search engine (YaCy, safe learning sites only)
