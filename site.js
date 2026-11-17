@@ -248,9 +248,18 @@
       .then(function (rows) { clearTimeout(t); return rows && rows[0] ? rows[0] : null; },
             function () { clearTimeout(t); return null; });   // can't tell -> stays open, like the main page
   }
+  /* Sleep mode: 11 pm - 6 am UK time the server restarts things and then only HWL Search runs,
+     so every Launchpad site shows a sleeping screen (the owner still gets in until 3 am). */
+  function sleepingNow() {
+    try {
+      var p = new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/London", hour: "2-digit", hour12: false }).format(new Date());
+      var h = parseInt(p, 10) % 24; return h >= 23 || h < 6;
+    } catch (e) { return false; }
+  }
+  var SLEEP_MSG = "Sleep mode: the Launchpad sleeps from 11 pm to 6 am (UK time) while the server restarts and does its night work. See you at 6 am!";
   var shown = null;
-  function showClosed(msg) {
-    if (shown) { shown.querySelector("p").textContent = msg; return; }
+  function showClosed(msg, title) {
+    if (shown) { shown.querySelector("p").textContent = msg; shown.querySelector("h1").textContent = title || "Under maintenance"; shown.querySelector("a").hidden = !!title; return; }
     addStyle(
       "#hehClosed{position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;padding:16px;" +
         "background:#0f172a;color:#e2e8f0;font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}" +
@@ -261,6 +270,7 @@
     shown = document.createElement("div"); shown.id = "hehClosed"; shown.setAttribute("role", "alertdialog"); shown.setAttribute("aria-modal", "true");
     shown.innerHTML = "<div><h1>Under maintenance</h1><p></p><a href=\"https://" + ROOT + "/\">Go to the Launchpad</a></div>";
     shown.querySelector("p").textContent = msg;
+    if (title) { shown.querySelector("h1").textContent = title; shown.querySelector("a").hidden = true; }
     html.classList.add("heh-closed");
     document.body.appendChild(shown);
     try { document.body.inert = true; shown.inert = false; } catch (e) {}
@@ -272,7 +282,12 @@
   }
   var ownGate = false;
   function checkLock() {
-    if (ownGate || document.hidden) return;
+    if (document.hidden) return;
+    if (sleepingNow()) {
+      isOwner(sessionEmail()).then(function (owner) { if (owner) hideClosed(); else showClosed(SLEEP_MSG, "The Launchpad is asleep 😴"); });
+      return;
+    }
+    if (ownGate) { hideClosed(); return; }
     readStatus().then(function (row) {
       if (!row || row.open_now !== false) { hideClosed(); return; }
       isOwner(sessionEmail()).then(function (owner) {
