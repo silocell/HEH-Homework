@@ -248,12 +248,27 @@
       .then(function (rows) { clearTimeout(t); return rows && rows[0] ? rows[0] : null; },
             function () { clearTimeout(t); return null; });   // can't tell -> stays open, like the main page
   }
-  /* Sleep mode: 11 pm - 6 am UK time the server restarts things and then only HWL Search runs,
+  /* Sleep mode (see the times below) the server restarts things and then only HWL Search runs,
      so every Launchpad site shows a sleeping screen (the owner still gets in until 3 am). */
+  /* Late nights (weekends: Fri, Sat and Sun nights; school holidays and the night before them):
+     maintenance 12-1 am and sleep 1-6 am, instead of 8-11 pm and 11 pm-6 am. School days off (Hatch End
+     High School 2026-27, INSET days and bank holidays included): */
+  var HOLS = [["2026-12-18", "2027-01-03"], ["2027-02-15", "2027-02-19"], ["2027-03-26", "2027-04-11"], ["2027-05-03", "2027-05-03"],
+              ["2027-05-31", "2027-06-04"], ["2027-07-17", "2027-08-31"]];
+  function ukNow() {
+    var p = {}; new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/London", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", hour12: false })
+      .formatToParts(new Date()).forEach(function (x) { p[x.type] = x.value; });
+    return { day: Date.UTC(+p.year, +p.month - 1, +p.day), h: parseInt(p.hour, 10) % 24 };
+  }
+  function iso(t) { return new Date(t).toISOString().slice(0, 10); }
+  function holiday(t) { var d = iso(t); for (var i = 0; i < HOLS.length; i++) if (d >= HOLS[i][0] && d <= HOLS[i][1]) return true; return false; }
+  function lateNight(t) { var w = new Date(t).getUTCDay(); return w === 5 || w === 6 || w === 0 || holiday(t) || holiday(t + 864e5); }
   function sleepingNow() {
     try {
-      var p = new Intl.DateTimeFormat("en-GB", { timeZone: "Europe/London", hour: "2-digit", hour12: false }).format(new Date());
-      var h = parseInt(p, 10) % 24; return h >= 23 || h < 6;
+      var n = ukNow();
+      if (n.h >= 23) return !lateNight(n.day);
+      if (n.h < 6) return n.h >= 1 || !lateNight(n.day - 864e5);
+      return false;
     } catch (e) { return false; }
   }
   /* Only pages that use the server sleep: ones that load Supabase or talk to HEH-Live. Games and other pages
@@ -265,7 +280,7 @@
     for (var i = 0; i < sc.length; i++) if (/hehs-live\.duckdns\.org|supabase\.createClient/.test(sc[i].textContent)) return true;
     return false;
   }
-  var SLEEP_MSG = "Sleep mode: the Launchpad sleeps from 11 pm to 6 am (UK time) while the server restarts and does its night work. See you at 6 am!";
+  var SLEEP_MSG = "Sleep mode: the Launchpad sleeps at night (11 pm - 6 am on school nights, 1 - 6 am at weekends and in the holidays, UK time) while the server restarts and does its night work. See you at 6 am!";
   var shown = null;
   function showClosed(msg, title) {
     if (shown) { shown.querySelector("p").textContent = msg; shown.querySelector("h1").textContent = title || "Under maintenance"; shown.querySelector("a").hidden = !!title; return; }
