@@ -295,6 +295,8 @@ button,input,select,textarea{font:inherit;color:inherit}
   display:flex;align-items:center;justify-content:center;gap:10px;
 }
 .btn.ms:hover{filter:none;border-color:var(--accent)}
+.btn.chz{margin-top:10px}
+.chz-form{margin-top:12px}
 .btn.ms svg{width:17px;height:17px;flex:none}
 .pw-switch{margin:14px 0 0;text-align:center}
 /* There was a note here warning that Microsoft calls this app
@@ -1538,6 +1540,21 @@ body.gsc-overflow-hidden{overflow:auto!important}
       <svg viewBox="0 0 23 23" aria-hidden="true"><path fill="#f25022" d="M1 1h10v10H1z"/><path fill="#7fba00" d="M12 1h10v10H12z"/><path fill="#00a4ef" d="M1 12h10v10H1z"/><path fill="#ffb900" d="M12 12h10v10H12z"/></svg>
       Sign in with Microsoft
     </button>
+    <button type="button" class="btn ms chz" id="chzBtn" aria-expanded="false" aria-controls="chzForm">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><rect width="24" height="24" rx="6" fill="#c8312b"/><path d="M16.6 8.2a5.4 5.4 0 1 0 0 7.6" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"/></svg>
+      Sign in with Chausima
+    </button>
+    <form id="chzForm" class="chz-form" autocomplete="on" hidden>
+      <div class="field">
+        <label for="chzEmail">Chausima address</label>
+        <input type="text" id="chzEmail" autocomplete="username" placeholder="name@chausima.com" autocapitalize="none" spellcheck="false" required>
+      </div>
+      <div class="field">
+        <label for="chzPw">Chausima password</label>
+        <input type="password" id="chzPw" autocomplete="current-password" required>
+      </div>
+      <button type="submit" class="btn" id="chzGo">Sign in</button>
+    </form>
     <p class="gate-error" id="gateError"></p>
 
     <p class="pw-switch" id="pwSwitch">
@@ -2767,6 +2784,40 @@ if(location.hash === "#spare"){
       var w = document.getElementById("spareWrap");
       if(w){ w.hidden = false; var g = document.getElementById("googleBtn"); if(g) g.focus(); }
     }
+  });
+})();
+
+/* Sign in with Chausima: the chausima-login function checks the address and password with Chausima Mail
+   and hands back a one-time token, which signs in here exactly like the other ways in. */
+(function(){
+  var b = document.getElementById("chzBtn"), f = document.getElementById("chzForm");
+  if(!b || !f) return;
+  b.addEventListener("click", function(){
+    f.hidden = !f.hidden; b.setAttribute("aria-expanded", String(!f.hidden));
+    if(!f.hidden) document.getElementById("chzEmail").focus();
+  });
+  f.addEventListener("submit", function(e){
+    e.preventDefault();
+    var err = document.getElementById("gateError"), go = document.getElementById("chzGo");
+    var em = document.getElementById("chzEmail").value.trim(), pw = document.getElementById("chzPw").value;
+    if(!sb){ err.textContent = "Can't reach the server. Check your connection."; return; }
+    err.textContent = ""; go.disabled = true; go.textContent = "Signing in…";
+    function done(msg){ go.disabled = false; go.textContent = "Sign in"; if(msg) err.textContent = msg; document.getElementById("chzPw").value = ""; }
+    fetch(SUPABASE_URL + "/functions/v1/chausima-login", { method:"POST",
+      headers:{ "content-type":"application/json", apikey:SUPABASE_KEY, Authorization:"Bearer " + SUPABASE_KEY },
+      body: JSON.stringify({ email:em, password:pw }) })
+    .then(function(r){ return r.json().catch(function(){ return { ok:false, reason:"Chausima sign-in isn't set up yet." }; }); })
+    .then(function(j){
+      if(!j || !j.ok) return done((j && j.reason) || "Couldn't sign in with Chausima.");
+      return sb.auth.verifyOtp({ token_hash:j.token_hash, type:"email" }).then(function(r){
+        if(r.error || !r.data || !r.data.user) return done("Couldn't finish signing in. Try again.");
+        done("");
+        var u = r.data.user;
+        store(SESSION_HINT, u.email);
+        openDashboard({ name:displayName(u.email), email:u.email, uid:u.id, offline:false }, u);
+      });
+    })
+    .catch(function(){ done("Can't reach the server. Check your connection."); });
   });
 })();
 
