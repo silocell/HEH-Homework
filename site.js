@@ -402,6 +402,11 @@
     ownGate = !!document.getElementById("closed");      // the main page has its own gate
     checkLock();
     setInterval(checkLock, 60000);
+    /* the restart and lockdown switches need to show up fast: a tiny check every 10 s (the full check stays once a minute) */
+    setInterval(function () {
+      if (document.hidden || ADMIN_HOST) return;
+      readHwl().then(function (st) { if ((st && (st.restarting || st.lock)) || wasRestarting || wasLocked) checkLock(); });
+    }, 10000);
     document.addEventListener("visibilitychange", checkLock);
     setTimeout(checkSuite, 2500);
   }
