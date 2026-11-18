@@ -282,7 +282,8 @@
   }
   var SLEEP_MSG = "Sleep mode: the Launchpad sleeps at night (11 pm - 6 am on school nights, 1 - 6 am at weekends and in the holidays, UK time) while the server restarts and does its night work. See you at 6 am!";
   var shown = null;
-  function showClosed(msg, title) {
+  function showClosed(msg, title, kind) {
+    if (shown && shown.getAttribute("data-kind") !== (kind || "")) hideClosed();
     if (shown) { shown.querySelector("p").textContent = msg; shown.querySelector("h1").textContent = title || "Under maintenance"; shown.querySelector("a").hidden = !!title; return; }
     addStyle(
       "#hehClosed{position:fixed;inset:0;z-index:2147483647;display:flex;align-items:center;justify-content:center;padding:16px;" +
@@ -290,9 +291,13 @@
       "#hehClosed>div{max-width:440px;background:#1e293b;border:1px solid #334155;border-radius:20px;padding:28px 24px;text-align:center}" +
       "#hehClosed h1{margin:0 0 8px;font-size:1.5rem;color:#fff}#hehClosed p{margin:0 0 18px;color:#cbd5e1}" +
       "#hehClosed a{display:inline-block;background:#6366f1;color:#fff;border-radius:12px;padding:10px 16px;text-decoration:none;font-weight:600}" +
-      "html.heh-closed body{overflow:hidden!important}");
-    shown = document.createElement("div"); shown.id = "hehClosed"; shown.setAttribute("role", "alertdialog"); shown.setAttribute("aria-modal", "true");
+      "#hehClosed a[hidden]{display:none}html.heh-closed body{overflow:hidden!important}" +
+      "#hehClosed[data-kind=lock]>div{border-color:#b91c1c;box-shadow:0 0 0 4px rgba(185,28,28,.18)}" +
+      "#hehClosed .heh-spin{width:44px;height:44px;margin:0 auto 14px;border-radius:50%;border:4px solid #334155;border-top-color:#818cf8;animation:hehSpin 1s linear infinite}" +
+      "@keyframes hehSpin{to{transform:rotate(360deg)}}@media (prefers-reduced-motion:reduce){#hehClosed .heh-spin{animation-duration:4s}}");
+    shown = document.createElement("div"); shown.id = "hehClosed"; shown.setAttribute("data-kind", kind || ""); shown.setAttribute("role", "alertdialog"); shown.setAttribute("aria-modal", "true");
     shown.innerHTML = "<div><h1>Under maintenance</h1><p></p><a href=\"https://" + ROOT + "/\">Go to the Launchpad</a></div>";
+    if (kind === "restart") { var sp = document.createElement("div"); sp.className = "heh-spin"; sp.setAttribute("aria-hidden", "true"); shown.firstChild.insertBefore(sp, shown.firstChild.firstChild); }
     shown.querySelector("p").textContent = msg;
     if (title) { shown.querySelector("h1").textContent = title; shown.querySelector("a").hidden = true; }
     html.classList.add("heh-closed");
@@ -305,8 +310,54 @@
     try { document.body.inert = false; } catch (e) {}
   }
   var ownGate = false;
+  /* HWL Admin's master switch (locks every Launchpad site down) and restart switch (a restarting screen until the
+     server is back). The admin console itself is never locked. While the whole server restarts it can't answer,
+     so the last answer is remembered and the screen stays up until it's back or the restart time runs out. */
+  var ADMIN_HOST = /^maintenance\./.test(location.hostname);
+  function readHwl() {
+    var ctl = window.AbortController ? new AbortController() : null;
+    var t = setTimeout(function () { if (ctl) ctl.abort(); }, 5000);
+    return fetch(API + "/hwl-admin/state", { cache: "no-store", signal: ctl ? ctl.signal : undefined })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (st) { clearTimeout(t); if (st) ls("hwl.state", JSON.stringify(st)); return st; }, function () { clearTimeout(t); return null; })
+      .then(function (st) {
+        if (st) return st;
+        var old = null; try { old = JSON.parse(ls("hwl.state") || "null"); } catch (e) {}
+        if (old && old.restarting && old.until * 1000 > Date.now()) return old;   // can't reach it: a restart we already knew about
+        if (old && old.lock) return old;                                          // ...or a lockdown that hasn't been lifted yet
+        return null;
+      });
+  }
+  var restartPoll = null, wasRestarting = false, wasLocked = false;
+  function restartScreen(st) {
+    var mins = Math.max(1, Math.round((st.until * 1000 - Date.now()) / 60000));
+    showClosed((st.kind === "server" ? "The server is restarting. " : "The Launchpad's services are restarting. ") +
+      "This page comes back on its own - about " + mins + " minute" + (mins === 1 ? "" : "s") + " at most.", "Restarting…", "restart");
+    wasRestarting = true;
+    if (!restartPoll) restartPoll = setInterval(function () { if (!document.hidden) checkLock(); }, 6000);
+  }
+  function restartOver() {
+    if (restartPoll) { clearInterval(restartPoll); restartPoll = null; }
+    if (wasRestarting) { wasRestarting = false; hideClosed(); location.reload(); return true; }
+    return false;
+  }
   function checkLock() {
     if (document.hidden) return;
+    if (ADMIN_HOST) return checkOpen();
+    readHwl().then(function (st) {
+      if (st && st.restarting) return restartScreen(st);
+      if (restartOver()) return;
+      if (st && st.lock) {   // master switch: the server has been shut down, so nobody gets in (unsaved work isn't kept)
+        showClosed("Couldn't connect to the server. " + (st.msg || "Lockdown is on, so the Launchpad is switched off for now. Please check back later."), "Lockdown is on 🔒", "lock");
+        wasLocked = true;
+        if (!restartPoll) restartPoll = setInterval(function () { if (!document.hidden) checkLock(); }, 20000);
+        return;
+      }
+      if (wasLocked) { wasLocked = false; if (restartPoll) { clearInterval(restartPoll); restartPoll = null; } hideClosed(); location.reload(); return; }
+      checkOpen();
+    });
+  }
+  function checkOpen() {
     if (sleepingNow() && needsServer()) {
       isOwner(sessionEmail()).then(function (owner) { if (owner) hideClosed(); else showClosed(SLEEP_MSG, "The Launchpad is asleep 😴"); });
       return;
